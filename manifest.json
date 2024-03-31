@@ -1,0 +1,46 @@
+{
+  "name": "FTR - For The Record - KI-Tools",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "description": "Browser-extension for an efficient, open-source content sourcing, archiving, translation, summarization, transcription, reformulation, humanization, voice-over and fact-check analysis using AI.",
+  "icons": {
+    "16": "icons/icon.svg",
+    "32": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  },
+  "action": {
+    "default_title": "FTR: KI-Tools anzeigen"
+  },
+  "content_scripts": [{
+    "run_at": "document_start",
+    "matches": ["http://*/*", "https://*/*", "file://*/*"],
+    "js": ["dist/events-prehook.js"],
+    "all_frames": false,
+    "match_origin_as_fallback": false,
+    "match_about_blank": false,
+    "world": "MAIN"
+  }, {
+    "matches": ["http://*/*", "https://*/*", "file://*/*"],
+    "js": ["./node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js", "src/browser-polyfill.js", "dist/content-script.js"],
+    "all_frames": false,
+    "match_origin_as_fallback": false,
+    "match_about_blank": false,
+    "run_at": "document_idle",
+    "world": "ISOLATED"
+  }],
+  "permissions": ["scripting", "activeTab", "storage"],
+  "background": {
+    "service_worker": "dist/worker.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [ "dist/*" ],
+      "matches": [ "http://*/*", "https://*/*", "file://*/*" ]
+    },
+    {
+      "resources": [ "fonts/*" ],
+      "matches": [ "http://*/*", "https://*/*", "file://*/*" ]
+    }
+  ]
+}

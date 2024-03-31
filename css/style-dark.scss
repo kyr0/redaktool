@@ -1,0 +1,368 @@
+@import "prosemirror.scss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+ 
+@layer base {
+  .lm_ab {
+    --ab-background: #1E1E1E;
+    --ab-foreground: #fefefe; /*210 40% 98%;*/
+ 
+    --ab-card: 222.2 84% 4.9%;
+    --ab-card-foreground: 210 40% 98%;
+ 
+    --ab-popover: 222.2 84% 4.9%;
+    --ab-popover-foreground: 210 40% 98%;
+ 
+    --ab-primary: 210 40% 98%;
+    --ab-primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --ab-secondary: 217.2 32.6% 17.5%;
+    --ab-secondary-foreground: 210 40% 98%;
+ 
+    --ab-muted: 217.2 32.6% 17.5%;
+    --ab-muted-foreground: 215 20.2% 65.1%;
+ 
+    --ab-accent: 217.2 32.6% 17.5%;
+    --ab-accent-foreground: 210 40% 98%;
+ 
+    --ab-destructive: 0 62.8% 30.6%;
+    --ab-destructive-foreground: 210 40% 98%;
+ 
+    --ab-border: 217.2 32.6% 17.5%;
+    --ab-input: 217.2 32.6% 17.5%;
+    --ab-ring: 212.7 26.8% 83.9%;
+  }
+}
+
+
+@layer components {
+  .ab-ftr-bg {
+    @apply ab-bg-slate-800;
+  }
+  .ab-ftr-bg-contrast {
+    @apply ab-bg-black;
+  }
+  .ab-ftr-bg-halfcontrast {
+    @apply ab-bg-slate-900;
+  }
+  .ab-ftr-active-menu-item {
+    @apply ab-bg-slate-700;
+    @apply ab-text-white;
+    @apply ab-pt-1;
+    @apply ab-pb-1;
+    @apply ab-rounded-sm;
+  }
+  .ab-ftr-menu-item {
+    @apply ab-pt-1;
+    @apply ab-pb-1;
+    @apply ab-rounded-sm;
+  }
+  .ab-ftr-button {
+    @apply ab-rounded-sm;
+    @apply ab-bg-slate-700;
+    @apply ab-text-white;
+  }
+}
+
+
+@layer base {
+
+  .lm_ab * {
+    font-size: 1rem;
+    color: var(--ab-foreground);
+    background: transparent;
+    height: initial;
+    width: initial;
+    /* Improve consistency of default fonts in all browsers. (https://github.com/sindresorhus/modern-normalize/issues/3) */
+    font-family:
+    system-ui,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji';
+    line-height: 1.15; /* 1. Correct the line height in all browsers. */
+    -webkit-text-size-adjust: 100%; /* 2. Prevent adjustments of font size after orientation changes in iOS. */
+    -moz-tab-size: 4; /* 3. Use a more readable tab size (opinionated). */
+    tab-size: 4; /* 3 */
+  }
+}
+
+.lm_ab {
+  @apply ab-p-2 ab-pt-1 ab-pb-1;
+  
+  .emoji {
+    width: 1em !important;
+  }
+
+  em {
+    font-style: italic;
+    font-weight: initial;
+  }
+
+  a {
+    @apply ab-text-primary;
+    @apply ab-underline;
+  }
+
+  ul, ol {
+    margin: 0 0 1em 0;
+    padding: 0 0 0 2em; /* Adjust left padding for indentation */
+    list-style-position: outside; /* Ensures markers are outside the content flow */
+  }
+  
+  ul {
+    list-style-type: disc; /* Default style for unordered lists */
+  }
+  
+  ol {
+    list-style-type: decimal; /* Default style for ordered lists */
+  }
+  
+  li {
+    margin-bottom: 0.5em; /* Adds space between list items */
+    line-height: 1.6; /* Improves readability */
+  }
+
+    *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  /*
+  Grouping content
+  ================
+  */
+
+  /**
+  1. Add the correct height in Firefox.
+  2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)
+  */
+
+  hr {
+    height: 0; /* 1 */
+    color: inherit; /* 2 */
+  }
+
+  /*
+  Text-level semantics
+  ====================
+  */
+
+  /**
+  Add the correct text decoration in Chrome, Edge, and Safari.
+  */
+
+  abbr[title] {
+    text-decoration: underline dotted;
+  }
+
+  /**
+  Add the correct font weight in Edge and Safari.
+  */
+
+  b,
+  strong {
+    font-weight: bolder;
+  }
+
+  /**
+  1. Improve consistency of default fonts in all browsers. (https://github.com/sindresorhus/modern-normalize/issues/3)
+  2. Correct the odd 'em' font sizing in all browsers.
+  */
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family:
+      ui-monospace,
+      SFMono-Regular,
+      Consolas,
+      'Liberation Mono',
+      Menlo,
+      monospace; /* 1 */
+    font-size: 1em; /* 2 */
+  }
+
+  /**
+  Add the correct font size in all browsers.
+  */
+
+  small {
+    font-size: 80%;
+  }
+
+  /**
+  Prevent 'sub' and 'sup' elements from affecting the line height in all browsers.
+  */
+
+  sub,
+  sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+
+  sub {
+    bottom: -0.25em;
+  }
+
+  sup {
+    top: -0.5em;
+  }
+
+  /*
+  Tabular data
+  ============
+  */
+
+  /**
+  1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
+  2. Correct table border color inheritance in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
+  */
+
+  table {
+    width: 100%; /* Full-width tables */
+    border-collapse: collapse; /* Collapses borders between cells */
+    background-color: transparent; /* Transparent background */
+    margin-bottom: 1em; /* Space below the table */
+    line-height: 1.5; /* Improved readability */
+  }
+  
+  th, td {
+    text-align: left; /* Align text to the left; adjust as needed */
+    padding: 8px; /* Padding inside cells */
+  }
+
+  /*
+  Forms
+  =====
+  */
+
+  /**
+  1. Change the font styles in all browsers.
+  2. Remove the margin in Firefox and Safari.
+  */
+
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: inherit; /* 1 */
+    font-size: 100%; /* 1 */
+    line-height: 1.15; /* 1 */
+    margin: 0; /* 2 */
+  }
+
+  /**
+  Remove the inheritance of text transform in Edge and Firefox.
+  */
+
+  button,
+  select {
+    text-transform: none;
+  }
+  /**
+  Remove the padding so developers are not caught out when they zero out 'fieldset' elements in all browsers.
+  */
+
+  legend {
+    padding: 0;
+  }
+
+  /**
+  Add the correct vertical alignment in Chrome and Firefox.
+  */
+
+  progress {
+    vertical-align: baseline;
+  }
+  /*
+  Interactive
+  ===========
+  */
+
+  /*
+  Add the correct display in Chrome and Safari.
+  */
+
+  summary {
+    display: list-item;
+  }
+
+  blockquote {
+    margin: 1em 0; /* Adds space around the blockquote */
+    padding: 0.5em 10px; /* Top and bottom padding with larger left padding */
+    border-left: 4px solid #ccc; /* Solid line on the left */
+    color: #555; /* Darker text color for contrast */
+    font-style: italic; /* Italicize text */
+    line-height: 1.6; /* Improve readability */
+  }
+  
+  blockquote cite {
+    display: block; /* Ensure cite is on a new line if used */
+    font-style: normal; /* Keep cite text normal to differentiate from quote */
+    font-weight: bold; /* Optional: make the citation bold */
+    margin-top: 10px; /* Space above the citation */
+    text-align: right; /* Align citation to the right */
+  }
+
+  h1 {
+    font-size: 1.875rem;
+    line-height: 2.5rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    line-height: 2.25rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+    line-height: 2rem;
+  }
+  
+  h4 {
+    font-size: 1.125rem;
+    font-weight: normal;
+    line-height: 1.75rem;
+  }
+  
+  h5 {
+    font-size: 1rem;
+    font-weight: normal;
+    line-height: 1.75rem;
+  }
+  
+  h6 {
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1.5rem;
+  }
+}
+
+.editor {
+  @apply ab-mx-auto;
+  display: block;
+}
+
+/** intentionally bleed into the website to override unselectable text */
+/*
+* {
+  user-select: text !important;
+}
+*/
+
+
+[data-milkdown-root="true"] {
+  height: 100%;
+}
