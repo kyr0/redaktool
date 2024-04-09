@@ -10,6 +10,7 @@
   "author": "Aron Homberg <aron.homberg@fluctura.com>",
   "license": "ISC",
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@milkdown/core": "^7.3.5",
     "@milkdown/ctx": "^7.3.5",
     "@milkdown/plugin-clipboard": "^7.3.5",
@@ -82,10 +83,12 @@
     "turndown": "^7.1.2",
     "turndown-plugin-gfm": "^1.0.2",
     "vaul": "^0.9.0",
-    "webextension-polyfill": "^0.10.0"
+    "webextension-polyfill": "^0.10.0",
+    "zod": "^3.22.4"
   },
   "type": "module",
   "devDependencies": {
+    "@biomejs/biome": "^1.6.4",
     "@types/bun": "latest",
     "@types/chrome": "latest",
     "@types/react": "^18.2.55",

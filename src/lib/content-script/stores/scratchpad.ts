@@ -1,8 +1,18 @@
-import { useStore } from "@nanostores/react"
-import { atom } from "nanostores"
+import { useStore } from "@nanostores/react";
+import { atom } from "nanostores";
 
-export const scratchpadEditorPlaceholderMarkdown  = `Please select text or use the inspector to select an element in the page to prompt for, then edit the content in the editor <img src="https://hyoban.ai/logos/anwalt-de.svg" alt="drawing" width="200"/>`
+export const scratchpadEditorPlaceholderMarkdown = ``;
 
-export const scratchpadEditorContentAtom = atom<string>(scratchpadEditorPlaceholderMarkdown)
+export const scratchpadEditorContentAtom = atom<string>(
+  scratchpadEditorPlaceholderMarkdown,
+);
+export const getScratchpadEditorContentStore = () =>
+  useStore(scratchpadEditorContentAtom);
 
-export const getScratchpadEditorContentStore = () => useStore(scratchpadEditorContentAtom)
+export const scratchpadEditorPromptAtom = atom<string>("Prompt here");
+export const getScratchpadEditorPromptStore = () =>
+  useStore(scratchpadEditorPromptAtom);
+
+export const translationEditorAtom = atom<string>("");
+export const getTranslationEditorContentStore = () =>
+  useStore(translationEditorAtom);
