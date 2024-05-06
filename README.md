@@ -23,7 +23,7 @@
 
 > 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage, marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
 
-## 🌟Features
+## 🌟 Features
 <span align="center">
 
   ![Screenshot](./docs/images/deck.webp)
