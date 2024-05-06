@@ -21,7 +21,7 @@
 
 > 🛠️ The "FTR: AI Tools" project offers a powerful browser extension specifically designed for editors and professionals engaged in text-related research, writing, and evaluation tasks. This tool serves as a comprehensive "AI toolbox" enabling direct interaction with content on any website for extraction, translation, summarization, composition, and proofreading. It includes additional functionalities like a News Radar, transcription services, and robust fact-checking features. Aimed at boosting productivity, the extension streamlines workflows by eliminating the need for multiple tools, thereby reducing the mental burden and decreasing costs through the direct integration of both commercial and open-source AI models. 
 
-> 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage, marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
+> 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage (through my open source [`vectorstore`](https://github.com/kyr0/vectorstore/) project), marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
 
 ## 🌟 Features
 <span align="center">
