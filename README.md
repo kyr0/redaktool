@@ -4,16 +4,18 @@
 
   # KI-Tools ("AI Tools")
 
-</span>
 
-### Browser Extension - for the journalistic work of the future
+  ### Browser Extension - for the journalistic work of the future
 
-#### Current State: IN DEVELOPMENT, PRE-ALPHA
+  <font color="#555">
+  
+  #### &ndash; IN DEVELOPMENT | PRE-ALPHA &ndash;
 
-<span align="center">
+  </font>
 
-[![](https://img.shields.io/badge/features-navy?style=for-the-badge&logo=rocket)](#🌟features)  [![](https://img.shields.io/badge/usage-magenta?style=for-the-badge&logo=readdotcv)](#📚usage)   [![](https://img.shields.io/badge/docs-darkmagenta?style=for-the-badge&logo=readme)](/wiki) [![](https://img.shields.io/badge/contributing-darkslategray?style=for-the-badge&logo=react)](#⚒️contibuting) ![MIT License](https://img.shields.io/github/license/kyr0/ftr-ki-tools?style=for-the-badge) 
-[![](https://dcbadge.vercel.app/api/server/4wR9t7cdWc)](https://discord.gg/4wR9t7cdWc) [![](https://img.shields.io/badge/email-aron-cc0000?style=for-the-badge&logo=maildotru)](mailto:info@aron-homberg.de) [![](https://img.shields.io/badge/acknowledgements-cc0000?style=for-the-badge&logo=undertale)](#❤️acknowledgements)
+
+  [![](https://img.shields.io/badge/features-navy?style=for-the-badge&logo=rocket)](#features)  [![](https://img.shields.io/badge/usage-magenta?style=for-the-badge&logo=readdotcv)](#usage)   [![](https://img.shields.io/badge/docs-darkmagenta?style=for-the-badge&logo=readme)](/kyr0/ftr-ki-tools/wiki) [![](https://img.shields.io/badge/contributing-darkslategray?style=for-the-badge&logo=react)](#%EF%B8%8Fcontibuting) ![MIT License](https://img.shields.io/github/license/kyr0/ftr-ki-tools?style=for-the-badge) 
+  [![](https://dcbadge.vercel.app/api/server/4wR9t7cdWc)](https://discord.gg/4wR9t7cdWc) [![](https://img.shields.io/badge/email-aron-cc0000?style=for-the-badge&logo=maildotru)](mailto:info@aron-homberg.de) [![](https://img.shields.io/badge/acknowledgements-cc0000?style=for-the-badge&logo=undertale)](#%EF%B8%8Facknowledgements)
 
 </span>
 
@@ -21,7 +23,7 @@
 
 > 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage, marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
 
-## 🌟Features
+## 🌟 Features
 <span align="center">
 
   ![Screenshot](./docs/images/deck.webp)
@@ -52,7 +54,7 @@ Additional features planned:
 -  ✅ **AI Fact-Checking**: Offers fact-checking with minimized errors and simulates human touch and style.
 -  ✅ **AI News Radar**: Ingests all news sources, added to the radar via RSS/Atom feeds, applies AI vector similarity algorithms to link similar news.
 
-## 📚Usage
+## 📚 Usage
 
 **Please be aware that this extension is currently in the ALPHA stage and is not ready for general user installation. If you're interested in using the extension at this time, you will need to compile it on your own machine. To do this, please refer to the "Contributing as a Developer" guide provided below.**
 
@@ -72,7 +74,7 @@ You can activate the extension on any website in a few simple ways:
 - Use the keystroke Alt+F on Windows or Control+F on Mac.
 - Alternatively, click on the extension’s menu entry in Chrome's extension dropdown.
 
-## ⚒️Contibuting
+## ⚒️ Contibuting
 
 ### As a User 
 This project, crafted by a writer and software engineer, is designed with you in mind—it thrives on your participation! Your unique insights and contributions can truly enrich this community. If you're willing to share a bit of your valuable time and energy, here are several ways you can make a meaningful impact:
@@ -110,7 +112,7 @@ Your contributions are welcome!
 - **Reporting Bugs**: Submit an issue in our repository, providing a detailed description of the problem and steps to reproduce it. A usage video works best.
 - **Feature Requests**: Have ideas on how to make this extension better? We'd love to hear from you! Please submit an issue, detailing your suggestions.
 
-## ❤️Acknowledgements
+## ❤️ Acknowledgements
 
 Special thanks to our contributors and supporters, particularly Media Tech Lab, for their invaluable assistance in this project.
 
