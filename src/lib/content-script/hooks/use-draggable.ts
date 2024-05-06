@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export interface Position {
   x: number;
@@ -7,14 +7,20 @@ export interface Position {
 
 export type StyleableElement = HTMLElement | SVGElement;
 
-export interface UpdatePositionCallback {
-  (x: number, y: number, node: StyleableElement): void;
-}
+export type UpdatePositionCallback = (
+  x: number,
+  y: number,
+  node: StyleableElement,
+) => void;
 
-export const applyNewPosition = (el: StyleableElement, x: number, y: number) => {
-    el.style.left = `${x}px`; 
-    el.style.top = `${y}px`;
-}
+export const applyNewPosition = (
+  el: StyleableElement,
+  x: number,
+  y: number,
+) => {
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+};
 
 export interface DraggableOptions {
   applyTopLeftStyles?: boolean;
@@ -24,13 +30,16 @@ export interface DraggableOptions {
 }
 
 export const defaultDraggableOptions: DraggableOptions = {
-    applyTopLeftStyles: true,
-    startCentered: false,
-    applyTopLeftStylesInitially: true,
+  applyTopLeftStyles: true,
+  startCentered: false,
+  applyTopLeftStylesInitially: true,
 };
 
-export const useDraggable = (initialPosition: Position, onUpdatePosition?: UpdatePositionCallback, options: DraggableOptions = defaultDraggableOptions) => {
-
+export const useDraggable = (
+  initialPosition: Position,
+  onUpdatePosition?: UpdatePositionCallback,
+  options: DraggableOptions = defaultDraggableOptions,
+) => {
   // merge, apply, and return the new options
   options = { ...defaultDraggableOptions, ...options };
 
@@ -41,11 +50,11 @@ export const useDraggable = (initialPosition: Position, onUpdatePosition?: Updat
   const [isInitial, setInitial] = useState<boolean>(true);
 
   useEffect(() => {
-    const node = draggableRef.current
+    const node = draggableRef.current;
     if (!node) return;
 
     if (options.applyTopLeftStyles && options.applyTopLeftStylesInitially) {
-        applyNewPosition(node, initialPosition.x, initialPosition.y);
+      applyNewPosition(node, initialPosition.x, initialPosition.y);
     }
 
     const updatePosition = (e: MouseEvent) => {
@@ -59,8 +68,8 @@ export const useDraggable = (initialPosition: Position, onUpdatePosition?: Updat
       };
 
       if (isInitial && options.startCentered) {
-        newPosition.x += (window.innerWidth / 2 ) - (boundingRect.width / 2)
-        newPosition.y += (window.innerHeight / 2 ) - (boundingRect.height / 2)
+        newPosition.x += window.innerWidth / 2 - boundingRect.width / 2;
+        newPosition.y += window.innerHeight / 2 - boundingRect.height / 2;
       }
 
       if (options.applyTopLeftStyles) {
@@ -71,11 +80,10 @@ export const useDraggable = (initialPosition: Position, onUpdatePosition?: Updat
 
       onUpdatePosition?.(newPosition.x, newPosition.y, node);
 
-      setInitial(false)
+      setInitial(false);
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-
       if (options.handleSelector) {
         const target = e.target as Element;
         const dragHandleEl = node.querySelector(options.handleSelector);
@@ -85,31 +93,40 @@ export const useDraggable = (initialPosition: Position, onUpdatePosition?: Updat
       setIsDragging(true);
       setStartX(e.clientX);
       setStartY(e.clientY);
-      node.classList.add('opacity-80');
+      node.classList.add("opacity-80");
     };
 
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
-        node.classList.remove('opacity-80');
-        document.removeEventListener('mousemove', updatePosition);
+        node.classList.remove("opacity-80");
+        document.removeEventListener("mousemove", updatePosition);
       }
     };
 
     if (isDragging) {
-      document.addEventListener('mousemove', updatePosition);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", updatePosition);
+      document.addEventListener("mouseup", handleMouseUp);
     }
 
     // Event listeners for mouse down to start dragging
-    node.addEventListener('mousedown', handleMouseDown as any);
+    node.addEventListener("mousedown", handleMouseDown as any);
 
     return () => {
-      document.removeEventListener('mousemove', updatePosition);
-      document.removeEventListener('mouseup', handleMouseUp);
-      node.removeEventListener('mousedown', handleMouseDown as any);
+      document.removeEventListener("mousemove", updatePosition);
+      document.removeEventListener("mouseup", handleMouseUp);
+      node.removeEventListener("mousedown", handleMouseDown as any);
     };
-  }, [draggableRef.current, isInitial, options.applyTopLeftStyles, options.applyTopLeftStylesInitially, isDragging, startX, startY, onUpdatePosition]);
+  }, [
+    draggableRef.current,
+    isInitial,
+    options.applyTopLeftStyles,
+    options.applyTopLeftStylesInitially,
+    isDragging,
+    startX,
+    startY,
+    onUpdatePosition,
+  ]);
 
   return draggableRef;
 };

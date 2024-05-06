@@ -1,7 +1,7 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "../lib/content-script/utils"
+import { cn } from "../lib/content-script/utils";
 
 const alertVariants = cva(
   "ab-relative ab-w-full ab-rounded-lg ab-border ab-p-4 [&>svg~*]:ab-pl-7 [&>svg+div]:ab-translate-y-[-3px] [&>svg]:ab-absolute [&>svg]:ab-left-4 [&>svg]:ab-top-4 [&>svg]:ab-text-foreground",
@@ -16,8 +16,8 @@ const alertVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
 const Alert = React.forwardRef<
   HTMLDivElement,
@@ -29,8 +29,8 @@ const Alert = React.forwardRef<
     className={cn(alertVariants({ variant }), className)}
     {...props}
   />
-))
-Alert.displayName = "Alert"
+));
+Alert.displayName = "Alert";
 
 const AlertTitle = React.forwardRef<
   HTMLParagraphElement,
@@ -38,11 +38,14 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("ab-mb-1 ab-font-medium ab-leading-none ab-tracking-tight", className)}
+    className={cn(
+      "ab-mb-1 ab-font-medium ab-leading-none ab-tracking-tight",
+      className,
+    )}
     {...props}
   />
-))
-AlertTitle.displayName = "AlertTitle"
+));
+AlertTitle.displayName = "AlertTitle";
 
 const AlertDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -53,7 +56,7 @@ const AlertDescription = React.forwardRef<
     className={cn("ab-text-sm [&_p]:ab-leading-relaxed", className)}
     {...props}
   />
-))
-AlertDescription.displayName = "AlertDescription"
+));
+AlertDescription.displayName = "AlertDescription";
 
-export { Alert, AlertTitle, AlertDescription }
+export { Alert, AlertTitle, AlertDescription };

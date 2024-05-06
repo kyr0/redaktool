@@ -1,11 +1,11 @@
-import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import type * as React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DayPicker } from "react-day-picker";
 
-import { cn } from "../lib/content-script/utils"
-import { buttonVariants } from "./button"
+import { cn } from "../lib/content-script/utils";
+import { buttonVariants } from "./button";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>
+export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({
   className,
@@ -18,14 +18,16 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn("ab-p-3", className)}
       classNames={{
-        months: "ab-flex ab-flex-col sm:ab-flex-row ab-space-y-4 sm:ab-space-x-4 sm:ab-space-y-0",
+        months:
+          "ab-flex ab-flex-col sm:ab-flex-row ab-space-y-4 sm:ab-space-x-4 sm:ab-space-y-0",
         month: "ab-space-y-4",
-        caption: "ab-flex ab-justify-center ab-pt-1 ab-relative ab-items-center",
+        caption:
+          "ab-flex ab-justify-center ab-pt-1 ab-relative ab-items-center",
         caption_label: "ab-text-sm ab-font-medium",
         nav: "ab-space-x-1 ab-flex ab-items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "ab-h-7 ab-w-7 ab-bg-transparent ab-p-0 ab-opacity-50 hover:ab-opacity-100"
+          "ab-h-7 ab-w-7 ab-bg-transparent ab-p-0 ab-opacity-50 hover:ab-opacity-100",
         ),
         nav_button_previous: "ab-absolute ab-left-1",
         nav_button_next: "ab-absolute ab-right-1",
@@ -37,7 +39,7 @@ function Calendar({
         cell: "ab-h-9 ab-w-9 ab-text-center ab-text-sm ab-p-0 ab-relative [&:has([aria-selected].day-range-end)]:ab-rounded-r-md [&:has([aria-selected].day-outside)]:ab-bg-accent/50 [&:has([aria-selected])]:ab-bg-accent first:[&:has([aria-selected])]:ab-rounded-l-md last:[&:has([aria-selected])]:ab-rounded-r-md focus-within:ab-relative focus-within:ab-z-20",
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "ab-h-9 ab-w-9 ab-p-0 ab-font-normal aria-selected:ab-opacity-100"
+          "ab-h-9 ab-w-9 ab-p-0 ab-font-normal aria-selected:ab-opacity-100",
         ),
         day_range_end: "ab-day-range-end",
         day_selected:
@@ -57,8 +59,8 @@ function Calendar({
       }}
       {...props}
     />
-  )
+  );
 }
-Calendar.displayName = "Calendar"
+Calendar.displayName = "Calendar";
 
-export { Calendar }
+export { Calendar };

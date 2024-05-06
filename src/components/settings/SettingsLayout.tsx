@@ -33,7 +33,12 @@ import { prefChrome } from "../../lib/content-script/prefs";
 import { Button } from "../../ui/button";
 import { OPEN_AI_API_KEY_NAME } from "../../shared";
 
-export type SettingsNames = "openai" | "gemini";
+export type SettingsNames =
+  | "openai"
+  | "gemini"
+  | "claude"
+  | "cohere"
+  | "huggingface";
 
 const OpenAiFormSchema = z.object({
   apiKey: z.string().min(2),
@@ -58,6 +63,13 @@ export const SettingsLayout = () => {
 
   const [activeSttingsModule, setActiveSettingsModule] =
     useState<SettingsNames>("openai");
+
+  const onSetActiveSettingsModule = useCallback(
+    (module: string) => {
+      setActiveSettingsModule(module as SettingsNames);
+    },
+    [setActiveSettingsModule],
+  );
 
   const onSendSaveOpenAiSettings = useCallback(async () => {
     try {
@@ -85,7 +97,7 @@ export const SettingsLayout = () => {
               <CommandGroup>
                 <CommandItem
                   value="openai"
-                  onSelect={setActiveSettingsModule}
+                  onSelect={onSetActiveSettingsModule}
                   className={
                     activeSttingsModule === "openai"
                       ? "ab-ftr-active-menu-item"
@@ -96,19 +108,19 @@ export const SettingsLayout = () => {
                 </CommandItem>
                 <CommandItem
                   value="claude"
-                  onSelect={setActiveSettingsModule}
+                  onSelect={onSetActiveSettingsModule}
                   className={
                     activeSttingsModule === "gemini"
                       ? "ab-ftr-active-menu-item"
                       : "ab-ftr-menu-item"
                   }
                 >
-                  <span>Claude</span>
+                  <span>Anthropics</span>
                 </CommandItem>
               </CommandGroup>
               <CommandItem
                 value="gemini"
-                onSelect={setActiveSettingsModule}
+                onSelect={onSetActiveSettingsModule}
                 className={
                   activeSttingsModule === "gemini"
                     ? "ab-ftr-active-menu-item"
@@ -118,8 +130,19 @@ export const SettingsLayout = () => {
                 <span>Gemini</span>
               </CommandItem>
               <CommandItem
+                value="cohere"
+                onSelect={onSetActiveSettingsModule}
+                className={
+                  activeSttingsModule === "gemini"
+                    ? "ab-ftr-active-menu-item"
+                    : "ab-ftr-menu-item"
+                }
+              >
+                <span>Cohere</span>
+              </CommandItem>
+              <CommandItem
                 value="huggingface"
-                onSelect={setActiveSettingsModule}
+                onSelect={onSetActiveSettingsModule}
                 className={
                   activeSttingsModule === "gemini"
                     ? "ab-ftr-active-menu-item"

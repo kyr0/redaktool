@@ -1,14 +1,3 @@
-import { CalendarIcon, CogIcon, Minimize } from "lucide-react";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "../../ui/command";
 import {
   ResizableHandle,
   ResizablePanel,

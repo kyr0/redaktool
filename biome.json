@@ -43,5 +43,9 @@
         "noAccumulatingSpread": "off"
       }
     }
+  },
+  "files": {
+    "include": ["src/**/*.ts", "src/**/*.tsx", "*.json"],
+    "ignore": ["node_modules", "dist", "fonts", "icons", "css"]
   }
 }

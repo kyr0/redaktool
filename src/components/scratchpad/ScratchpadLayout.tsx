@@ -72,6 +72,13 @@ export const ScratchpadLayout = () => {
     price: 0,
   });
 
+  const onSetActiveAiToolModule = useCallback(
+    (tool: string) => {
+      setActiveAiToolModule(tool as ToolNames);
+    },
+    [setActiveAiToolModule],
+  );
+
   const scratchpadEditorContent$ = getScratchpadEditorContentStore();
   const translationEditorContent$ = getTranslationEditorContentStore();
   //const [currentMarkdown, setCurrentMarkdown] = useState<string>(scratchpadEditorContent$)
@@ -264,10 +271,10 @@ export const ScratchpadLayout = () => {
                   <CommandGroup>
                     <CommandItem
                       value="translate"
-                      onSelect={setActiveAiToolModule}
+                      onSelect={onSetActiveAiToolModule}
                       className={
                         activeAiToolModule === "translate"
-                          ? `ab-ftr-active-menu-item`
+                          ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
                     >
@@ -277,10 +284,10 @@ export const ScratchpadLayout = () => {
                     </CommandItem>
                     <CommandItem
                       value="summarize"
-                      onSelect={setActiveAiToolModule}
+                      onSelect={onSetActiveAiToolModule}
                       className={
                         activeAiToolModule === "summarize"
-                          ? `ab-ftr-active-menu-item`
+                          ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
                     >
@@ -290,10 +297,10 @@ export const ScratchpadLayout = () => {
                     </CommandItem>
                     <CommandItem
                       value="fact-check"
-                      onSelect={setActiveAiToolModule}
+                      onSelect={onSetActiveAiToolModule}
                       className={
                         activeAiToolModule === "fact-check"
-                          ? `ab-ftr-active-menu-item`
+                          ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
                     >
@@ -303,10 +310,10 @@ export const ScratchpadLayout = () => {
                     </CommandItem>
                     <CommandItem
                       value="rewrite"
-                      onSelect={setActiveAiToolModule}
+                      onSelect={onSetActiveAiToolModule}
                       className={
                         activeAiToolModule === "rewrite"
-                          ? `ab-ftr-active-menu-item`
+                          ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
                     >
@@ -316,10 +323,10 @@ export const ScratchpadLayout = () => {
                     </CommandItem>
                     <CommandItem
                       value="humanize"
-                      onSelect={setActiveAiToolModule}
+                      onSelect={onSetActiveAiToolModule}
                       className={
                         activeAiToolModule === "humanize"
-                          ? `ab-ftr-active-menu-item`
+                          ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
                     >
@@ -332,10 +339,10 @@ export const ScratchpadLayout = () => {
                   <CommandGroup>
                     <CommandItem
                       value="voice-over"
-                      onSelect={setActiveAiToolModule}
+                      onSelect={onSetActiveAiToolModule}
                       className={
                         activeAiToolModule === "voice-over"
-                          ? `ab-ftr-active-menu-item`
+                          ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
                     >

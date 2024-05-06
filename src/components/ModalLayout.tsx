@@ -75,7 +75,7 @@ export const ModalLayout = () => {
                   onSelect={onCommandSelect}
                   className={
                     activeModule === "radar"
-                      ? `ab-ftr-active-menu-item`
+                      ? "ab-ftr-active-menu-item"
                       : "ab-ftr-menu-item"
                   }
                 >
@@ -88,7 +88,7 @@ export const ModalLayout = () => {
                   onSelect={onCommandSelect}
                   className={
                     activeModule === "scratchpad"
-                      ? `ab-ftr-active-menu-item`
+                      ? "ab-ftr-active-menu-item"
                       : "ab-ftr-menu-item"
                   }
                 >
@@ -101,7 +101,7 @@ export const ModalLayout = () => {
                   onSelect={onCommandSelect}
                   className={
                     activeModule === "history"
-                      ? `ab-ftr-active-menu-item`
+                      ? "ab-ftr-active-menu-item"
                       : "ab-ftr-menu-item"
                   }
                 >
@@ -114,7 +114,7 @@ export const ModalLayout = () => {
                   onSelect={onCommandSelect}
                   className={
                     activeModule === "archive"
-                      ? `ab-ftr-active-menu-item`
+                      ? "ab-ftr-active-menu-item"
                       : "ab-ftr-menu-item"
                   }
                 >
@@ -129,7 +129,7 @@ export const ModalLayout = () => {
                 onSelect={onCommandSelect}
                 className={
                   activeModule === "transcription"
-                    ? `ab-ftr-active-menu-item`
+                    ? "ab-ftr-active-menu-item"
                     : "ab-ftr-menu-item"
                 }
               >
@@ -144,7 +144,7 @@ export const ModalLayout = () => {
                   onSelect={onCommandSelect}
                   className={
                     activeModule === "settings"
-                      ? `ab-ftr-active-menu-item`
+                      ? "ab-ftr-active-menu-item"
                       : "ab-ftr-menu-item"
                   }
                 >

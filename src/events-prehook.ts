@@ -4,21 +4,27 @@ import { prefPerPage } from "./lib/content-script/prefs";
 
 // Extend the Window interface to include $$_ftrEventListenersMap
 declare global {
-    interface HTMLElement {
-        $$_ftrEventListenersMap: Map<EventTarget, Map<string, EventListenerOrEventListenerObject[]>>;
-        $$_ftrMediaElements: Array<string>;
-    }
+  interface HTMLElement {
+    $$_ftrEventListenersMap: Map<
+      EventTarget,
+      Map<string, EventListenerOrEventListenerObject[]>
+    >;
+    $$_ftrMediaElements: Array<string>;
+  }
 }
 
 const init = () => {
-    // Ensure the global map exists on the window object
-    if (document.body && !document.body.$$_ftrEventListenersMap) {
-        (document.body as any).$$_ftrEventListenersMap = new Map<EventTarget, Map<string, EventListenerOrEventListenerObject[]>>();
-    }
-    if (document.body && !document.body.$$_ftrMediaElements) {
-        (document.body as any).$$_ftrMediaElements = []
-    }
-}
+  // Ensure the global map exists on the window object
+  if (document.body && !document.body.$$_ftrEventListenersMap) {
+    (document.body as any).$$_ftrEventListenersMap = new Map<
+      EventTarget,
+      Map<string, EventListenerOrEventListenerObject[]>
+    >();
+  }
+  if (document.body && !document.body.$$_ftrMediaElements) {
+    (document.body as any).$$_ftrMediaElements = [];
+  }
+};
 
 // Corrected implementation for addEventListener and removeEventListener
 /*
@@ -75,45 +81,55 @@ EventTarget.prototype.removeEventListener = function(type: string, listener: Eve
 */
 
 const broadcastMediaElementSelectors = () => {
-    prefPerPage<Array<string>>('mediaElements', []).set(document.body.$$_ftrMediaElements);
-}
+  prefPerPage<Array<string>>("mediaElements", []).set(
+    document.body.$$_ftrMediaElements,
+  );
+};
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", () => {
+  init();
 
-    init();
-    
-    document.querySelectorAll('audio, video').forEach((element) => {
-        document.body.$$_ftrMediaElements.push(getCssSelector(element as HTMLMediaElement));
-    })
-    broadcastMediaElementSelectors();
+  document.querySelectorAll("audio, video").forEach((element) => {
+    document.body.$$_ftrMediaElements.push(
+      getCssSelector(element as HTMLMediaElement),
+    );
+  });
+  broadcastMediaElementSelectors();
 
-    // Function to handle mutations
-    const handleMutations: MutationCallback = (mutationsList) => {
-        for (const mutation of mutationsList) {
-            // Check for added nodes
-            if (mutation.addedNodes.length) {
-                mutation.addedNodes.forEach((node) => {
-                    // Check if the added node is an audio or video element
-                    if (node instanceof HTMLAudioElement || node instanceof HTMLVideoElement) {
-                        console.log(`${node instanceof HTMLAudioElement ? 'audio' : 'video'} appended`, node);
+  // Function to handle mutations
+  const handleMutations: MutationCallback = (mutationsList) => {
+    for (const mutation of mutationsList) {
+      // Check for added nodes
+      if (mutation.addedNodes.length) {
+        mutation.addedNodes.forEach((node) => {
+          // Check if the added node is an audio or video element
+          if (
+            node instanceof HTMLAudioElement ||
+            node instanceof HTMLVideoElement
+          ) {
+            console.log(
+              `${
+                node instanceof HTMLAudioElement ? "audio" : "video"
+              } appended`,
+              node,
+            );
 
+            document.body.$$_ftrMediaElements.push(
+              getCssSelector(node as HTMLElement),
+            );
+            broadcastMediaElementSelectors();
+          }
+        });
+      }
+    }
+  };
 
-                        document.body.$$_ftrMediaElements.push(getCssSelector(node as HTMLElement));
-                        broadcastMediaElementSelectors();
-                    }
-                });
-            }
-        }
-    };
+  // Create a new MutationObserver instance
+  const observer = new MutationObserver(handleMutations);
 
-    // Create a new MutationObserver instance
-    const observer = new MutationObserver(handleMutations);
+  // Options for the observer (which mutations to observe)
+  const config = { childList: true, subtree: true };
 
-    // Options for the observer (which mutations to observe)
-    const config = { childList: true, subtree: true };
-
-    // Start observing the document body for DOM mutations
-    observer.observe(document.body, config);
+  // Start observing the document body for DOM mutations
+  observer.observe(document.body, config);
 });
-
-

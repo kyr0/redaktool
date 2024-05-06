@@ -1,7 +1,7 @@
-import * as React from "react"
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+import * as React from "react";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 
-import { cn } from "../lib/content-script/utils"
+import { cn } from "../lib/content-script/utils";
 
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
@@ -18,8 +18,8 @@ const ScrollArea = React.forwardRef<
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
-))
-ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
+));
+ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName;
 
 const ScrollBar = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
@@ -34,13 +34,13 @@ const ScrollBar = React.forwardRef<
         "ab-h-full ab-w-2.5 ab-border-l ab-border-l-transparent ab-p-[1px]",
       orientation === "horizontal" &&
         "ab-h-2.5 ab-flex-col ab-border-t ab-border-t-transparent ab-p-[1px]",
-      className
+      className,
     )}
     {...props}
   >
     <ScrollAreaPrimitive.ScrollAreaThumb className="ab-relative ab-flex-1 ab-rounded-full ab-bg-border" />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
-))
-ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
+));
+ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;
 
-export { ScrollArea, ScrollBar }
+export { ScrollArea, ScrollBar };

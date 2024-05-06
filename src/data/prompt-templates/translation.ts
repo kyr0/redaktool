@@ -4,10 +4,10 @@
 // MARKDOWN
 
 export interface TranslatePromptValues extends Record<string, string> {
-    CONTEXT: string
-    AUDIENCE: string
-    TARGET_LANGUAGE: string
-    MARKDOWN: string
+  CONTEXT: string;
+  AUDIENCE: string;
+  TARGET_LANGUAGE: string;
+  MARKDOWN: string;
 }
 
 export const promptTemplateTranslation = `
@@ -33,4 +33,4 @@ END OF RULES.
 
 MARKDOWN to translate:
 {{MARKDOWN}}
-`
+`;

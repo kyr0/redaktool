@@ -1,5 +1,4 @@
 import { prefChrome } from "./prefs";
-import { atomicSignal } from "./signal";
 
 export const getDarkModeSetting = () => {
   return prefChrome<boolean>(

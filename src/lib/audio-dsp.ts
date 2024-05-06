@@ -1,5 +1,7 @@
 export function audioBufferToWav(audioBuffer: AudioBuffer) {
-  return new Blob([audioBufferToWavArrayBuffer(audioBuffer)], { type: 'audio/wav' });
+  return new Blob([audioBufferToWavArrayBuffer(audioBuffer)], {
+    type: "audio/wav",
+  });
 }
 
 export const blobToDataUrl = (blob: Blob): Promise<string> => {
@@ -13,7 +15,10 @@ export const blobToDataUrl = (blob: Blob): Promise<string> => {
   });
 };
 
-export default function audioBufferToWavArrayBuffer(buffer: AudioBuffer, opt?: { float32?: boolean }): ArrayBuffer {
+export default function audioBufferToWavArrayBuffer(
+  buffer: AudioBuffer,
+  opt?: { float32?: boolean },
+): ArrayBuffer {
   opt = opt || {};
 
   const numChannels = buffer.numberOfChannels;
@@ -31,17 +36,23 @@ export default function audioBufferToWavArrayBuffer(buffer: AudioBuffer, opt?: {
   return encodeWAV(result, format, sampleRate, numChannels, bitDepth);
 }
 
-function encodeWAV(samples: Float32Array, format: number, sampleRate: number, numChannels: number, bitDepth: number): ArrayBuffer {
+function encodeWAV(
+  samples: Float32Array,
+  format: number,
+  sampleRate: number,
+  numChannels: number,
+  bitDepth: number,
+): ArrayBuffer {
   const bytesPerSample = bitDepth / 8;
   const blockAlign = numChannels * bytesPerSample;
 
   const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
   const view = new DataView(buffer);
 
-  writeString(view, 0, 'RIFF');
+  writeString(view, 0, "RIFF");
   view.setUint32(4, 36 + samples.length * bytesPerSample, true);
-  writeString(view, 8, 'WAVE');
-  writeString(view, 12, 'fmt ');
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
   view.setUint32(16, 16, true);
   view.setUint16(20, format, true);
   view.setUint16(22, numChannels, true);
@@ -49,7 +60,7 @@ function encodeWAV(samples: Float32Array, format: number, sampleRate: number, nu
   view.setUint32(28, sampleRate * blockAlign, true);
   view.setUint16(32, blockAlign, true);
   view.setUint16(34, bitDepth, true);
-  writeString(view, 36, 'data');
+  writeString(view, 36, "data");
   view.setUint32(40, samples.length * bytesPerSample, true);
 
   if (format === 1) {
@@ -81,10 +92,14 @@ function writeFloat32(output: DataView, offset: number, input: Float32Array) {
   }
 }
 
-function floatTo16BitPCM(output: DataView, offset: number, input: Float32Array) {
+function floatTo16BitPCM(
+  output: DataView,
+  offset: number,
+  input: Float32Array,
+) {
   for (let i = 0; i < input.length; i++, offset += 2) {
     const s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
 }
 
@@ -94,7 +109,10 @@ function writeString(view: DataView, offset: number, string: string) {
   }
 }
 
-export async function sliceAudioBufferAtPauses(originalBuffer: AudioBuffer, maxSecondsPerChunk: number = 30) {
+export async function sliceAudioBufferAtPauses(
+  originalBuffer: AudioBuffer,
+  maxSecondsPerChunk = 30,
+) {
   // First, detect pauses using the updated algorithm
   const pauses = detectPauses(originalBuffer);
   const sampleRate = originalBuffer.sampleRate;
@@ -104,67 +122,83 @@ export async function sliceAudioBufferAtPauses(originalBuffer: AudioBuffer, maxS
 
   // OfflineAudioContext for the original buffer's sample rate and channels
   const offlineContext = new OfflineAudioContext(
-      originalBuffer.numberOfChannels,
-      originalBuffer.length,
-      originalBuffer.sampleRate
+    originalBuffer.numberOfChannels,
+    originalBuffer.length,
+    originalBuffer.sampleRate,
   );
 
   for (let i = 0; i < pauses.length; i++) {
-      const pause = pauses[i];
-      // Calculate the end of the current chunk in samples
-      const nextChunkStart = Math.floor(pause * sampleRate); // Ensuring integer index
+    const pause = pauses[i];
+    // Calculate the end of the current chunk in samples
+    const nextChunkStart = Math.floor(pause * sampleRate); // Ensuring integer index
 
-      // Check if adding this pause would exceed maxSecondsPerChunk
-      if (nextChunkStart - currentChunkStart > maxSecondsPerChunk * sampleRate) {
-          // Use the lastPauseBeforeMaxChunk to split before exceeding maxSecondsPerChunk
-          // Ensure we have a valid last pause, otherwise, use the current pause to avoid infinite loops
-          const splitPoint = lastPauseBeforeMaxChunk > 0 ? lastPauseBeforeMaxChunk : nextChunkStart;
-          const chunkLength = splitPoint - currentChunkStart;
-          const chunkBuffer = offlineContext.createBuffer(
-              originalBuffer.numberOfChannels,
-              chunkLength,
-              sampleRate
-          );
+    // Check if adding this pause would exceed maxSecondsPerChunk
+    if (nextChunkStart - currentChunkStart > maxSecondsPerChunk * sampleRate) {
+      // Use the lastPauseBeforeMaxChunk to split before exceeding maxSecondsPerChunk
+      // Ensure we have a valid last pause, otherwise, use the current pause to avoid infinite loops
+      const splitPoint =
+        lastPauseBeforeMaxChunk > 0 ? lastPauseBeforeMaxChunk : nextChunkStart;
+      const chunkLength = splitPoint - currentChunkStart;
+      const chunkBuffer = offlineContext.createBuffer(
+        originalBuffer.numberOfChannels,
+        chunkLength,
+        sampleRate,
+      );
 
-          // Copy the data for each channel
-          for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
-              const originalData = originalBuffer.getChannelData(channel);
-              const chunkData = chunkBuffer.getChannelData(channel);
-              for (let i = 0; i < chunkLength; i++) {
-                  chunkData[i] = originalData[i + currentChunkStart];
-              }
-          }
-
-          // Add the chunk to the list
-          chunks.push(chunkBuffer);
-          // Update the start for the next chunk
-          currentChunkStart = splitPoint;
-          // Reset lastPauseBeforeMaxChunk as we've just used it for splitting
-          lastPauseBeforeMaxChunk = 0;
-      } else {
-          // Update lastPauseBeforeMaxChunk as this pause does not exceed maxSecondsPerChunk
-          lastPauseBeforeMaxChunk = nextChunkStart;
+      // Copy the data for each channel
+      for (
+        let channel = 0;
+        channel < originalBuffer.numberOfChannels;
+        channel++
+      ) {
+        const originalData = originalBuffer.getChannelData(channel);
+        const chunkData = chunkBuffer.getChannelData(channel);
+        for (let i = 0; i < chunkLength; i++) {
+          chunkData[i] = originalData[i + currentChunkStart];
+        }
       }
+
+      // Add the chunk to the list
+      chunks.push(chunkBuffer);
+      // Update the start for the next chunk
+      currentChunkStart = splitPoint;
+      // Reset lastPauseBeforeMaxChunk as we've just used it for splitting
+      lastPauseBeforeMaxChunk = 0;
+    } else {
+      // Update lastPauseBeforeMaxChunk as this pause does not exceed maxSecondsPerChunk
+      lastPauseBeforeMaxChunk = nextChunkStart;
+    }
   }
 
   // Handle potential leftover audio as the last chunk
   if (currentChunkStart < originalBuffer.length) {
-      const remainingLength = originalBuffer.length - currentChunkStart;
-      const chunkBuffer = offlineContext.createBuffer(originalBuffer.numberOfChannels, remainingLength, sampleRate);
-      for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
-          const channelData = originalBuffer.getChannelData(channel);
-          const chunkData = chunkBuffer.getChannelData(channel);
-          for (let i = 0; i < remainingLength; i++) {
-              chunkData[i] = channelData[currentChunkStart + i];
-          }
+    const remainingLength = originalBuffer.length - currentChunkStart;
+    const chunkBuffer = offlineContext.createBuffer(
+      originalBuffer.numberOfChannels,
+      remainingLength,
+      sampleRate,
+    );
+    for (
+      let channel = 0;
+      channel < originalBuffer.numberOfChannels;
+      channel++
+    ) {
+      const channelData = originalBuffer.getChannelData(channel);
+      const chunkData = chunkBuffer.getChannelData(channel);
+      for (let i = 0; i < remainingLength; i++) {
+        chunkData[i] = channelData[currentChunkStart + i];
       }
-      chunks.push(chunkBuffer);
+    }
+    chunks.push(chunkBuffer);
   }
 
   return chunks;
 }
 
-export async function getAudioFileAsAudioBuffer(file: File, audioContext: AudioContext): Promise<AudioBuffer> {
+export async function getAudioFileAsAudioBuffer(
+  file: File,
+  audioContext: AudioContext,
+): Promise<AudioBuffer> {
   const arrayBuffer = await file.arrayBuffer();
   return await audioContext.decodeAudioData(arrayBuffer);
 }
@@ -178,64 +212,68 @@ export function detectPauses(audioBuffer: AudioBuffer): Array<number> {
   let isSilence = false;
   let silenceStartIndex = 0;
   let lowestVolumeMomentIndex = 0;
-  let lowestVolumeSoFar = Infinity;
+  let lowestVolumeSoFar = Number.POSITIVE_INFINITY;
   const pauses = [];
 
   for (let i = 0; i < channelData.length; i++) {
-      const sample = channelData[i];
-      const rms = Math.sqrt(sample * sample);
-      const db = 20 * Math.log10(rms);
+    const sample = channelData[i];
+    const rms = Math.sqrt(sample * sample);
+    const db = 20 * Math.log10(rms);
 
-      if (db < thresholdDb) {
-          if (!isSilence) {
-              isSilence = true;
-              silenceStartIndex = i;
-              lowestVolumeSoFar = db;
-              lowestVolumeMomentIndex = i;
-          } else {
-              if (db < lowestVolumeSoFar) {
-                  lowestVolumeSoFar = db;
-                  lowestVolumeMomentIndex = i;
-              }
-          }
-      } else if (isSilence) {
-          const silenceDuration = (i - silenceStartIndex) / sampleRate;
-          if (silenceDuration >= minSilenceDuration) {
-              const lowestVolumeMomentSeconds = lowestVolumeMomentIndex / sampleRate;
-              pauses.push(lowestVolumeMomentSeconds);
-          }
-          isSilence = false;
-          lowestVolumeSoFar = Infinity;
+    if (db < thresholdDb) {
+      if (!isSilence) {
+        isSilence = true;
+        silenceStartIndex = i;
+        lowestVolumeSoFar = db;
+        lowestVolumeMomentIndex = i;
+      } else {
+        if (db < lowestVolumeSoFar) {
+          lowestVolumeSoFar = db;
+          lowestVolumeMomentIndex = i;
+        }
       }
+    } else if (isSilence) {
+      const silenceDuration = (i - silenceStartIndex) / sampleRate;
+      if (silenceDuration >= minSilenceDuration) {
+        const lowestVolumeMomentSeconds = lowestVolumeMomentIndex / sampleRate;
+        pauses.push(lowestVolumeMomentSeconds);
+      }
+      isSilence = false;
+      lowestVolumeSoFar = Number.POSITIVE_INFINITY;
+    }
   }
 
   return pauses;
 }
 
-
-export function processAudioBufferWithBandpass(originalBuffer: AudioBuffer): Promise<AudioBuffer> {
+export function processAudioBufferWithBandpass(
+  originalBuffer: AudioBuffer,
+): Promise<AudioBuffer> {
   return new Promise((resolve, reject) => {
-      const offlineContext = new OfflineAudioContext(
-          originalBuffer.numberOfChannels,
-          originalBuffer.length,
-          originalBuffer.sampleRate
-      );
+    const offlineContext = new OfflineAudioContext(
+      originalBuffer.numberOfChannels,
+      originalBuffer.length,
+      originalBuffer.sampleRate,
+    );
 
-      const bandpassFilter = offlineContext.createBiquadFilter();
-      bandpassFilter.type = 'bandpass';
-      bandpassFilter.frequency.value = 590;
-      bandpassFilter.Q.value = Math.sqrt(1100 / 80);
+    const bandpassFilter = offlineContext.createBiquadFilter();
+    bandpassFilter.type = "bandpass";
+    bandpassFilter.frequency.value = 590;
+    bandpassFilter.Q.value = Math.sqrt(1100 / 80);
 
-      const source = offlineContext.createBufferSource();
-      source.buffer = originalBuffer;
-      source.connect(bandpassFilter);
-      bandpassFilter.connect(offlineContext.destination);
-      source.start();
+    const source = offlineContext.createBufferSource();
+    source.buffer = originalBuffer;
+    source.connect(bandpassFilter);
+    bandpassFilter.connect(offlineContext.destination);
+    source.start();
 
-      offlineContext.startRendering().then(processedBuffer => {
-          resolve(processedBuffer);
-      }).catch(error => {
-          reject(error);
+    offlineContext
+      .startRendering()
+      .then((processedBuffer) => {
+        resolve(processedBuffer);
+      })
+      .catch((error) => {
+        reject(error);
       });
   });
 }

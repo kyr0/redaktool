@@ -1,9 +1,9 @@
-import * as React from "react"
-import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
-import { cva } from "class-variance-authority"
-import { ChevronDown } from "lucide-react"
+import * as React from "react";
+import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
+import { cva } from "class-variance-authority";
+import { ChevronDown } from "lucide-react";
 
-import { cn } from "../lib/content-script/utils"
+import { cn } from "../lib/content-script/utils";
 
 const NavigationMenu = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Root>,
@@ -13,15 +13,15 @@ const NavigationMenu = React.forwardRef<
     ref={ref}
     className={cn(
       "ab-relative ab-z-10 ab-flex ab-max-w-max ab-flex-1 ab-items-center ab-justify-center",
-      className
+      className,
     )}
     {...props}
   >
     {children}
     <NavigationMenuViewport />
   </NavigationMenuPrimitive.Root>
-))
-NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName
+));
+NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName;
 
 const NavigationMenuList = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.List>,
@@ -31,18 +31,18 @@ const NavigationMenuList = React.forwardRef<
     ref={ref}
     className={cn(
       "ab-group ab-flex ab-flex-1 ab-list-none ab-items-center ab-justify-center ab-space-x-1",
-      className
+      className,
     )}
     {...props}
   />
-))
-NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName
+));
+NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName;
 
-const NavigationMenuItem = NavigationMenuPrimitive.Item
+const NavigationMenuItem = NavigationMenuPrimitive.Item;
 
 const navigationMenuTriggerStyle = cva(
-  "ab-group ab-inline-flex ab-h-10 ab-w-max ab-items-center ab-justify-center ab-rounded-md ab-bg-background ab-px-4 ab-py-2 ab-text-sm ab-font-medium ab-transition-colors hover:ab-bg-accent hover:ab-text-accent-foreground focus:ab-bg-accent focus:ab-text-accent-foreground focus:ab-outline-none disabled:ab-pointer-events-none disabled:ab-opacity-50 data-[active]:ab-bg-accent/50 data-[state=open]:ab-bg-accent/50"
-)
+  "ab-group ab-inline-flex ab-h-10 ab-w-max ab-items-center ab-justify-center ab-rounded-md ab-bg-background ab-px-4 ab-py-2 ab-text-sm ab-font-medium ab-transition-colors hover:ab-bg-accent hover:ab-text-accent-foreground focus:ab-bg-accent focus:ab-text-accent-foreground focus:ab-outline-none disabled:ab-pointer-events-none disabled:ab-opacity-50 data-[active]:ab-bg-accent/50 data-[state=open]:ab-bg-accent/50",
+);
 
 const NavigationMenuTrigger = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Trigger>,
@@ -59,8 +59,8 @@ const NavigationMenuTrigger = React.forwardRef<
       aria-hidden="true"
     />
   </NavigationMenuPrimitive.Trigger>
-))
-NavigationMenuTrigger.displayName = NavigationMenuPrimitive.Trigger.displayName
+));
+NavigationMenuTrigger.displayName = NavigationMenuPrimitive.Trigger.displayName;
 
 const NavigationMenuContent = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Content>,
@@ -70,32 +70,36 @@ const NavigationMenuContent = React.forwardRef<
     ref={ref}
     className={cn(
       "ab-left-0 ab-top-0 ab-w-full data-[motion^=from-]:ab-animate-in data-[motion^=to-]:ab-animate-out data-[motion^=from-]:ab-fade-in data-[motion^=to-]:ab-fade-out data-[motion=from-end]:ab-slide-in-from-right-52 data-[motion=from-start]:ab-slide-in-from-left-52 data-[motion=to-end]:ab-slide-out-to-right-52 data-[motion=to-start]:ab-slide-out-to-left-52 md:ab-absolute md:ab-w-auto",
-      className
+      className,
     )}
     {...props}
   />
-))
-NavigationMenuContent.displayName = NavigationMenuPrimitive.Content.displayName
+));
+NavigationMenuContent.displayName = NavigationMenuPrimitive.Content.displayName;
 
-const NavigationMenuLink = NavigationMenuPrimitive.Link
+const NavigationMenuLink = NavigationMenuPrimitive.Link;
 
 const NavigationMenuViewport = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Viewport>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Viewport>
 >(({ className, ...props }, ref) => (
-  <div className={cn("ab-absolute ab-left-0 ab-top-full ab-flex ab-justify-center")}>
+  <div
+    className={cn(
+      "ab-absolute ab-left-0 ab-top-full ab-flex ab-justify-center",
+    )}
+  >
     <NavigationMenuPrimitive.Viewport
       className={cn(
         "ab-origin-top-center ab-relative ab-mt-1.5 ab-h-[var(--radix-navigation-menu-viewport-height)] ab-w-full ab-overflow-hidden ab-rounded-md ab-border ab-bg-popover ab-text-popover-foreground ab-shadow-lg data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-90 md:ab-w-[var(--radix-navigation-menu-viewport-width)]",
-        className
+        className,
       )}
       ref={ref}
       {...props}
     />
   </div>
-))
+));
 NavigationMenuViewport.displayName =
-  NavigationMenuPrimitive.Viewport.displayName
+  NavigationMenuPrimitive.Viewport.displayName;
 
 const NavigationMenuIndicator = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Indicator>,
@@ -105,15 +109,15 @@ const NavigationMenuIndicator = React.forwardRef<
     ref={ref}
     className={cn(
       "ab-top-full ab-z-[1] ab-flex ab-h-1.5 ab-items-end ab-justify-center ab-overflow-hidden data-[state=visible]:ab-animate-in data-[state=hidden]:ab-animate-out data-[state=hidden]:ab-fade-out data-[state=visible]:ab-fade-in",
-      className
+      className,
     )}
     {...props}
   >
     <div className="ab-relative ab-top-[60%] ab-h-2 ab-w-2 ab-rotate-45 ab-rounded-tl-sm ab-bg-border ab-shadow-md" />
   </NavigationMenuPrimitive.Indicator>
-))
+));
 NavigationMenuIndicator.displayName =
-  NavigationMenuPrimitive.Indicator.displayName
+  NavigationMenuPrimitive.Indicator.displayName;
 
 export {
   navigationMenuTriggerStyle,
@@ -125,4 +129,4 @@ export {
   NavigationMenuLink,
   NavigationMenuIndicator,
   NavigationMenuViewport,
-}
+};

@@ -1,25 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Resize } from './Icons';
+import { useState, useRef, useEffect } from "react";
+import { Resize } from "./Icons";
 
 const calculateNewSize = (ref: HTMLElement, deltaX: number, deltaY: number) => {
   const currentSize = getCalulatedSize(ref);
   return {
     w: currentSize.width + deltaX,
-    h: currentSize.height + deltaY
-  }
-}
+    h: currentSize.height + deltaY,
+  };
+};
 
 const applyNewSize = (ref: HTMLElement, width: number, height: number) => {
   ref.style.width = `${width}px`;
   ref.style.height = `${height}px`;
-}
+};
 
 export const getCalulatedSize = (ref: HTMLElement) => ({
-  width: parseInt(window.getComputedStyle(ref).width, 10),
-  height: parseInt(window.getComputedStyle(ref).height, 10)
-})
+  width: Number.parseInt(window.getComputedStyle(ref).width, 10),
+  height: Number.parseInt(window.getComputedStyle(ref).height, 10),
+});
 
-export const Resizable: React.FC<any> = ({ children, onUpdateSize, initialSize, className }) => {
+export const Resizable: React.FC<any> = ({
+  children,
+  onUpdateSize,
+  initialSize,
+  className,
+}) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeButtonRef = useRef<HTMLDivElement>(null);
   const resizableContainerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +39,11 @@ export const Resizable: React.FC<any> = ({ children, onUpdateSize, initialSize, 
     const deltaX = e.clientX - lastMousePosition.current.x;
     const deltaY = e.clientY - lastMousePosition.current.y;
 
-    const newSize = calculateNewSize(resizableContainerRef.current, deltaX, deltaY);
+    const newSize = calculateNewSize(
+      resizableContainerRef.current,
+      deltaX,
+      deltaY,
+    );
 
     applyNewSize(resizableContainerRef.current, newSize.w, newSize.h);
 
@@ -52,18 +61,18 @@ export const Resizable: React.FC<any> = ({ children, onUpdateSize, initialSize, 
     const handleMouseUp = () => {
       if (isResizing) {
         setIsResizing(false);
-        document.removeEventListener('mousemove', updatePosition, true);
+        document.removeEventListener("mousemove", updatePosition, true);
       }
     };
 
     if (isResizing) {
-      document.addEventListener('mousemove', updatePosition, true);
-      document.addEventListener('mouseup', handleMouseUp, true);
+      document.addEventListener("mousemove", updatePosition, true);
+      document.addEventListener("mouseup", handleMouseUp, true);
     }
 
     return () => {
-      document.removeEventListener('mousemove', updatePosition, true);
-      document.removeEventListener('mouseup', handleMouseUp, true);
+      document.removeEventListener("mousemove", updatePosition, true);
+      document.removeEventListener("mouseup", handleMouseUp, true);
     };
   }, [isResizing]);
 
@@ -75,9 +84,13 @@ export const Resizable: React.FC<any> = ({ children, onUpdateSize, initialSize, 
   }, [resizableContainerRef.current, initialized]);
 
   return (
-    <div ref={resizableContainerRef} className={`ab-block`}>
+    <div ref={resizableContainerRef} className={"ab-block"}>
       {children}
-      <div ref={resizeButtonRef} onMouseDown={handleMouseDown} className={`ab-block ab-cursor-se-resize ab-absolute -ab-right-1 ab-bottom-0 ab-z-40 ${className}`}>
+      <div
+        ref={resizeButtonRef}
+        onMouseDown={handleMouseDown}
+        className={`ab-block ab-cursor-se-resize ab-absolute -ab-right-1 ab-bottom-0 ab-z-40 ${className}`}
+      >
         <Resize />
       </div>
     </div>

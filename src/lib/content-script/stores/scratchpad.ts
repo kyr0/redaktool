@@ -1,7 +1,7 @@
 import { useStore } from "@nanostores/react";
 import { atom } from "nanostores";
 
-export const scratchpadEditorPlaceholderMarkdown = ``;
+export const scratchpadEditorPlaceholderMarkdown = "";
 
 export const scratchpadEditorContentAtom = atom<string>(
   scratchpadEditorPlaceholderMarkdown,

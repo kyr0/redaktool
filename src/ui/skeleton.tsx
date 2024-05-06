@@ -1,4 +1,4 @@
-import { cn } from "../lib/content-script/utils"
+import { cn } from "../lib/content-script/utils";
 
 function Skeleton({
   className,
@@ -9,7 +9,7 @@ function Skeleton({
       className={cn("ab-animate-pulse ab-rounded-md ab-bg-muted", className)}
       {...props}
     />
-  )
+  );
 }
 
-export { Skeleton }
+export { Skeleton };
