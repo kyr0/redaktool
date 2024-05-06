@@ -14,8 +14,8 @@
   </font>
 
 
-  [![](https://img.shields.io/badge/features-navy?style=for-the-badge&logo=rocket)](#features)  [![](https://img.shields.io/badge/usage-magenta?style=for-the-badge&logo=readdotcv)](#usage)   [![](https://img.shields.io/badge/docs-darkmagenta?style=for-the-badge&logo=readme)](/kyr0/ftr-ki-tools/wiki) [![](https://img.shields.io/badge/contributing-darkslategray?style=for-the-badge&logo=react)](#%EF%B8%8Fcontibuting) ![MIT License](https://img.shields.io/github/license/kyr0/ftr-ki-tools?style=for-the-badge) 
-  [![](https://dcbadge.vercel.app/api/server/4wR9t7cdWc)](https://discord.gg/4wR9t7cdWc) [![](https://img.shields.io/badge/email-aron-cc0000?style=for-the-badge&logo=maildotru)](mailto:info@aron-homberg.de) [![](https://img.shields.io/badge/acknowledgements-cc0000?style=for-the-badge&logo=undertale)](#%EF%B8%8Facknowledgements)
+  [![](https://img.shields.io/badge/features-navy?style=for-the-badge&logo=rocket)](#-features)  [![](https://img.shields.io/badge/usage-magenta?style=for-the-badge&logo=readdotcv)](#-usage)   [![](https://img.shields.io/badge/docs-darkmagenta?style=for-the-badge&logo=readme)](https://github.com/kyr0/ftr-ki-tools/wiki) [![](https://img.shields.io/badge/contributing-darkslategray?style=for-the-badge&logo=react)](#%EF%B8%8F-contibuting) ![MIT License](https://img.shields.io/github/license/kyr0/ftr-ki-tools?style=for-the-badge) 
+  [![](https://dcbadge.vercel.app/api/server/4wR9t7cdWc)](https://discord.gg/4wR9t7cdWc) [![](https://img.shields.io/badge/email-aron-cc0000?style=for-the-badge&logo=maildotru)](mailto:info@aron-homberg.de) [![](https://img.shields.io/badge/acknowledgements-cc0000?style=for-the-badge&logo=undertale)](#%EF%B8%8F-acknowledgements)
 
 </span>
 
@@ -23,7 +23,7 @@
 
 > 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage, marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
 
-## 🌟 Features
+## 🌟Features
 <span align="center">
 
   ![Screenshot](./docs/images/deck.webp)
