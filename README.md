@@ -112,6 +112,15 @@ Your contributions are welcome!
 - **Reporting Bugs**: Submit an issue in our repository, providing a detailed description of the problem and steps to reproduce it. A usage video works best.
 - **Feature Requests**: Have ideas on how to make this extension better? We'd love to hear from you! Please submit an issue, detailing your suggestions.
 
+### Versioning note
+
+Until end of October 2024, this project will apply a specific versioning scheme, that adds a tag to the semver version: 
+`0.0.0-increment-$milestone.$month.$week`. This is, to track and group the progress in `CHANGELOG.md` on a per-milestone, per-month, per-week, basis, in increments.
+
+### Conventional Commits
+
+To organize the work done, alongside it's documentation, every commit follows a the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) policy. This allows for `bun run changelog` to auto-generate the changelog with meaningful process reports every Tuesday evening. 
+
 ## ❤️ Acknowledgements
 
 Special thanks to our contributors and supporters, particularly Media Tech Lab, for their invaluable assistance in this project.

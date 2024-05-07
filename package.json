@@ -1,11 +1,12 @@
 {
   "name": "ftr-ki-tools",
-  "version": "1.0.0",
+  "version": "0.0.0-increment-1.1.1",
   "description": "Browser extension, designed for editors and professionals engaged in text-related research, writing, and evaluation tasks.",
   "scripts": {
     "predev": "mkdir -p ./dist && cp -R ./css/* ./dist/ && bun tailwindcss -i ./css/style-dark.scss -o ./dist/style-dark.css && bun tailwindcss -i ./css/style-light.scss -o ./dist/style-light.css",
     "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/worker.js && bun build ./src/content-script.tsx --loader .css:text --outfile=./dist/content-script.js",
-    "test": "bun test"
+    "test": "bun test",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
   },
   "author": "Aron Homberg <aron.homberg@fluctura.com>",
   "license": "MIT",
@@ -91,14 +92,15 @@
   },
   "type": "module",
   "devDependencies": {
-    "typescript": "^5.0.0",
     "@biomejs/biome": "^1.6.4",
     "@types/bun": "latest",
     "@types/chrome": "^0.0.267",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@types/webextension-polyfill": "^0.10.7",
+    "autoprefixer": "^10.4.19",
+    "conventional-changelog-cli": "^5.0.0",
     "tailwindcss": "^3.4.1",
-    "vitest": "^1.6.0"
+    "typescript": "^5.0.0"
   }
 }
