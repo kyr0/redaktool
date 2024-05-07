@@ -10,6 +10,8 @@
   "author": "Aron Homberg <aron.homberg@fluctura.com>",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.8",
+    "@google-cloud/vertexai": "^1.1.0",
     "@hookform/resolvers": "^3.3.4",
     "@milkdown/core": "^7.3.5",
     "@milkdown/ctx": "^7.3.5",
@@ -57,6 +59,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^0.2.1",
+    "cohere-ai": "^7.9.5",
     "css-selector-generator": "^3.6.7",
     "dexie": "^3.2.5",
     "easymde": "^2.18.0",
