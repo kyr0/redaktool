@@ -16,7 +16,7 @@ export function AiModelDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">OpenAI: GPT-4 Turbo</Button>
+        <Button variant="outline">OpenAI: GPT-4o</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuItem>
