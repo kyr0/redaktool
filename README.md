@@ -1,8 +1,8 @@
 <span align="center">
 
-  ![Logo](./docs/images/logo.png)
+  ![Logo](./icons/logo.png)
 
-  # KI-Tools ("AI Tools")
+  # RedakTool
 
 
   ### Browser Extension - for the journalistic work of the future
@@ -14,12 +14,12 @@
   </font>
 
 
-  [![](https://img.shields.io/badge/features-navy?style=for-the-badge&logo=rocket)](#-features)  [![](https://img.shields.io/badge/usage-magenta?style=for-the-badge&logo=readdotcv)](#-usage)   [![](https://img.shields.io/badge/docs-darkmagenta?style=for-the-badge&logo=readme)](https://github.com/kyr0/ftr-ki-tools/wiki) [![](https://img.shields.io/badge/contributing-darkslategray?style=for-the-badge&logo=react)](#%EF%B8%8F-contibuting) ![MIT License](https://img.shields.io/github/license/kyr0/ftr-ki-tools?style=for-the-badge) 
+  [![](https://img.shields.io/badge/features-navy?style=for-the-badge&logo=rocket)](#-features)  [![](https://img.shields.io/badge/usage-magenta?style=for-the-badge&logo=readdotcv)](#-usage)   [![](https://img.shields.io/badge/docs-darkmagenta?style=for-the-badge&logo=readme)](https://github.com/kyr0/redaktool/wiki) [![](https://img.shields.io/badge/contributing-darkslategray?style=for-the-badge&logo=react)](#%EF%B8%8F-contibuting) ![MIT License](https://img.shields.io/github/license/kyr0/ftr-ki-tools?style=for-the-badge) 
   [![](https://dcbadge.vercel.app/api/server/4wR9t7cdWc)](https://discord.gg/4wR9t7cdWc) [![](https://img.shields.io/badge/email-aron-cc0000?style=for-the-badge&logo=maildotru)](mailto:info@aron-homberg.de) [![](https://img.shields.io/badge/acknowledgements-cc0000?style=for-the-badge&logo=undertale)](#%EF%B8%8F-acknowledgements)
 
 </span>
 
-> 🛠️ The "FTR: AI Tools" project offers a powerful browser extension specifically designed for editors and professionals engaged in text-related research, writing, and evaluation tasks. This tool serves as a comprehensive "AI toolbox" enabling direct interaction with content on any website for extraction, translation, summarization, composition, and proofreading. It includes additional functionalities like a News Radar, transcription services, and robust fact-checking features. Aimed at boosting productivity, the extension streamlines workflows by eliminating the need for multiple tools, thereby reducing the mental burden and decreasing costs through the direct integration of both commercial and open-source AI models. 
+> 🛠️ RedakTool offers a powerful browser extension specifically designed for editors and professionals engaged in text-related research, writing, and evaluation tasks. This tool serves as a comprehensive "AI toolbox" enabling direct interaction with content on any website for extraction, translation, summarization, composition, and proofreading. It includes additional functionalities like a News Radar, transcription services, and robust fact-checking features. Aimed at boosting productivity, the extension streamlines workflows by eliminating the need for multiple tools, thereby reducing the mental burden and decreasing costs through the direct integration of both commercial and open-source AI models. 
 
 > 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage (through my open source [`vectorstore`](https://github.com/kyr0/vectorstore/) project), marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
 
@@ -30,9 +30,7 @@
 
 </span>
 
-
-
-The "FTR: KI-Tools" browser extension includes the following features:
+RedakTool offers the following features:
 
 - ✅ **Advanced Text, Image, Table Data Extraction and Archiving**: Allows users to extract content from any website, and save it in Markdown format with a single click. The archive search applies local  vector search to find similar texts.
 -  ✅ **AI Translation**: Adapts translations to account for metaphors, style, and target audience considerations.
@@ -108,7 +106,7 @@ This command will compile a new version of this extension  that you can load in 
 
 Your contributions are welcome!
 
-- **Feature Development**: Extend FTR: KI-Tools by adding more features and integrations. You may fork this repository, create a new branch, implement another Tab or Menu Entry for your new feature, and open a Pull Request here. Please simply follow the code-style and general architecture of this codebase.
+- **Feature Development**: Extend RedakTool by adding more features and integrations. You may fork this repository, create a new branch, implement another Tab or Menu Entry for your new feature, and open a Pull Request here. Please simply follow the code-style and general architecture of this codebase.
 - **Reporting Bugs**: Submit an issue in our repository, providing a detailed description of the problem and steps to reproduce it. A usage video works best.
 - **Feature Requests**: Have ideas on how to make this extension better? We'd love to hear from you! Please submit an issue, detailing your suggestions.
 
@@ -128,3 +126,5 @@ Special thanks to our contributors and supporters, particularly Media Tech Lab, 
 <a href="https://www.media-lab.de/en/programs/media-tech-lab">
     <img src="https://raw.githubusercontent.com/media-tech-lab/.github/main/assets/mtl-powered-by.png" width="240" title="Media Tech Lab powered by logo">
 </a>
+
+<img src="./icons/ftr_logo.png" width="240" title="FTR: For The Record Newsletter">

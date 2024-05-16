@@ -31,6 +31,7 @@ export const DarkMode = (props: IconProps) => (
   </svg>
 );
 
+// TODO: refactor name
 export const FTRLogoDark = (props: IconProps) => (
   <svg
     width="24"

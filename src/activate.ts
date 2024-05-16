@@ -1,2 +1,3 @@
-// fire custom event to open FTR Tools
+// fire custom event to open redaktool
+// TODO: refactor name
 document.dispatchEvent(new CustomEvent("OpenFTRTools", { detail: {} }));

@@ -1,16 +1,16 @@
 {
-  "name": "FTR - For The Record - KI-Tools",
+  "name": "RedakTool",
   "version": "1.0.0",
   "manifest_version": 3,
-  "description": "Browser-extension for an efficient, open-source content sourcing, archiving, translation, summarization, transcription, reformulation, humanization, voice-over and fact-check analysis using AI.",
+  "description": "Browser extension for editors and professionals engaged in text-related research, writing, and evaluation tasks. This tool serves as a comprehensive 'AI toolbox' enabling direct interaction with content on any website for extraction, translation, summarization, re-phrasing and more.",
   "icons": {
-    "16": "icons/icon.svg",
-    "32": "icons/icon.svg",
-    "48": "icons/icon.svg",
-    "128": "icons/icon.svg"
+    "16": "icons/icon.png",
+    "32": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
   },
   "action": {
-    "default_title": "FTR: KI-Tools anzeigen"
+    "default_title": "RedakTool anzeigen"
   },
   "content_scripts": [
     {
