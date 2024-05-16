@@ -1,6 +1,7 @@
 <span align="center">
-
-  <img src="./icons/logo.png" width="240" title="RedakTool Logo">
+    <p align="center">
+      <img src="./icons/logo.png" width="300" title="RedakTool Logo">
+    </p>
 
   # RedakTool
 
