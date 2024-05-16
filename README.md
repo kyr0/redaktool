@@ -27,7 +27,7 @@
 ## 🌟 Features
 <span align="center">
 
-  ![Screenshot](./docs/images/deck.webp)
+  ![Screenshot](./docs/images/redaktool_screen.png)
 
 </span>
 
