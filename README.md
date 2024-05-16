@@ -124,10 +124,13 @@ To organize the work done, alongside it's documentation, every commit follows a 
 
 Special thanks to our contributors and supporters, particularly Media Tech Lab, for their invaluable assistance in this project.
 
+<p>
 <a href="https://www.media-lab.de/en/programs/media-tech-lab">
     <img src="https://raw.githubusercontent.com/media-tech-lab/.github/main/assets/mtl-powered-by.png" width="240" title="Media Tech Lab powered by logo">
 </a>
-Media Tech Lab
+</p>
 
-<img src="./icons/ftr_logo.png" width="100" title="FTR: For The Record Newsletter">
-FTR: Newsletter
+<p>
+  <img src="./icons/ftr_logo.png" width="100" title="FTR: For The Record Newsletter">
+  FTR: Newsletter
+</p>
