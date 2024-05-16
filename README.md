@@ -1,6 +1,6 @@
 <span align="center">
 
-  ![Logo](./icons/logo.png)
+  <img src="./icons/logo.png" width="240" title="RedakTool Logo">
 
   # RedakTool
 
