@@ -127,5 +127,7 @@ Special thanks to our contributors and supporters, particularly Media Tech Lab, 
 <a href="https://www.media-lab.de/en/programs/media-tech-lab">
     <img src="https://raw.githubusercontent.com/media-tech-lab/.github/main/assets/mtl-powered-by.png" width="240" title="Media Tech Lab powered by logo">
 </a>
+Media Tech Lab
 
-<img src="./icons/ftr_logo.png" width="240" title="FTR: For The Record Newsletter">
+<img src="./icons/ftr_logo.png" width="100" title="FTR: For The Record Newsletter">
+FTR: Newsletter
