@@ -4,7 +4,7 @@
   "description": "Browser extension, designed for editors and professionals engaged in text-related research, writing, and evaluation tasks.",
   "scripts": {
     "predev": "mkdir -p ./dist && cp -R ./css/* ./dist/ && bun tailwindcss -i ./css/style-dark.scss -o ./dist/style-dark.css && bun tailwindcss -i ./css/style-light.scss -o ./dist/style-light.css",
-    "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/worker.js && bun build ./src/content-script.tsx --loader .css:text --outfile=./dist/content-script.js",
+    "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/worker.js && bun build ./src/content-script.tsx --loader .css:text --outfile=./dist/content-script.js --outdir=./dist",
     "test": "bun test",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
   },
@@ -12,11 +12,18 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.8",
+    "@ckeditor/ckeditor5-autoformat": "^41.4.2",
+    "@ckeditor/ckeditor5-basic-styles": "^41.4.2",
+    "@ckeditor/ckeditor5-build-multi-root": "^41.4.2",
+    "@ckeditor/ckeditor5-essentials": "^41.4.2",
+    "@ckeditor/ckeditor5-markdown-gfm": "^41.4.2",
+    "@ckeditor/ckeditor5-react": "^6.3.0",
+    "@ckeditor/ckeditor5-source-editing": "^41.4.2",
     "@google-cloud/vertexai": "^1.1.0",
     "@hookform/resolvers": "^3.3.4",
     "@milkdown/core": "^7.3.5",
     "@milkdown/ctx": "^7.3.5",
-    "@milkdown/plugin-clipboard": "^7.3.5",
+    "@milkdown/plugin-clipboard": "^7.3.6",
     "@milkdown/plugin-cursor": "^7.3.5",
     "@milkdown/plugin-emoji": "^7.3.5",
     "@milkdown/plugin-history": "^7.3.5",
