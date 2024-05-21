@@ -42,8 +42,8 @@ export const AppModal: React.FC<any> = ({ children }) => {
     y: 100,
   });
   const storedDialogSizePref = prefPerPage<any>("dialog_size", {
-    w: 200,
-    h: 200,
+    w: 1024,
+    h: 768,
   });
   const [positioningClasses, setPositioningClasses] = useState<string>(
     "ab-fixed ab-left-[100px] ab-top-[100px]",
