@@ -28,7 +28,7 @@ import {
   ResizablePanelGroup,
   VerticalResizeHandle,
 } from "../../ui/resizable";
-import { MarkdownEditor, markdownDefaultContent } from "../MarkdownEditor";
+import { MarkdownEditor } from "../MarkdownEditor";
 import {
   calculatePrompt,
   calculateTokensFromBudget,
