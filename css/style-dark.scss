@@ -49,7 +49,7 @@
     @apply ab-bg-slate-900;
   }
   .ab-ftr-active-menu-item {
-    @apply ab-bg-slate-700;
+    @apply ab-bg-slate-700  !important;
     @apply ab-text-white;
     @apply ab-pt-1;
     @apply ab-pb-1;

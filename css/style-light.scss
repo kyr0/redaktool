@@ -51,7 +51,7 @@
     @apply ab-bg-slate-300;
   }
   .ab-ftr-active-menu-item {
-    @apply ab-bg-slate-300;
+    @apply ab-bg-slate-300 !important;
     @apply ab-text-black;
     @apply ab-pt-1;
     @apply ab-pb-1;
