@@ -30,7 +30,7 @@ async function whisper(audio: Blob, format = "wav", transcribeEnglish = true) {
       method: "POST",
       body: formData,
       headers: {
-        Authorization: `Bearer ${await getValue("OPEN_AI_API_KEY", "no-key")}`,
+        Authorization: `Bearer ${await getPref(OPEN_AI_API_KEY_NAME)}`,
       },
     },
   );
@@ -42,13 +42,16 @@ async function whisper(audio: Blob, format = "wav", transcribeEnglish = true) {
 }
 
 const getValue = async (key: string, defaultValue?: string) => {
-  const result = await chrome.storage.local.get([key]);
+  const result = await chrome.storage.sync.get([key]);
+  console.log("result", result);
   return typeof result[key] === "undefined" ? defaultValue : result[key];
 };
 
 const setValue = async (key: string, value: any) => {
-  await chrome.storage.local.set({ [key]: value });
+  await chrome.storage.sync.set({ [key]: value });
 };
+
+// TODO: setBlobValue, getBlobValue with unlimitedStorage permission; https://developer.chrome.com/docs/extensions/reference/api/storage?hl=de
 
 const getPref = async (key: string, defaultValue?: string) => {
   return await getValue(getNamespacedKey(key), defaultValue);
@@ -63,7 +66,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
 
   (async () => {
-    console.log("worker script loaded", await getPref(OPEN_AI_API_KEY_NAME));
+    console.log(
+      "worker script loaded",
+      await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
+    );
     const client = new OpenAIClient({
       apiKey: await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
     });

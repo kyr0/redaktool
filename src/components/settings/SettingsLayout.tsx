@@ -54,6 +54,10 @@ export const SettingsLayout = () => {
 
   useEffect(() => {
     (async () => {
+      console.log(
+        "setting openai api key",
+        await prefChrome<string>(OPEN_AI_API_KEY_NAME).get(),
+      );
       openAiSettingsForm.setValue(
         "apiKey",
         await prefChrome<string>(OPEN_AI_API_KEY_NAME).get(),
@@ -79,6 +83,11 @@ export const SettingsLayout = () => {
       if (!valid) {
         return;
       }
+
+      console.log(
+        "sending save openai key",
+        openAiSettingsForm.getValues().apiKey,
+      );
 
       prefChrome(OPEN_AI_API_KEY_NAME).set(
         openAiSettingsForm.getValues().apiKey,
