@@ -277,3 +277,24 @@ export function processAudioBufferWithBandpass(
       });
   });
 }
+
+export const blobToArrayBuffer = (blob: Blob): Promise<ArrayBuffer> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to convert Blob to ArrayBuffer"));
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(blob);
+  });
+};
+
+export const blobToAudioBuffer = async (blob: Blob): Promise<AudioBuffer> => {
+  const arrayBuffer = await blobToArrayBuffer(blob);
+  const audioContext = new AudioContext();
+  return await audioContext.decodeAudioData(arrayBuffer);
+};

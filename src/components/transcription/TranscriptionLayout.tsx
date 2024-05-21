@@ -27,6 +27,7 @@ import { MarkdownEditor } from "../MarkdownEditor";
 import AudioPlayer from "../../ui/audio-player";
 import {
   audioBufferToWav,
+  blobToAudioBuffer,
   blobToDataUrl,
   getAudioFileAsAudioBuffer,
   processAudioBufferWithBandpass,
@@ -63,6 +64,42 @@ async function transcribeInWorker(blob: Blob) {
   });
 }
 
+async function downloadMediaAsBlob(videoElement: HTMLVideoElement) {
+  try {
+    const sources = videoElement.getElementsByTagName("source");
+    let mediaUrl = null;
+
+    for (const source of Array.from(sources)) {
+      if (source.type && videoElement.canPlayType(source.type) !== "") {
+        mediaUrl = source.src;
+        break;
+      }
+    }
+
+    if (!mediaUrl) {
+      mediaUrl = videoElement.src;
+    }
+
+    // need to stream it...
+    if (mediaUrl.startsWith("blob:")) {
+      return null;
+    }
+
+    if (!mediaUrl) {
+      throw new Error("No valid media source found.");
+    }
+    const response = await fetch(mediaUrl);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.blob();
+  } catch (error) {
+    console.error("There was an error!", error);
+  }
+}
+
 export const TranscriptionLayout = () => {
   const audioPlayerContainerRef = useRef<any>();
   const mediaElContainerRef = useRef<any>();
@@ -83,7 +120,7 @@ export const TranscriptionLayout = () => {
   const [mediaElements, setMediaElements] = useState<Array<HTMLMediaElement>>(
     [],
   );
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob>();
 
   const onFindVisibleMediaElements = useCallback(() => {
     const mediaElementsPref = prefPerPage<Array<string>>("mediaElements", []);
@@ -243,41 +280,107 @@ export const TranscriptionLayout = () => {
   const onTranscribeMediaElement = useCallback(() => {
     if (selectedMediaElement) {
       console.log("transcribe media element", selectedMediaElement);
-      if ("captureStream" in selectedMediaElement) {
-        const stream = (
-          selectedMediaElement as HTMLMediaElementWithCaptureStream
-        ).captureStream();
-        const audioBuffer = stream.getAudioTracks()[0];
-        console.log("audioBuffer", audioBuffer);
 
-        const recorder = new MediaRecorder(stream);
-        const audioChunks: Array<Blob> = [];
+      console.log("trying to download media as blob");
+      (async () => {
+        const blob = await downloadMediaAsBlob(
+          selectedMediaElement as HTMLVideoElement,
+        );
 
-        recorder.ondataavailable = (e: BlobEvent) => {
-          audioChunks.push(e.data);
+        if (blob !== null) {
+          console.log("got a blob!", blob);
+        } else {
+          if ("captureStream" in selectedMediaElement) {
+            const stream = (
+              selectedMediaElement as HTMLMediaElementWithCaptureStream
+            ).captureStream();
+            const audioTracks = stream.getAudioTracks();
+            const audioStream = new MediaStream(audioTracks);
+            let secondsPassed = 0;
+            console.log("audioBuffer", audioTracks);
+            console.log("audioStream", audioStream);
 
-          // temporary result
-          console.log("Recording chunk data available");
-          const audioBlob = new Blob(audioChunks, { type: recorder.mimeType });
-          setAudioBlob(audioBlob);
-        };
+            const recorder = new MediaRecorder(audioStream, {
+              bitsPerSecond: 128000,
+              mimeType: "audio/webm; codecs=opus",
+              audioBitsPerSecond: 128000,
+            });
+            const audioChunks: Array<Blob> = [];
 
-        recorder.onstop = () => {
-          const audioBlob = new Blob(audioChunks, { type: recorder.mimeType });
-          console.log("Recording stopped, blob created", audioBlob);
-          setAudioBlob(audioBlob);
-        };
+            recorder.ondataavailable = (e: BlobEvent) => {
+              secondsPassed++;
+              audioChunks.push(e.data);
 
-        selectedMediaElement.addEventListener("play", () => {
-          recorder.start(1000 /*ms timeslice*/);
-        });
+              // temporary result
+              console.log("Recording chunk data available");
+              const audioBlob = new Blob(audioChunks, {
+                type: recorder.mimeType,
+              });
+              setAudioBlob(audioBlob);
+            };
 
-        selectedMediaElement.addEventListener("pause", () => {
-          recorder.stop();
-        });
-      } else {
-        console.error("Stream capture is not supported");
-      }
+            recorder.onstop = () => {
+              const audioBlob = new Blob(audioChunks, {
+                type: recorder.mimeType,
+              });
+              console.log("Recording stopped, blob created", audioBlob);
+              (async () => {
+                const sizeInMb = audioBlob.size / 1024 / 1024;
+
+                if (sizeInMb > 0.1 || secondsPassed > 1) {
+                  const audioBuffer = await blobToAudioBuffer(audioBlob);
+
+                  console.log("Audio buffer set", audioBlob, audioBuffer);
+                  if (audioPlayerStatusRef.current) {
+                    audioPlayerStatusRef.current.innerHTML =
+                      "Applying band-pass filter...";
+                  }
+                  console.log("Applying band-pass filter...");
+
+                  const audioBufferFiltered =
+                    await processAudioBufferWithBandpass(audioBuffer);
+
+                  setAudioBuffer(audioBufferFiltered);
+
+                  console.log("Slicing into chunks...");
+                  if (audioPlayerStatusRef.current) {
+                    audioPlayerStatusRef.current.innerHTML =
+                      "Slicing into chunks...";
+                  }
+                  const slicedChunks = await sliceAudioBufferAtPauses(
+                    audioBufferFiltered,
+                    10,
+                  );
+                  setAudioBufferSlices(slicedChunks);
+                  console.log("Done slicing");
+                }
+                /*
+                const transcription = (await transcribeInWorker(
+                  audioBlob,
+                )) as {
+                  text: string;
+                };
+                console.log("done transcribe slice 1MiB", transcription);
+                */
+              })();
+
+              // @ts-ignore
+              window.__currentAudioTranscriptionBlob = audioBlob;
+              setAudioBlob(audioBlob);
+            };
+
+            selectedMediaElement.addEventListener("play", () => {
+              recorder.start(1000 /*ms timeslice*/);
+            });
+
+            selectedMediaElement.addEventListener("pause", () => {
+              recorder.stop();
+            });
+          } else {
+            console.error("Stream capture is not supported");
+          }
+        }
+      })();
     }
   }, [selectedMediaElement]);
 
@@ -317,7 +420,7 @@ export const TranscriptionLayout = () => {
                 <div>
                   <CardFooter className="ab-flex ab-justify-between">
                     {/*<Button variant="outline">Cancel</Button>*/}
-                    <Button>Transkribieren</Button>
+                    <Button>Verarbeiten</Button>
                   </CardFooter>
                 </div>
               </Card>
@@ -369,9 +472,9 @@ export const TranscriptionLayout = () => {
                 </div>
                 <div>
                   <CardFooter className="ab-flex ab-justify-between">
-                    <Button variant="outline">Test</Button>
+                    {/*<Button variant="outline">Test</Button>*/}
                     <Button onClick={onTranscribeMediaElement}>
-                      Transkribieren
+                      Stream aktivieren
                     </Button>
                   </CardFooter>
                 </div>
@@ -407,9 +510,11 @@ export const TranscriptionLayout = () => {
                       <AudioPlayer
                         className="w-[100%]"
                         audioBlob={
-                          audioBuffer
-                            ? audioBufferToWav(audioBuffer)
-                            : audioBlob
+                          audioBlob && audioBlob instanceof Blob
+                            ? audioBlob
+                            : audioBuffer
+                              ? audioBufferToWav(audioBuffer)
+                              : null
                         }
                       />
                     </>
@@ -427,11 +532,11 @@ export const TranscriptionLayout = () => {
                   </p>
                 )}
 
-                <AudioPlayer className="w-[100%]" audioBlob={audioBlob} />
+                <AudioPlayer className="w-[100%]" audioBlob={audioBlob!} />
               </div>
               <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-sticky ab-top-0 ab-z-30  ab-justify-between">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
-                  Audio-Chunks:
+                  Audio-Abschnitte
                 </h5>
               </div>
               <div className="ab-flex ab-h-[100%] ab-w-[100%] ab-overflow-auto ab-flex-col">
@@ -479,9 +584,12 @@ export const TranscriptionLayout = () => {
                 })}
                 {audioBufferBlobs.length === 0 && (
                   <p className="ab-p-2">
-                    Dieser Bereich wird mit vorverarbeiteten Audio-Chunks
-                    befüllt, sobald die Vor-Verarbeitung der Transkription
-                    durchgeführt wurde.
+                    Dieser Bereich wird mit vorverarbeiteten Audio-Abschnitten
+                    befüllt. Dies ist technisch notwendig und findet statt,
+                    sobald die Verarbeitung der Transkription abgeschlossen
+                    wurde wurde. (Klicken Sie auf "Verarbeiten" oder
+                    Pausieren/Stoppen Sie einen Stream, der zuvor aktiviert
+                    wurde.)
                   </p>
                 )}
               </div>
