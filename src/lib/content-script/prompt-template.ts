@@ -38,7 +38,8 @@ export function calculateTokensFromBudget(budget: number): number {
 }
 
 export const calculatePrompt = (text: string): Partial<Prompt> => {
-  const encoding = encodingForModel("gpt-4-turbo-preview");
+  // @ts-ignore
+  const encoding = encodingForModel("gpt-4o");
   const encoded = encoding.encode(text);
 
   return {
