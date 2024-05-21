@@ -1,3 +1,3 @@
 # Milestone Plan (May - October)
 
-TODO
+See: [docs/milestones](docs/milestones/)
