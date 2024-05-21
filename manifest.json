@@ -36,7 +36,7 @@
       "world": "ISOLATED"
     }
   ],
-  "permissions": ["scripting", "activeTab", "storage"],
+  "permissions": ["scripting", "activeTab", "storage", "unlimitedStorage"],
   "background": {
     "service_worker": "dist/worker.js"
   },
