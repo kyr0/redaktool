@@ -11,10 +11,10 @@ export const prefPerPage = <T>(key: string, defaultValue?: T) => {
 
 // async chrome extension storage-synced prefs, connected to worker
 export const prefChrome = <T>(key: string, defaultValue?: T) => {
-  async function setValue(key: string, value: any) {
+  async function setValue(key: string, value: any, local = true) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
-        { action: "set", text: JSON.stringify({ key, value }) },
+        { action: "set", text: JSON.stringify({ key, value, local }) },
         (response) => {
           if (response.success) {
             console.log("value was set", key, value, response);
@@ -27,10 +27,10 @@ export const prefChrome = <T>(key: string, defaultValue?: T) => {
     });
   }
 
-  async function getValue(key: string) {
+  async function getValue(key: string, local = true) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
-        { action: "get", text: JSON.stringify({ key }) },
+        { action: "get", text: JSON.stringify({ key, local }) },
         (response) => {
           if (response.success) {
             try {
@@ -48,10 +48,11 @@ export const prefChrome = <T>(key: string, defaultValue?: T) => {
     });
   }
   return {
-    get: async (): Promise<T> =>
-      typeof (getValue(getNamespacedKey(key)) as T) === "undefined"
+    get: async (local = true): Promise<T> =>
+      typeof (getValue(getNamespacedKey(key), local) as T) === "undefined"
         ? (Promise.resolve(defaultValue) as T)
         : (getValue(getNamespacedKey(key)) as T),
-    set: async (value: T) => setValue(getNamespacedKey(key), value),
+    set: async (value: T, local = true) =>
+      setValue(getNamespacedKey(key), value, local),
   };
 };

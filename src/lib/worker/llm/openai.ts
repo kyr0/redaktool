@@ -16,7 +16,7 @@ export const openAIPrompt = async (
   };
 
   if (!body.model) {
-    body.model = "gpt-4-turbo";
+    body.model = "gpt-4o";
   }
 
   console.log("Using model:", body.model);

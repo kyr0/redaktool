@@ -41,24 +41,31 @@ async function whisper(audio: Blob, format = "wav", transcribeEnglish = true) {
   return await response.json();
 }
 
-const getValue = async (key: string, defaultValue?: string) => {
-  const result = await chrome.storage.sync.get([key]);
+// sync. storage must be used buffered because of MAX_WRITE_OPERATIONS_PER_MINUTE error
+
+const getValue = async (key: string, defaultValue?: string, local = true) => {
+  const result = await (local
+    ? chrome.storage.local
+    : chrome.storage.session
+  ).get([key]);
   console.log("result", result);
   return typeof result[key] === "undefined" ? defaultValue : result[key];
 };
 
-const setValue = async (key: string, value: any) => {
-  await chrome.storage.sync.set({ [key]: value });
+const setValue = async (key: string, value: any, local = true) => {
+  await (local ? chrome.storage.local : chrome.storage.session).set({
+    [key]: value,
+  });
 };
 
 // TODO: setBlobValue, getBlobValue with unlimitedStorage permission; https://developer.chrome.com/docs/extensions/reference/api/storage?hl=de
 
-const getPref = async (key: string, defaultValue?: string) => {
+const getPref = async (key: string, defaultValue?: string, local = true) => {
   return await getValue(getNamespacedKey(key), defaultValue);
 };
 
-const setPref = async (key: string, value: any) => {
-  return await setValue(getNamespacedKey(key), value);
+const setPref = async (key: string, value: any, local = true) => {
+  return await setValue(getNamespacedKey(key), value, local);
 };
 // TODO: Archive with IndexedDB and Vector Embeddings
 
@@ -85,7 +92,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       switch (request.action) {
         case "get":
           try {
-            const value = await getValue(data.key);
+            const value = await getValue(
+              data.key,
+              undefined,
+              data.local || true,
+            );
 
             console.log("GET", data.key, value);
             sendResponse({ success: true, value: JSON.stringify(value) });
@@ -95,7 +106,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         case "set":
           console.log("SET", data.key, data.value);
-          await setValue(data.key, data.value);
+          await setValue(data.key, data.value, data.local || true);
           sendResponse({ success: true });
           break;
         case "prompt": {
@@ -120,7 +131,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               if (value.choices[0].delta.content) {
                 partialResponseText += value.choices[0].delta.content;
               }
-              setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText);
+              setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText, false);
               read();
             }
             read();
@@ -128,7 +139,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           const readableStream: ChatStreamResponse =
             await client.streamChatCompletion({
-              model: "gpt-4-turbo-preview", // TODO: select dynamically, depending on provider and pass settings
+              model: "gpt-4o", // TODO: select dynamically, depending on provider and pass settings
               messages: [
                 {
                   role: "system",

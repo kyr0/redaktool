@@ -8,7 +8,9 @@ export const sendPrompt = (
 ) => {
   const updateStream = setInterval(async () => {
     try {
-      onChunk((await prefChrome(PARTIAL_RESPONSE_TEXT_NAME).get()) as string);
+      onChunk(
+        (await prefChrome(PARTIAL_RESPONSE_TEXT_NAME).get(false)) as string,
+      );
     } catch (error) {
       // ignore
     }
