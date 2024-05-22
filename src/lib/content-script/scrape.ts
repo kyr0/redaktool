@@ -5,25 +5,7 @@ import TurndownService from "turndown";
 export const getTurndownService = () => {
   const turndownService = new TurndownService({
     // @ts-ignore
-    filter: (node, options) =>
-      node.nodeName === "STYLE" ||
-      node.nodeName === "IMG" ||
-      node.nodeName === "SCRIPT" ||
-      node.nodeName === "AUDIO" ||
-      node.nodeName === "VIDEO" ||
-      node.nodeName === "OBJECT" ||
-      node.nodeName === "SVG" ||
-      node.nodeName === "CODE" ||
-      node.nodeName === "PRE" ||
-      node.nodeName === "FORM" ||
-      node.nodeName === "INPUT" ||
-      node.nodeName === "TEXTAREA" ||
-      node.nodeName === "BUTTON" ||
-      node.nodeName === "NAV" ||
-      node.nodeName === "FOOTER" ||
-      node.nodeName === "IFRAME" ||
-      node.nodeName === "INS" ||
-      node.nodeName === "ADS",
+    filter: (node, options) => !isIrrelevantNode(node),
   });
   return turndownService;
 };
@@ -271,30 +253,203 @@ export const scrapeForMarkdownOneLevelDeep = async (
   scrapeConfig?: ScrapeConfig,
 ) => {
   const html = await scrapeWebsite(targetUrl, options, scrapeConfig);
-  const document = htmlToDomDocument(html);
-  const twoOtherOnSiteLinks = await extractRelevantRelativeLinks(
-    document,
-    targetUrl,
-    options.maxLinks || 2,
+
+  //log("out.html", html);
+  const _document =
+    // Node.js vs. browser/service worker
+    typeof document === "undefined" ? htmlToDomDocument(html) : document;
+
+  const { bestCandidate, topP } = autoCorrelateMostRelevantContent(
+    _document,
+    _document.body,
   );
-  let relevantContentAsMarkdown = extractRelevantContentAsMarkdown(
-    document,
-    html,
+
+  return extractRelevantContentAsMarkdown(
+    _document,
+    (bestCandidate.node as HTMLElement).innerHTML ||
+      (bestCandidate.node as HTMLElement).innerText,
     options?.hardCharLimit || 32000,
   );
-  for (let i = 0; i < twoOtherOnSiteLinks.length; i++) {
-    const relevantLink = twoOtherOnSiteLinks[i];
-    const subPageHtml = await scrapeWebsite(
-      targetUrl.toString() + relevantLink,
-      options,
-    );
-    const subPageDocument = htmlToDomDocument(subPageHtml);
-    const subPageRelevantContentAsMarkdown = extractRelevantContentAsMarkdown(
-      subPageDocument,
-      subPageHtml,
-      options?.hardCharLimit || 32000,
-    );
-    relevantContentAsMarkdown += subPageRelevantContentAsMarkdown;
+};
+
+const ELEMENT_NODE = 1;
+const FILTER_REJECT = 2;
+const FILTER_ACCEPT = 1;
+
+export const isIrrelevantNode = (node: Node) => {
+  const ignoredElements = [
+    "STYLE",
+    "IMG",
+    "SCRIPT",
+    "AUDIO",
+    "VIDEO",
+    "OBJECT",
+    "SVG",
+    "CODE",
+    "FORM",
+    "INPUT",
+    "TEXTAREA",
+    "BUTTON",
+    "NAV",
+    "FOOTER",
+    "IFRAME",
+    "INS",
+    "ADS",
+    "NOSCRIPT",
+  ];
+
+  if (ignoredElements.includes(node.nodeName.toUpperCase())) {
+    return true;
   }
-  return relevantContentAsMarkdown;
+  return false;
+};
+
+export const createDomWalker = (document: Document, el: Node) =>
+  document.createTreeWalker(el, ELEMENT_NODE, {
+    acceptNode: (node) => {
+      if (isIrrelevantNode(node)) {
+        return FILTER_REJECT;
+      }
+      return FILTER_ACCEPT;
+    },
+  });
+
+export const traverseUpwards = (node: Node) => {
+  let count = 0;
+  let currentNode = node;
+
+  while (currentNode.parentElement) {
+    count++;
+    currentNode = currentNode.parentElement;
+  }
+  return count;
+};
+
+export const forEachRelevantElement = (
+  document: Document,
+  node: Node,
+  fn: (node: Node, depth: number) => void,
+) => {
+  const walker = createDomWalker(document, node);
+  let currentNode = walker.nextNode();
+  while (currentNode) {
+    if (currentNode.textContent?.trim()) {
+      fn(currentNode, traverseUpwards(currentNode));
+    }
+    currentNode = walker.nextNode();
+  }
+};
+
+export const splitIntoSentences = (text: string) => {
+  // regular expression to match sentence-ending period preceded by a word character and followed by whitespace or end of string.
+  const sentencePattern = /(?<=\w\.)\s+/u;
+
+  // check if text contains at least one period, if not return an empty array
+  if (!/\w\./.test(text)) {
+    return [];
+  }
+
+  return text
+    .split(sentencePattern)
+    .filter((sentence) => sentence.trim().length > 0);
+};
+
+// normalize values to a scale of 0 to 1
+export const normalize = (value: number, min: number, max: number) =>
+  (value - min) / (max - min);
+
+export interface AutoCorrelateMostRelevantContentOptions {
+  minSentences: number;
+}
+
+export interface AutoCorrelateMostRelevantContentResult {
+  text: string;
+  node: Node;
+  sentences: number;
+  length: number;
+  depth: number;
+  score?: number;
+}
+
+export const autoCorrelateMostRelevantContent = (
+  document: Document,
+  node: Node,
+  options = { minSentences: 3 },
+) => {
+  const results: Array<AutoCorrelateMostRelevantContentResult> = [];
+  let minDepth = Number.POSITIVE_INFINITY;
+  let maxDepth = Number.NEGATIVE_INFINITY;
+  let minSentenceCount = Number.POSITIVE_INFINITY;
+  let maxSentenceCount = Number.NEGATIVE_INFINITY;
+
+  const uniqueCombinations = new Set();
+
+  forEachRelevantElement(document, node, (node, depth) => {
+    if ((node as HTMLElement) && !node.textContent) return;
+
+    const sentencesTexts = splitIntoSentences(
+      (node as HTMLElement).innerText.trim(),
+    );
+    const text = sentencesTexts.join(" ").trim();
+
+    if (text) {
+      const sentences = sentencesTexts.length;
+      const length = text.length;
+      const combinationKey = `${sentences}-${length}`;
+
+      // skip records with the same sentence count and depth as any record already in the results
+      if (uniqueCombinations.has(combinationKey)) return;
+
+      results.push({
+        node,
+        text,
+        sentences,
+        length,
+        depth,
+      });
+
+      // add the combination to the set
+      uniqueCombinations.add(combinationKey);
+
+      // update min and max depths
+      if (depth < minDepth) {
+        minDepth = depth;
+      }
+      if (depth > maxDepth) {
+        maxDepth = depth;
+      }
+
+      // update min and max sentence counts
+      if (sentences < minSentenceCount) {
+        minSentenceCount = sentences;
+      }
+      if (sentences > maxSentenceCount) {
+        maxSentenceCount = sentences;
+      }
+    }
+  });
+
+  // calculate normalized content score for auto-correlation
+  results.forEach((result) => {
+    const normalizedDepth = normalize(result.depth, minDepth, maxDepth);
+    const normalizedSentences = normalize(
+      result.sentences,
+      minSentenceCount,
+      maxSentenceCount,
+    );
+
+    // giving equal weight to depth and sentences
+    result.score = 0.5 * normalizedDepth + 0.5 * normalizedSentences;
+  });
+
+  const relevantContent = results
+    .filter((v) => v.score! >= 0.5 && v.sentences > options.minSentences)
+    .sort((a, b) => b.score! - a.score!);
+
+  const bestCandidate = relevantContent[0];
+
+  return {
+    topP: relevantContent,
+    bestCandidate,
+  };
 };
