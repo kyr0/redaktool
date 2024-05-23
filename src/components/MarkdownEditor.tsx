@@ -69,6 +69,9 @@ import { insertTextPlugin } from "./scratchpad/plugin/InsertText";
 import { selectEditorContent } from "../lib/content-script/clipboard";
 //import { SlashView, slash } from './scratchpad/plugin/Slash';
 
+// TODO: copy over code from https://github.com/Milkdown/website/tree/main/src/components/playground-editor
+//       as this editor is stable and has all the features we need
+
 export interface MilkdownInternalProps {
   defaultValue: string;
   placeholder?: string;
@@ -118,6 +121,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
 
   const { get, loading } = useEditor(
     (root) => {
+      // https://github.com/laurent22/joplin/blob/dev/packages/app-desktop/gui/NoteEditor/NoteBody/CodeMirror/v6/Editor.tsx#L102C3-L110C6
       const editor = Editor.make()
         .config((ctx) => {
           ctx.set(rootCtx, root);

@@ -67,7 +67,7 @@ export const ModalLayout = () => {
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel defaultSize={20} minSize={15}>
         <div className="ab-flex ab-ab-h-fit ab-items-center ab-justify-center ab-p-0">
-          <Command>
+          <Command value={activeModule}>
             <CommandList>
               <CommandGroup>
                 <CommandItem

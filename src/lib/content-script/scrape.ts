@@ -1,12 +1,57 @@
+import { readFileSync } from "node:fs";
 import { ZenRows } from "zenrows";
 import { htmlToDomDocument } from "./dom";
 import TurndownService from "turndown";
+import { log } from "../debug";
+import { prettyPrintMarkdown, removeExcessiveNewlines } from "./turndown";
+import tables from "./gfm/tables";
 
-export const getTurndownService = () => {
+export const getTurndownServiceServerSide = () => {
   const turndownService = new TurndownService({
+    linkStyle: "inlined",
+    codeBlockStyle: "fenced",
+    strongDelimiter: "**",
     // @ts-ignore
-    filter: (node, options) => !isIrrelevantNode(node),
+    preformattedCode: true,
+
+    // @ts-ignore
+    filter: (node, options) => {
+      const isIrrelevant = isIrrelevantNode(node);
+      return isIrrelevant;
+    },
   });
+
+  tables(turndownService);
+
+  turndownService.addRule("remove-irrelevant", {
+    filter: [
+      "style",
+      "script",
+      "img",
+      "picture",
+      "audio",
+      "video",
+      "object",
+      // @ts-ignore
+      "svg",
+      "code",
+      "form",
+      "input",
+      "textarea",
+      "button",
+      "nav",
+      "footer",
+      "iframe",
+      "ins",
+      // @ts-ignore
+      "ads",
+      "noscript",
+    ],
+    replacement: () => {
+      return "";
+    },
+  });
+
   return turndownService;
 };
 
@@ -150,16 +195,22 @@ export const scrapeWebsite = async (
     }
 
     const client = new ZenRows(options.apiKey, {
-      concurrency: 5,
+      concurrency: 1,
       retries: 1,
     });
 
+    console.time("scrape");
     const { data: html } = await client.get(targetUrl, {
       js_render: true,
       premium_proxy: true,
       antibot: "true",
+      proxy_country: "de",
+      device: "desktop",
+      wait: 1000,
       ...scrapeConfig,
     });
+
+    console.timeEnd("scrape");
     return html;
   } catch (error) {
     // @ts-ignore
@@ -176,7 +227,6 @@ export const scrapeWebsite = async (
     throw error;
   }
 };
-
 export const extractRelevantContentAsMarkdown = (
   document: Document,
   html: string,
@@ -190,9 +240,10 @@ export const extractRelevantContentAsMarkdown = (
   const contentMarkdown = `# ${document.title}
     ${metaDescription ? `## ${metaDescription}` : ""}
 
-    ${getTurndownService().turndown(html).substring(0, maxLength)}
+    ${getTurndownServiceServerSide().turndown(html).substring(0, maxLength)}
     `;
-  return contentMarkdown;
+
+  return prettyPrintMarkdown(contentMarkdown);
 };
 
 export const toRelativeHref = (link: string, targetUrl: URL) => {
@@ -252,22 +303,30 @@ export const scrapeForMarkdownOneLevelDeep = async (
   options: ScrapeOptions,
   scrapeConfig?: ScrapeConfig,
 ) => {
-  const html = await scrapeWebsite(targetUrl, options, scrapeConfig);
+  const html = readFileSync("./logs/out.html", { encoding: "utf-8" }); /* await scrapeWebsite(
+      targetUrl,
+      options,
+      scrapeConfig,
+    );*/
 
   //log("out.html", html);
   const _document =
     // Node.js vs. browser/service worker
     typeof document === "undefined" ? htmlToDomDocument(html) : document;
 
-  const { bestCandidate, topP } = autoCorrelateMostRelevantContent(
-    _document,
-    _document.body,
-  );
+  const { bestCandidate, topP, commonParentNode } =
+    autoCorrelateMostRelevantContent(_document, _document.body);
+
+  const bestRelevance = commonParentNode ? commonParentNode : bestCandidate;
+
+  if (!bestRelevance) {
+    throw new Error("No relevant content found");
+  }
 
   return extractRelevantContentAsMarkdown(
     _document,
-    (bestCandidate.node as HTMLElement).innerHTML ||
-      (bestCandidate.node as HTMLElement).innerText,
+    (bestRelevance.node as HTMLElement).innerHTML ||
+      (bestRelevance.node as HTMLElement).innerText,
     options?.hardCharLimit || 32000,
   );
 };
@@ -279,6 +338,8 @@ const FILTER_ACCEPT = 1;
 export const isIrrelevantNode = (node: Node) => {
   const ignoredElements = [
     "STYLE",
+    "IMAGE",
+    "PICTURE",
     "IMG",
     "SCRIPT",
     "AUDIO",
@@ -371,6 +432,17 @@ export interface AutoCorrelateMostRelevantContentResult {
   score?: number;
 }
 
+// Helper function to get depth of a node
+const getDepth = (node: Node, document: Document): number => {
+  let depth = 0;
+  let current = node;
+  while (current !== document) {
+    current = current.parentNode!;
+    depth++;
+  }
+  return depth;
+};
+
 export const autoCorrelateMostRelevantContent = (
   document: Document,
   node: Node,
@@ -442,14 +514,39 @@ export const autoCorrelateMostRelevantContent = (
     result.score = 0.5 * normalizedDepth + 0.5 * normalizedSentences;
   });
 
-  const relevantContent = results
-    .filter((v) => v.score! >= 0.5 && v.sentences > options.minSentences)
+  let relevantContent = results
+    .filter((v) => /* v.score! >= 0.5 &&*/ v.sentences > options.minSentences)
     .sort((a, b) => b.score! - a.score!);
+
+  // check if the content of consecutive relevantContent entries have a common parent node,
+  // which depth is max. 2 levels higher than the depth of the first relevantContent entry
+  const firstRelevantDepth = relevantContent[0]?.depth;
+
+  const bestParentNode = relevantContent.reduce((commonParent, current) => {
+    if (!commonParent) return current.node.parentNode;
+
+    let parent = current.node.parentNode;
+    while (parent && getDepth(parent, document) > firstRelevantDepth + 2) {
+      parent = parent.parentNode;
+    }
+
+    if (parent && parent === commonParent) {
+      return commonParent;
+    }
+
+    return null;
+  }, relevantContent[0]?.node.parentNode);
+
+  relevantContent = relevantContent.filter((v) => v.score! >= 0.5);
 
   const bestCandidate = relevantContent[0];
 
   return {
     topP: relevantContent,
     bestCandidate,
+    commonParentNode: {
+      node: bestParentNode,
+      depth: traverseUpwards(bestParentNode!),
+    },
   };
 };

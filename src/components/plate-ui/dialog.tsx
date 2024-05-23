@@ -1,0 +1,63 @@
+'use client';
+
+import * as React from 'react';
+
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { cn, createPrimitiveElement, withCn, withRef } from '@udecode/cn';
+
+import { Icons } from '@/components/icons';
+
+export const Dialog = DialogPrimitive.Root;
+
+export const DialogTrigger = DialogPrimitive.Trigger;
+
+export const DialogPortal = DialogPrimitive.Portal;
+
+export const DialogClose = DialogPrimitive.Close;
+
+export const DialogOverlay = withCn(
+  DialogPrimitive.Overlay,
+  'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0'
+);
+
+export const DialogContent = withRef<typeof DialogPrimitive.Content>(
+  ({ children, className, ...props }, ref) => (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        className={cn(
+          'ab-fixed ab-left-1/2 ab-top-1/2 ab-z-50 ab-grid ab-w-full ab-max-w-lg ab--translate-x-1/2 ab--translate-y-1/2 ab-gap-4 ab-border ab-bg-background ab-p-6 ab-shadow-lg ab-duration-200 data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[state=closed]:ab-slide-out-to-left-1/2 data-[state=closed]:ab-slide-out-to-top-[48%] data-[state=open]:ab-slide-in-from-left-1/2 data-[state=open]:ab-slide-in-from-top-[48%] sm:ab-rounded-lg',
+          className
+        )}
+        ref={ref}
+        {...props}
+      >
+        {children}
+        <DialogPrimitive.Close className='ab-absolute ab-right-4 ab-top-4 ab-rounded-sm ab-opacity-70 ab-ring-offset-background ab-transition-opacity hover:ab-opacity-100 focus:ab-outline-none focus:ab-ring-2 focus:ab-ring-ring focus:ab-ring-offset-2 disabled:ab-pointer-events-none data-[state=open]:ab-bg-accent data-[state=open]:ab-text-muted-foreground'>
+          <Icons.close className='ab-size-4' />
+          <span className='ab-sr-only'>Close</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+);
+
+export const DialogHeader = withCn(
+  createPrimitiveElement('div'),
+  'flex flex-col space-y-1.5 text-center sm:text-left'
+);
+
+export const DialogFooter = withCn(
+  createPrimitiveElement('div'),
+  'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2'
+);
+
+export const DialogTitle = withCn(
+  DialogPrimitive.Title,
+  'text-lg font-semibold leading-none tracking-tight'
+);
+
+export const DialogDescription = withCn(
+  DialogPrimitive.Description,
+  'text-sm text-muted-foreground'
+);

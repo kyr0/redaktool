@@ -23,7 +23,6 @@ import {
   useState,
   type SyntheticEvent,
 } from "react";
-import { MarkdownEditor } from "../MarkdownEditor";
 import AudioPlayer from "../../ui/audio-player";
 import {
   audioBufferToWav,
@@ -37,6 +36,7 @@ import { Badge } from "../../ui/badge";
 import { filterForVisibleElements } from "../../lib/content-script/element";
 import { prefPerPage } from "../../lib/content-script/prefs";
 import { formatDuration } from "../../lib/content-script/format";
+import { MarkdownEditor } from "../MarkdownEditor";
 interface HTMLMediaElementWithCaptureStream extends HTMLMediaElement {
   captureStream(): MediaStream;
 }

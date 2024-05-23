@@ -22,23 +22,20 @@ export interface Prompt {
   price: number;
 }
 
-export function calculatePrice(tokens: number): number {
-  // Define the price per token
-  const pricePerToken = 0.00001;
-  const totalPrice = tokens * pricePerToken;
-  return totalPrice;
-}
+// https://openai.com/api/pricing/
+export const getPricePerToken = (model: string): number =>
+  10 / 1000000; /** input: $5, output 15$, avg. $10 */
+
+export const calculatePrice = (tokens: number): number =>
+  tokens * 2 * getPricePerToken("gpt-4o");
 
 export function calculateTokensFromBudget(budget: number): number {
-  // Define the price per token
-  const pricePerToken = 0.00001;
   // Calculate the number of tokens that can be purchased with the given budget
-  const tokens = budget / pricePerToken;
+  const tokens = budget / getPricePerToken("gpt-4o");
   return Math.floor(tokens); // Assuming you can only purchase whole tokens
 }
 
 export const calculatePrompt = (text: string): Partial<Prompt> => {
-  // @ts-ignore
   const encoding = encodingForModel("gpt-4o");
   const encoded = encoding.encode(text);
 

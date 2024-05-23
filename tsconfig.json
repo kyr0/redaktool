@@ -6,8 +6,11 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
-    "types": ["vitest/globals", "@types/chrome"],
-
+    "types": ["vitest/globals", "@types/chrome", "@types/bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     /* Bundler mode */
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,

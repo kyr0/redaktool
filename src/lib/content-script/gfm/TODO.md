@@ -1,0 +1,2 @@
+- support strike-through 
+- codeblock

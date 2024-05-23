@@ -28,7 +28,6 @@ import {
   ResizablePanelGroup,
   VerticalResizeHandle,
 } from "../../ui/resizable";
-import { MarkdownEditor } from "../MarkdownEditor";
 import {
   calculatePrompt,
   calculateTokensFromBudget,
@@ -49,8 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import { sendPrompt } from "../../lib/content-script/prompt";
 import { AiModelDropdown } from "../AiModelDropdown";
-import { set } from "react-hook-form";
-import { Input } from "../../ui/input";
+import { MarkdownEditor } from "../MarkdownEditor";
 
 export type ToolNames =
   | "translate"

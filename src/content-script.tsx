@@ -28,30 +28,37 @@ class FtrElement extends HTMLElement {
 
     if (this.shadowRoot) {
       this.shadowRoot.innerHTML = `
-            <style>
-                @font-face {
-                    font-family: "GeistSans";
-                    src: url("${fontGeistBold}") format("woff2");
-                    font-weight: bold;
-                    font-style: normal;
-                    font-display: swap;
-                }
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+              @font-face {
+                  font-family: "GeistSans";
+                  src: url("${fontGeistBold}") format("woff2");
+                  font-weight: bold;
+                  font-style: normal;
+                  font-display: swap;
+              }
 
-                @font-face {
-                    font-family: "GeistSans";
-                    src: url("${fontGeistRegular}") format("woff2");
-                    font-weight: normal;
-                    font-style: normal;
-                    font-display: swap;
-                }
+              @font-face {
+                  font-family: "GeistSans";
+                  src: url("${fontGeistRegular}") format("woff2");
+                  font-weight: normal;
+                  font-style: normal;
+                  font-display: swap;
+              }
 
-                :host {
-                    font-size: 10px;
-                    padding: 0;
-                    margin: 0;
-                }
-            </style>
-            <div class="lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483646]" id="ftr_root"></div>`;
+              :host {
+                  font-size: 10px;
+                  padding: 0;
+                  margin: 0;
+              }
+          </style>
+        </head>
+        <body>
+          <div class="lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483646]" id="ftr_root"></div>
+        </body>
+      </html>`;
     }
   }
 
@@ -85,6 +92,8 @@ class FtrElement extends HTMLElement {
           (await isDarkModeEnabledInPrefs()) ? "dark" : "light",
         );
 
+        // @ts-ignore
+        console.log("connectedCallback", window.Quill);
         root.render(
           <>
             <AppModal>

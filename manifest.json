@@ -17,9 +17,9 @@
       "run_at": "document_start",
       "matches": ["http://*/*", "https://*/*", "file://*/*"],
       "js": ["dist/events-prehook.js"],
-      "all_frames": false,
-      "match_origin_as_fallback": false,
-      "match_about_blank": false,
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "match_about_blank": true,
       "world": "MAIN"
     },
     {
@@ -29,9 +29,9 @@
         "src/browser-polyfill.js",
         "dist/content-script.js"
       ],
-      "all_frames": false,
-      "match_origin_as_fallback": false,
-      "match_about_blank": false,
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "match_about_blank": true,
       "run_at": "document_idle",
       "world": "ISOLATED"
     }
@@ -41,6 +41,10 @@
     "service_worker": "dist/worker.js"
   },
   "web_accessible_resources": [
+    {
+      "resources": ["node_modules/*"],
+      "matches": ["http://*/*", "https://*/*", "file://*/*"]
+    },
     {
       "resources": ["dist/*"],
       "matches": ["http://*/*", "https://*/*", "file://*/*"]

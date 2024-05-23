@@ -1331,3 +1331,11 @@
   },
 );
 //# sourceMappingURL=browser-polyfill.js.map
+
+/*
+// Provides missing shadowRoot.getSelection implementation
+if (typeof ShadowRoot !== 'undefined') {
+  ShadowRoot.prototype.getSelection = ShadowRoot.prototype.getSelection || function() {
+      return document.getSelection();
+  };
+}*/
