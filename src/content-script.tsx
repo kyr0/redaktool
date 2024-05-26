@@ -10,7 +10,6 @@ import {
   isDarkModeEnabledInPrefs,
   setDarkModeEnabledInPrefs,
 } from "./lib/content-script/dark-mode";
-
 // biome-ignore lint/suspicious/noGlobalAssign: extension technical requirement to cross-reference
 history = window.history;
 
@@ -43,12 +42,6 @@ class FtrElement extends HTMLElement {
                     font-weight: normal;
                     font-style: normal;
                     font-display: swap;
-                }
-
-                :host {
-                    font-size: 10px;
-                    padding: 0;
-                    margin: 0;
                 }
             </style>
             <div class="lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483646]" id="ftr_root"></div>`;

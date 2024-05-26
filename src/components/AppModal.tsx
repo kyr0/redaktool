@@ -32,10 +32,14 @@ import {
   restorePreviousSelection,
   selectEditorContent,
 } from "../lib/content-script/clipboard";
+import "../i18n/config";
+import { useTranslation, Trans } from "react-i18next";
+import { Logo } from "./Logo";
 
 export const AppModal: React.FC<any> = ({ children }) => {
   // disabled text selection magic ;)
   //useSelection()
+  const { t, i18n } = useTranslation();
 
   const storedDialogPositionPref = prefPerPage<any>("dialog_position", {
     x: 100,
@@ -67,6 +71,16 @@ export const AppModal: React.FC<any> = ({ children }) => {
     const isDarkModeEnabled = await getDarkMode();
     console.log("dark mode enabled", isDarkModeEnabled);
     setDarkMode(!isDarkModeEnabled);
+  }, []);
+
+  const onChangeLanguageButtonClick = useCallback(() => {
+    console.log("change language button clicked");
+
+    if (i18n.language === "de") {
+      i18n.changeLanguage("en");
+    } else {
+      i18n.changeLanguage("de");
+    }
   }, []);
 
   const selectionGuaranteed$ = getSelectionGuaranteedStore();
@@ -158,7 +172,8 @@ export const AppModal: React.FC<any> = ({ children }) => {
         <DialogHeader className="ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
           <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
             <div className="ab-flex ab-flex-row ab-items-center ab-ml-2">
-              RedakTool
+              <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="Logo" />
+              {t("productName")}
             </div>
 
             <div className="ab-flex ab-flex-row ab-items-center">
@@ -179,6 +194,16 @@ export const AppModal: React.FC<any> = ({ children }) => {
                 <DarkMode className="ab-h-4 ab-w-4 ab-shrink-0" />
                 <span className="ab-sr-only">Toggle Mode</span>
               </button>
+
+              <button
+                type="button"
+                onClick={onChangeLanguageButtonClick}
+                className={HeaderButtonStyle}
+              >
+                <div>{t("language")}</div>
+                <span className="ab-sr-only">{t("language")}</span>
+              </button>
+
               <DialogPrimitive.Close className={`${HeaderButtonStyle} ab-mr-1`}>
                 <X className="ab-h-4 ab-w-4 ab-shrink-0" />
                 <span className="ab-sr-only">Close</span>
