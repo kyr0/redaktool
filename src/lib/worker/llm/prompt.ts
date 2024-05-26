@@ -7,6 +7,7 @@ import { type HuggingFaceBody, huggingFacePrompt } from "./huggingface";
 import { ollamaPrompt, type OllamaBody } from "./ollama";
 import { type GeminiOptions, geminiPrompt } from "./gemini";
 import type { ChatParams } from "openai-fetch";
+import { perplexityPrompt } from "./perplexity";
 
 export interface PromptTokenUsage {
   completion_tokens: number | undefined;
@@ -40,7 +41,8 @@ export type ProviderType =
   | "cohere"
   | "huggingface"
   | "ollama"
-  | "gemini";
+  | "gemini"
+  | "perplexity";
 
 // non-streaming, single, system-prompt completion with any LLM
 export const systemPrompt = async (
@@ -111,6 +113,25 @@ export const systemPrompt = async (
             {
               role: "user",
               parts: [{ text: promptText }],
+            },
+          ],
+        },
+        apiOptions,
+      );
+    }
+    case "perplexity": {
+      return perplexityPrompt(
+        {
+          ...(promptOptions as ChatParams),
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are artificial intelligence assistant for fact-checking. You must base any verdict on evidence and the scientific method of reasoning, hence reason deductively. You need to respond in JSON format only. Example: { sources: [''], claim: 'Earth is flat.', verdict: false, explanation: '' }",
+            },
+            {
+              role: "user",
+              content: `Claim: ${promptText}`,
             },
           ],
         },
