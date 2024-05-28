@@ -1,3 +1,26 @@
+# 0.0.0-increment-1.1.4 (2024-05-28)
+
+### Features
+
+* added perplexity AI support for online fact-checking ([cdac3cc](https://github.com/kyr0/ftr-ki-tools/commit/cdac3cc72899effd8406cfcca417bfff8c1b78b0))
+* browser compatibility reset CSS ([2b205fd](https://github.com/kyr0/ftr-ki-tools/commit/2b205fd716c548b54412d625634e0e7e852ae653))
+* debug code for scripts ([afb5ba9](https://github.com/kyr0/ftr-ki-tools/commit/afb5ba91971fb84a2bc03fff43cfcdd0b5a78057))
+* i18n support with EN and DE, plus language switcher ([4a7d1ad](https://github.com/kyr0/ftr-ki-tools/commit/4a7d1ad67cd4eadecaf2a8c13f39e7821f21a786))
+* scarping using ZenRows ([cb300b0](https://github.com/kyr0/ftr-ki-tools/commit/cb300b0d1d87d445efff4b602c9216ae8a48c6ec))
+* scraping algorithm with auto-correlation for most relevant content ([ffe1d33](https://github.com/kyr0/ftr-ki-tools/commit/ffe1d335ad0a43244fdf775e22840ddb85e91cac))
+
+### Experimental/Research
+
+* Integrated and tested 5 different WYSIWYG editors ([
+e6472b7
+ ](https://github.com/kyr0/redaktool/commit/e6472b7fb70f379f461bc17c331370f63dfa1a80)):
+- Tried Milkdown/CodeMirror (quality issues, complexity) [Markdown]
+- Tried CKEditor (license issue) [HTML]
+- Tried TinyMCE (license issue from 7+ on) [HTML]
+- Tried Quill (BSD Clause, MIT compatible, commercially usable) [HTML], issues with selection in ShadowDOM
+- Tried Slate, MIT licensed,
+- Finally found Plate, based on Slate and compatible with Tailwind and Shadcn
+
 # 0.0.0-increment-1.1.3 (2024-05-21)
 
 ### Documentation
