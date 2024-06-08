@@ -18,7 +18,7 @@ export function AiModelDropdown() {
       <DropdownMenuTrigger asChild>
         <Button variant="outline">OpenAI: GPT-4o</Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
+      <DropdownMenuContent className="w-56 ab-z-[2147483646]">
         <DropdownMenuItem>
           <span>Gemini Pro</span>
         </DropdownMenuItem>
@@ -32,8 +32,8 @@ export function AiModelDropdown() {
             <DropdownMenuSubTrigger>
               <span>HuggingFace</span>
             </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
+            <DropdownMenuPortal container={window.__ftrShadowRoot}>
+              <DropdownMenuSubContent className="ab-z-[2147483647]">
                 <DropdownMenuItem>
                   <span>OpenChat 3.5 (Mistral)</span>
                 </DropdownMenuItem>

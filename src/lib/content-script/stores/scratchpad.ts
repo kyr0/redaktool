@@ -18,6 +18,10 @@ export const scratchpadEditorPlaceholderMarkdown = `# RedakTool
 * KI-**Formulierungshilfe**, die den **menschlichen Touch** und den **eigenen Stil** simuliert.&#x20;
 * KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.
 
+|    |    |    |    |
+| :- | :- | :- | :- |
+|    |    |    |    |
+|    |    |    |    |
 `;
 
 export const scratchpadEditorContentAtom = atom<string>(

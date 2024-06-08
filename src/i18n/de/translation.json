@@ -1,4 +1,14 @@
 {
-  "productName": "RedakTool DE",
-  "language": "DE"
+  "productName": "RedakTool",
+  "language": "DE",
+  "module_source": "Content-Extraktion",
+  "module_translation": "Übersetzung",
+  "module_summary": "Zusammenfasstung",
+  "module_factcheck": "Faktencheck",
+  "module_rewrite": "Lektorat",
+  "module_radar": "News-Radar",
+  "module_scratchpad": "Notizblock",
+  "module_archive": "Archiv",
+  "module_transcription": "Transkription",
+  "module_settings": "Einstellungen"
 }

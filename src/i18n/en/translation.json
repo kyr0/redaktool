@@ -1,4 +1,14 @@
 {
-  "productName": "RedakTool EN",
-  "language": "EN"
+  "productName": "RedakTool",
+  "language": "EN",
+  "module_source": "Content Extraction",
+  "module_translation": "Translation",
+  "module_summary": "Summary",
+  "module_factcheck": "Fact Check",
+  "module_rewrite": "Copy Editing",
+  "module_radar": "News Radar",
+  "module_scratchpad": "Scratchpad",
+  "module_archive": "Archive",
+  "module_transcription": "Transcription",
+  "module_settings": "Settings"
 }

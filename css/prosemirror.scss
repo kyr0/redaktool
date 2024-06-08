@@ -209,3 +209,101 @@ img.ProseMirror-separator{
 .milkdown-theme-nord.prose br[data-is-inline=true],.milkdown-theme-nord.prose br[data-is-inline=true]:after{
   content:" "
 }
+
+.ProseMirror * {
+  font-family: 'Ghost', sans-serif !important; /* Consistent font for readability */
+  line-height: 1.75rem !important; /* Spacing for readability */
+  font-size: 1rem !important; /* Standard font size */
+}
+
+/* Basic Reset for .ProseMirror */
+.ProseMirror {
+  padding: 1rem !important;
+}
+
+/* Headings */
+.ProseMirror h1 {
+  font-size: 2.25rem !important; /* 36px */
+  margin: 1.5rem 0 1rem !important;
+}
+
+.ProseMirror h2 {
+  font-size: 1.75rem !important; /* 28px */
+  margin: 1.25rem 0 1rem !important;
+}
+
+.ProseMirror h3 {
+  font-size: 1.5rem !important; /* 24px */
+  margin: 1rem 0 1rem !important;
+}
+
+.ProseMirror h4 {
+  font-size: 1.25rem !important; /* 20px */
+  margin: 0.75rem 0 1rem !important;
+}
+
+.ProseMirror h5 {
+  font-size: 1.125rem !important; /* 18px */
+  margin: 0.5rem 0 !important;
+}
+
+.ProseMirror h6 {
+  font-size: 1rem !important; /* 16px */
+  margin: 0.25rem 0 !important;
+}
+
+/* Paragraphs */
+.ProseMirror p {
+  line-height: 1.1rem !important;
+}
+
+/* Links */
+.ProseMirror a {
+  color: #0066cc !important;
+  text-decoration: none !important;
+}
+
+.ProseMirror a:hover, .ProseMirror a:focus {
+  text-decoration: underline !important;
+}
+
+/* Lists */
+.ProseMirror ul, .ProseMirror ol {
+  margin: 0 0 1rem 2rem !important; /* Standard list styling */
+  padding-left: 0 !important;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Blockquotes */
+.ProseMirror blockquote {
+  font-family: serif !important;
+  font-style: italic !important;
+  border-left: 4px solid #ccc !important;
+  padding-left: 1rem !important;
+  margin: 1rem 0 !important;
+}
+
+/* Code and Preformatted Text */
+.ProseMirror code {
+  font-family: 'Courier New', monospace !important;
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 3px !important;
+  font-size: 0.875rem !important;
+}
+
+.ProseMirror pre {
+  font-family: 'Courier New', monospace !important;
+  padding: 1rem !important;
+  overflow: auto !important;
+  margin: 1rem 0 !important;
+}
+
+/* Images */
+.ProseMirror img {
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 1rem 0 !important;
+}

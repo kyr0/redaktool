@@ -22,5 +22,9 @@ export const safeDisplayPosition = (position: { x: number; y: number }) => {
   if (y < 0) {
     y = 0;
   }
+
+  if (x < 0) {
+    x = 0;
+  }
   return { x, y };
 };

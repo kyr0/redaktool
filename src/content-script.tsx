@@ -44,7 +44,7 @@ class FtrElement extends HTMLElement {
                     font-display: swap;
                 }
             </style>
-            <div class="lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483646]" id="ftr_root"></div>`;
+            <div class="lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483640]" id="ftr_root"></div>`;
     }
   }
 
@@ -73,7 +73,11 @@ class FtrElement extends HTMLElement {
   connectedCallback() {
     (async () => {
       if (this.shadowRoot) {
-        const root = createRoot(this.shadowRoot.getElementById("ftr_root")!);
+        // @ts-ignore
+        window.__ftrShadowRoot = this.shadowRoot.getElementById("ftr_root")!;
+
+        // @ts-ignore
+        const root = createRoot(window.__ftrShadowRoot);
         this.toggleStyleElement(
           (await isDarkModeEnabledInPrefs()) ? "dark" : "light",
         );
@@ -131,9 +135,10 @@ function init() {
   const ftrRoot = document.createElement("ftr-root");
   ftrRoot.setAttribute(
     "style",
-    "display:flex; position: absolute; z-index: 2147483646",
+    "display:flex; position: absolute; z-index: 2147483640",
   );
   document.body.appendChild(ftrRoot);
+
   /*
     const bodyPortal = document.createElement('div');
     bodyPortal.setAttribute('class', 'lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483646]');

@@ -52,7 +52,7 @@
   }
   .ab-ftr-active-menu-item {
     @apply ab-bg-slate-700  !important;
-    @apply ab-text-white;
+    @apply ab-text-white !important;
     @apply ab-pt-1;
     @apply ab-pb-1;
     @apply ab-rounded-sm;

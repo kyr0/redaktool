@@ -35,6 +35,16 @@ import {
 import "../i18n/config";
 import { useTranslation, Trans } from "react-i18next";
 import { Logo } from "./Logo";
+import { cloneAndFilterNode } from "../lib/content-script/dom";
+
+export type ZoomOptions =
+  | "ab-scale-75"
+  | "ab-scale-90"
+  | "ab-scale-95"
+  | "ab-scale-100"
+  | "ab-scale-105"
+  | "ab-scale-110"
+  | "ab-scale-125";
 
 export const AppModal: React.FC<any> = ({ children }) => {
   // disabled text selection magic ;)
@@ -52,6 +62,8 @@ export const AppModal: React.FC<any> = ({ children }) => {
   const [positioningClasses, setPositioningClasses] = useState<string>(
     "ab-fixed ab-left-[100px] ab-top-[100px]",
   );
+
+  const [zoomClasses, setZoomClasses] = useState<ZoomOptions>("ab-scale-100");
   const storedSize = storedDialogSizePref.get();
 
   const dialogRef = useDraggable(
@@ -73,6 +85,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
     setDarkMode(!isDarkModeEnabled);
   }, []);
 
+  // language switch
   const onChangeLanguageButtonClick = useCallback(() => {
     console.log("change language button clicked");
 
@@ -86,6 +99,12 @@ export const AppModal: React.FC<any> = ({ children }) => {
   const selectionGuaranteed$ = getSelectionGuaranteedStore();
 
   const activateElementSelection = useElementSelector((element) => {
+    if (element.querySelector("body")) {
+      element = element.querySelector("body")!;
+    }
+
+    element = cloneAndFilterNode(element) as HTMLElement;
+
     // set the markdown content to the selected element
     scratchpadEditorContentAtom.set(turndown(element.innerHTML));
     setShowDialog(true);
@@ -136,9 +155,21 @@ export const AppModal: React.FC<any> = ({ children }) => {
 
   // open with Control + f or alt + f
   useKeystroke("f", () => {
+    console.log("pressed f to open");
     setShowOpenButton(false);
     setShowDialog(true);
   });
+
+  // safe mode open with Control + s or alt + s
+  useKeystroke("s", () => {
+    storedDialogPositionPref.set({ x: window.scrollX, y: window.scrollY });
+    setShowOpenButton(false);
+    setShowDialog(true);
+  });
+
+  useEffect(() => {
+    console.log("positioning classes changed", positioningClasses);
+  }, [positioningClasses]);
 
   useEffect(() => {
     document.addEventListener("OpenFTRTools", (event) => {
@@ -152,8 +183,10 @@ export const AppModal: React.FC<any> = ({ children }) => {
     <Dialog
       open={showDialog}
       onOpenChange={(open) => {
+        console.log("open changed", open);
         setShowDialog(open);
         if (open) {
+          console.log("open changed to true");
           setShowOpenButton(false);
         }
       }}
@@ -166,13 +199,13 @@ export const AppModal: React.FC<any> = ({ children }) => {
       <DialogContent
         ref={dialogRef as any}
         showOverlay={false}
-        wrapperClassName={`${positioningClasses} ab-ftr-bg-contrast ab-z-[2147483647] ab-opacity-95 ab-rounded-sm ab-flex`}
+        wrapperClassName={`${positioningClasses} ${zoomClasses} ab-ftr-bg-contrast ab-z-[2147483640] ab-rounded-sm ab-flex`}
         className="!ab-p-2 !ab-gap-0"
       >
-        <DialogHeader className="ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
+        <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
           <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
             <div className="ab-flex ab-flex-row ab-items-center ab-ml-2">
-              <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="Logo" />
+              <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
               {t("productName")}
             </div>
 

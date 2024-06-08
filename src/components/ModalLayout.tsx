@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   CalendarIcon,
   CogIcon,
   EditIcon,
@@ -27,7 +28,7 @@ import { ScratchpadLayout } from "./scratchpad/ScratchpadLayout";
 import { ArchiveLayout } from "./archive/ArchiveLayout";
 import { TranscriptionLayout } from "./transcription/TranscriptionLayout";
 import { SettingsLayout } from "./settings/SettingsLayout";
-import { StackIcon } from "@radix-ui/react-icons";
+import { useTranslation, Trans } from "react-i18next";
 
 export type ModuleNames =
   | "scratchpad"
@@ -39,6 +40,7 @@ export type ModuleNames =
 
 export const ModalLayout = () => {
   const [activeModule, setActiveModule] = useState<ModuleNames>("scratchpad");
+  const { t, i18n } = useTranslation();
 
   const onCommandSelect = (command: string) => {
     switch (command) {
@@ -63,6 +65,10 @@ export const ModalLayout = () => {
     }
   };
 
+  const onToggleMenu = () => {
+    setActiveModule(activeModule === "radar" ? "scratchpad" : "radar");
+  };
+
   return (
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel defaultSize={20} minSize={15}>
@@ -70,6 +76,17 @@ export const ModalLayout = () => {
           <Command>
             <CommandList>
               <CommandGroup>
+                <CommandItem
+                  value="nav"
+                  onSelect={onToggleMenu}
+                  className={"ab-ftr-active-menu-item"}
+                >
+                  <span>Navigation</span>
+                  <CommandShortcut className="ab-flex ab-flex-col ab-justify-end ab-items-center">
+                    <ArrowLeft className="ab-ml-2 ab-h-4 ab-w-4 ab-text-primary ab-shrink-0 ab-border-primary ab-border-spacing-4 ab-rounded-full ab-border-[1px]" />
+                  </CommandShortcut>
+                </CommandItem>
+                <CommandSeparator className="ab-mb-1" />
                 <CommandItem
                   value="radar"
                   onSelect={onCommandSelect}
@@ -80,7 +97,7 @@ export const ModalLayout = () => {
                   }
                 >
                   <RadarIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span>Themenfindung</span>
+                  <span>{t("module_radar")}</span>
                   <CommandShortcut>⌃R</CommandShortcut>
                 </CommandItem>
                 <CommandItem
@@ -93,21 +110,8 @@ export const ModalLayout = () => {
                   }
                 >
                   <EditIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span>Recherche</span>
+                  <span>{t("module_scratchpad")}</span>
                   <CommandShortcut>⌃S</CommandShortcut>
-                </CommandItem>
-                <CommandItem
-                  value="history"
-                  onSelect={onCommandSelect}
-                  className={
-                    activeModule === "history"
-                      ? "ab-ftr-active-menu-item"
-                      : "ab-ftr-menu-item"
-                  }
-                >
-                  <StackIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span>Verlauf</span>
-                  <CommandShortcut>⌃V</CommandShortcut>
                 </CommandItem>
                 <CommandItem
                   value="archive"
@@ -119,7 +123,7 @@ export const ModalLayout = () => {
                   }
                 >
                   <LibraryIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span>Archiv</span>
+                  <span>{t("module_archive")}</span>
                   <CommandShortcut>⌃A</CommandShortcut>
                 </CommandItem>
               </CommandGroup>
@@ -134,7 +138,7 @@ export const ModalLayout = () => {
                 }
               >
                 <MicIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                <span>Transkription</span>
+                <span>{t("module_transcription")}</span>
                 <CommandShortcut>⌃T</CommandShortcut>
               </CommandItem>
               <CommandSeparator className="ab-mt-1" />
@@ -149,7 +153,7 @@ export const ModalLayout = () => {
                   }
                 >
                   <CogIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span>Einstellungen</span>
+                  <span>{t("module_settings")}</span>
                 </CommandItem>
               </CommandGroup>
             </CommandList>
@@ -157,7 +161,7 @@ export const ModalLayout = () => {
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel defaultSize={80} minSize={60}>
+      <ResizablePanel defaultSize={80} minSize={60} className="ab-ml-2">
         {activeModule === "scratchpad" && <ScratchpadLayout />}
         {activeModule === "transcription" && <TranscriptionLayout />}
         {activeModule === "archive" && <ArchiveLayout />}

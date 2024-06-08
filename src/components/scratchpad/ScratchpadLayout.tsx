@@ -1,5 +1,6 @@
 import {
   ArrowRightCircle,
+  BookCheck,
   CalendarIcon,
   CogIcon,
   CompassIcon,
@@ -9,6 +10,7 @@ import {
   Minimize,
   Newspaper,
   PenToolIcon,
+  Scale,
   SendIcon,
   User2Icon,
 } from "lucide-react";
@@ -49,23 +51,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import { sendPrompt } from "../../lib/content-script/prompt";
 import { AiModelDropdown } from "../AiModelDropdown";
-import { set } from "react-hook-form";
-import { Input } from "../../ui/input";
+import { useTranslation, Trans } from "react-i18next";
+import { ListBulletIcon } from "@radix-ui/react-icons";
 
 export type ToolNames =
-  | "translate"
-  | "summarize"
+  | "source"
+  | "translation"
+  | "summary"
   | "fact-check"
-  | "rewrite"
-  | "voice-over"
-  | "humanize";
+  | "rewrite";
 
 export const ScratchpadLayout = () => {
-  const [activeView, setActiveView] = useState<"source" | "translation">(
-    "source",
-  );
+  const { t, i18n } = useTranslation();
+  const [activeView, setActiveView] = useState<ToolNames>("source");
   const [activeAiToolModule, setActiveAiToolModule] =
-    useState<ToolNames>("translate");
+    useState<ToolNames>("translation");
   const [prompt, setPrompt] = useState<Prompt>({
     text: "",
     encoded: [],
@@ -122,7 +122,7 @@ export const ScratchpadLayout = () => {
   useEffect(() => {
     console.log("activeAiToolModule", activeAiToolModule);
     switch (activeAiToolModule as ToolNames) {
-      case "translate":
+      case "translation":
         setPrompt(
           generatePrompt("translation", {
             AUDIENCE: "news reader",
@@ -165,75 +165,69 @@ export const ScratchpadLayout = () => {
       <ResizablePanel
         defaultSize={65}
         minSize={60}
-        className="!ab-overflow-y-scroll"
+        className="!ab-overflow-hidden"
       >
         {/*<Input defaultValue={"Unbenannt"} className="ab-m-2 ab-space-x-1" />*/}
         <Tabs
           defaultValue={activeView}
           value={activeView}
           orientation="vertical"
-          className="ab-p-0 ab-m-0 ab-text-sm ab-h-full"
+          className="ab-p-0 ab-m-0 ab-text-sm ab-h-full ab-flex ab-flex-col ab-items-stretch"
         >
-          <TabsList className="ab-m-0">
+          <TabsList className="-ab-pt-1 ab-h-12 !ab-justify-start !ab-min-h-12 ab-items-stretch">
             <TabsTrigger
               value="source"
               onClick={() => setActiveView("source")}
-              className={`!ab-text-[12px] ${
+              className={`!ab-pt-0 !ab-max-h-9 !ab-text-md ${
                 activeView === "source"
                   ? "ab-ftr-active-menu-item"
                   : "ab-ftr-menu-item"
               }`}
             >
-              <Newspaper className="ab-w-3 ab-h-5 ab-shrink-0 ab-mr-1" />{" "}
-              Content-Editor{" "}
-              <ArrowRightCircle className="ab-w-3 ab-h-5 ab-shrink-0 ab-mr-1 ab-ml-1" />
+              <Newspaper className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_source")}
             </TabsTrigger>
             <TabsTrigger
               onClick={() => setActiveView("translation")}
               value="translation"
-              className={`!ab-text-[12px] ${
+              className={`!ab-pt-0 !ab-max-h-9 !ab-text-md  ${
                 activeView === "translation"
                   ? "ab-ftr-active-menu-item"
                   : "ab-ftr-menu-item"
               }`}
             >
-              <Languages className="ab-w-3 ab-h-3 ab-shrink-0 ab-mr-1" />{" "}
-              Übersetzt
+              <Languages className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_translation")}
             </TabsTrigger>
             <TabsTrigger
               disabled
               value="summary"
-              className="!ab-text-[12px] ab-opacity-45"
+              className="!ab-pt-0 !ab-max-h-9 !ab-text-md "
             >
-              <CompassIcon className="ab-w-3 ab-h-3 ab-shrink-0 ab-mr-1" />{" "}
-              Zusammengefasst
+              <ListBulletIcon className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_summary")}
             </TabsTrigger>
             <TabsTrigger
               disabled
-              value="evidence-findings"
-              className="!ab-text-[12px] ab-opacity-45"
+              value="fact-check"
+              className="!ab-pt-0 !ab-max-h-9 !ab-text-md"
             >
-              <List className="ab-w-3 ab-h-3 ab-shrink-0 ab-mr-1" />{" "}
-              Fakten-gecheckt
+              <Scale className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_factcheck")}
             </TabsTrigger>
             <TabsTrigger
               disabled
               value="rewrite"
-              className="!ab-text-[12px] ab-opacity-45"
+              className="!ab-pt-0 !ab-max-h-9 !ab-text-md "
             >
-              <PenToolIcon className="ab-w-3 ab-h-3 ab-shrink-0 ab-mr-1" />{" "}
-              Neuformuliert
-            </TabsTrigger>
-            <TabsTrigger
-              disabled
-              value="humanized"
-              className="!ab-text-[12px] ab-opacity-45"
-            >
-              <PenToolIcon className="ab-w-3 ab-h-3 ab-shrink-0 ab-mr-1" />{" "}
-              Humanisiert
+              <BookCheck className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_rewrite")}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="source" className="ab-m-0 ab-h-full">
+          <TabsContent
+            value="source"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+          >
             <MarkdownEditor
               defaultValue={scratchpadEditorContent$}
               placeholder={scratchpadEditorPlaceholderMarkdown}
@@ -242,7 +236,10 @@ export const ScratchpadLayout = () => {
               onChange={onMarkdownChange}
             />
           </TabsContent>
-          <TabsContent value="translation">
+          <TabsContent
+            value="translation"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+          >
             <MarkdownEditor
               defaultValue={translationEditorContent$}
               placeholder={""}
@@ -251,9 +248,24 @@ export const ScratchpadLayout = () => {
               onChange={() => {}}
             />
           </TabsContent>
-          <TabsContent value="summary">TODO</TabsContent>
-          <TabsContent value="evidence-findings">TODO</TabsContent>
-          <TabsContent value="rewrite">TODO</TabsContent>
+          <TabsContent
+            value="summary"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+          >
+            TODO
+          </TabsContent>
+          <TabsContent
+            value="fact-check"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+          >
+            TODO
+          </TabsContent>
+          <TabsContent
+            value="rewrite"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+          >
+            TODO
+          </TabsContent>
         </Tabs>
       </ResizablePanel>
       <VerticalResizeHandle />
@@ -270,10 +282,10 @@ export const ScratchpadLayout = () => {
                 <CommandList>
                   <CommandGroup>
                     <CommandItem
-                      value="translate"
+                      value="translation"
                       onSelect={onSetActiveAiToolModule}
                       className={
-                        activeAiToolModule === "translate"
+                        activeAiToolModule === "translation"
                           ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
@@ -283,10 +295,10 @@ export const ScratchpadLayout = () => {
                       <CommandShortcut>⌃T</CommandShortcut>
                     </CommandItem>
                     <CommandItem
-                      value="summarize"
+                      value="summary"
                       onSelect={onSetActiveAiToolModule}
                       className={
-                        activeAiToolModule === "summarize"
+                        activeAiToolModule === "summary"
                           ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item"
                       }
@@ -304,7 +316,7 @@ export const ScratchpadLayout = () => {
                           : "ab-ftr-menu-item"
                       }
                     >
-                      <List className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
+                      <List className="ab-mr-2 ab-h-5 ab-w-5 ab-shrink-0" />
                       <span>Fakten-Check</span>
                       <CommandShortcut>⌃C</CommandShortcut>
                     </CommandItem>
@@ -320,35 +332,6 @@ export const ScratchpadLayout = () => {
                       <PenToolIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
                       <span>Neu formulieren</span>
                       <CommandShortcut>⌃N</CommandShortcut>
-                    </CommandItem>
-                    <CommandItem
-                      value="humanize"
-                      onSelect={onSetActiveAiToolModule}
-                      className={
-                        activeAiToolModule === "humanize"
-                          ? "ab-ftr-active-menu-item"
-                          : "ab-ftr-menu-item"
-                      }
-                    >
-                      <User2Icon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                      <span>Humanisieren</span>
-                      <CommandShortcut>⌃H</CommandShortcut>
-                    </CommandItem>
-                  </CommandGroup>
-                  <CommandSeparator />
-                  <CommandGroup>
-                    <CommandItem
-                      value="voice-over"
-                      onSelect={onSetActiveAiToolModule}
-                      className={
-                        activeAiToolModule === "voice-over"
-                          ? "ab-ftr-active-menu-item"
-                          : "ab-ftr-menu-item"
-                      }
-                    >
-                      <Mic className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
-                      <span>Voice-over</span>
-                      <CommandShortcut>⌃V</CommandShortcut>
                     </CommandItem>
                   </CommandGroup>
                 </CommandList>

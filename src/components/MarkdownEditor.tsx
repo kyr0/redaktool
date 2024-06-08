@@ -7,7 +7,11 @@ import {
   rootAttrsCtx,
   SchemaReady,
 } from "@milkdown/core";
-import { createSlice, type MilkdownPlugin } from "@milkdown/ctx";
+import {
+  createSlice,
+  type MilkdownPlugin,
+  type Telemetry,
+} from "@milkdown/ctx";
 import { blockquoteSchema, headingSchema } from "@milkdown/preset-commonmark";
 import { $command, callCommand } from "@milkdown/utils";
 import { setBlockType, wrapIn } from "@milkdown/prose/commands";
@@ -62,11 +66,14 @@ import {
   ProsemirrorAdapterProvider,
   usePluginViewContext,
   usePluginViewFactory,
+  useWidgetViewFactory,
 } from "@prosemirror-adapter/react";
 import { atom } from "nanostores";
 import { useStore } from "@nanostores/react";
 import { insertTextPlugin } from "./scratchpad/plugin/InsertText";
 import { selectEditorContent } from "../lib/content-script/clipboard";
+import { Separator } from "../ui/separator";
+import { linkPlugin } from "./editor/LinkWidget";
 //import { SlashView, slash } from './scratchpad/plugin/Slash';
 
 export interface MilkdownInternalProps {
@@ -95,7 +102,7 @@ const wrapInHeadingCommand = $command(
 const ToolbarButton = ({ onClick, title, children, className }: any) => (
   <Button
     onClick={onClick}
-    className={`ab-h-[30px] ab-w-[30px] ab-p-1 ab-m-1 ${className}`}
+    className={`ab-h-10 ab-w-10 ab-shrink-0 ab-m-1 !ab-p-0 ${className}`}
     variant={"ghost"}
     title={title}
   >
@@ -113,12 +120,31 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
   placeholder,
   onChange,
 }: MarkdownEditorProps) => {
-  //const pluginViewFactory = usePluginViewFactory();
   const { view, prevState } = usePluginViewContext();
+
+  const pluginViewFactory = usePluginViewFactory();
+  const widgetViewFactory = useWidgetViewFactory();
+
+  useEffect(() => {
+    if (view) {
+      console.log("view", view.dom);
+    }
+  }, [view]);
 
   const { get, loading } = useEditor(
     (root) => {
       const editor = Editor.make()
+        .enableInspector()
+        .onStatusChange((status) => {
+          if (status === "Created") {
+            if (root) {
+              // disable native spellcheck
+              const editorEl = root.querySelector(".ProseMirror");
+              editorEl?.setAttribute("spellcheck", "false");
+            }
+          }
+          console.log("editor status change", status);
+        })
         .config((ctx) => {
           ctx.set(rootCtx, root);
           ctx.set(defaultValueCtx, defaultValue);
@@ -138,7 +164,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           ctx.update(editorViewOptionsCtx, (prev) => ({
             ...prev,
             attributes: {
-              class: "ab-outline-none ab-h-full ab-overflow-scroll",
+              class: "ab-outline-none ab-h-full !ab-overflow-scroll",
             },
           }));
 
@@ -159,6 +185,9 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
               onChange(markdown);
             }
           });
+
+          const telemetry: Telemetry[] = editor.inspect();
+          console.log("telemetry", telemetry);
         })
         .config(nord)
         //.use(slash)
@@ -167,6 +196,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
         .use(placeholderPlugin)
         .use(wrapInBlockquoteCommand)
         .use(wrapInHeadingCommand)
+        .use(linkPlugin(widgetViewFactory))
         .use(commonmark)
         .use(gfm)
         .use(clipboard)
@@ -185,6 +215,11 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
     [onChange, placeholder],
   );
 
+  useEffect(() => {
+    if (!get()) return;
+    console.log("editor get()", get());
+  }, [get]);
+
   const runCommand = (command: any) => {
     if (!get()) return;
     get()!.action((ctx) => {
@@ -195,12 +230,13 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
   return (
     <div className="ab-relative ab-w-full ab-h-full">
       {showToolbar && (
-        <div className="ab-flex ab-m-1 ab-h-[30px] ab-mt-1 ab-sticky ab-top-0 ab-left-0 ab-w-full ab-z-40  ab-items-start ab-justify-start">
+        <div className="ab-flex ab-p-0 ab-m-0 ab-pl-1 ab-pr-1 ab-h-10 ab-sticky ab-top-0 ab-left-0 ab-w-full ab-z-40 ab-items-start ab-justify-start ab-ftr-active-menu-item">
           <ToolbarButton
             onClick={() => get()!.action(callCommand(wrapInHeadingCommand.key))}
+            className="ab-p-0"
             title="H1/Normal"
           >
-            <Heading1 className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Heading1 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
@@ -208,7 +244,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
             title="H2/Normal"
           >
-            <Heading2 className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Heading2 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
@@ -216,7 +252,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
             title="H2/Normal"
           >
-            <Heading3 className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Heading3 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
@@ -224,7 +260,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
             title="H2/Normal"
           >
-            <Heading4 className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Heading4 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
@@ -232,7 +268,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
             title="H2/Normal"
           >
-            <Heading5 className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Heading5 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
@@ -240,49 +276,57 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
             title="H2/Normal"
           >
-            <Heading6 className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Heading6 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
+          <Separator
+            orientation="vertical"
+            className="!ab-w-1 !ab-h-8 !ab-m-1"
+          />
           <ToolbarButton
             onClick={() => runCommand(toggleEmphasisCommand)}
             title="Italic/Normal"
           >
-            <ItalicIcon className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <ItalicIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(toggleStrongCommand)}
             title="Bold/Normal"
           >
-            <BoldIcon className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <BoldIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(toggleStrikethroughCommand)}
-            title="Bold/Normal"
+            title="Strikethrough/Normal"
           >
-            <Strikethrough className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Strikethrough className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
+          <Separator
+            orientation="vertical"
+            className="!ab-w-1 !ab-h-8 !ab-m-1"
+          />
           <ToolbarButton
             onClick={() => runCommand(toggleLinkCommand)}
             title="Link/Unlink"
           >
-            <LinkIcon className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <LinkIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(toggleInlineCodeCommand)}
             title="Code/Normal"
           >
-            <CodeIcon className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <CodeIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(insertHrCommand)}
             title="Horizontal line/Normal"
           >
-            <Ruler className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Ruler className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(insertTableCommand)}
-            title="Horizontal line/Normal"
+            title="Table"
           >
-            <Table className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <Table className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
 
           <ToolbarButton
@@ -291,7 +335,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
             title="Blockquote/Normal"
           >
-            <QuoteIcon className="ab-shrink-0 ab-w-4 ab-h-4" />
+            <QuoteIcon className="ab-shrink-0 !ab-w-6 !ab-h-6" />
           </ToolbarButton>
         </div>
       )}

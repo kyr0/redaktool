@@ -9,13 +9,17 @@ export const ArchiveLayout = () => {
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel defaultSize={20} minSize={10}>
         <div className="ab-flex ab-h-full ab-items-center ab-justify-center ab-p-2">
-          <span className="ab-font-semibold">Dokumente</span>
+          <span className="ab-font-semibold">
+            TODO: Document stash with vector search (Milestone 2, Month 4)
+          </span>
         </div>
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize={80} minSize={60}>
         <div className="ab-flex ab-h-full ab-items-center ab-justify-center ab-p-2">
-          <span className="ab-font-semibold">Editor (TODO)</span>
+          <span className="ab-font-semibold">
+            TODO: Read-only editor (with export options)
+          </span>
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
