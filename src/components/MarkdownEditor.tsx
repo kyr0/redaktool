@@ -285,7 +285,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           </ToolbarButton>
           <Separator
             orientation="vertical"
-            className="!ab-w-1 !ab-h-8 !ab-m-1"
+            className="!ab-w-1 !ab-h-6 !ab-m-1"
           />
           <ToolbarButton
             onClick={() => runCommand(toggleEmphasisCommand)}
@@ -310,7 +310,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           </ToolbarButton>
           <Separator
             orientation="vertical"
-            className="!ab-w-1 !ab-h-8 !ab-m-1"
+            className="!ab-w-1 !ab-h-6 !ab-m-1"
           />
           <ToolbarButton
             onClick={() => runCommand(toggleLinkCommand)}
