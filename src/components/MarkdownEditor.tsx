@@ -230,53 +230,58 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
   return (
     <div className="ab-relative ab-w-full ab-h-full">
       {showToolbar && (
-        <div className="ab-flex ab-p-0 ab-m-0 ab-pl-1 ab-pr-1 ab-h-10 ab-sticky ab-top-0 ab-left-0 ab-w-full ab-z-40 ab-items-start ab-justify-start ab-ftr-active-menu-item">
+        <div className="ab-flex ab-m-0 ab-p-1 ab-h-10 ab-sticky ab-top-0 ab-left-0 ab-w-full ab-z-40 ab-items-start ab-justify-start ab-ftr-active-menu-item">
           <ToolbarButton
             onClick={() => get()!.action(callCommand(wrapInHeadingCommand.key))}
-            className="ab-p-0"
+            className="ab-p-0 ab-h-8"
             title="H1/Normal"
           >
-            <Heading1 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <Heading1 className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
               get()!.action(callCommand(wrapInHeadingCommand.key, 2))
             }
+            className="ab-p-0 ab-h-8"
             title="H2/Normal"
           >
-            <Heading2 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <Heading2 className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
               get()!.action(callCommand(wrapInHeadingCommand.key, 3))
             }
-            title="H2/Normal"
+            className="ab-p-0 ab-h-8"
+            title="H3/Normal"
           >
-            <Heading3 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <Heading3 className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
               get()!.action(callCommand(wrapInHeadingCommand.key, 4))
             }
-            title="H2/Normal"
+            className="ab-p-0 ab-h-8"
+            title="H4/Normal"
           >
-            <Heading4 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <Heading4 className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
               get()!.action(callCommand(wrapInHeadingCommand.key, 5))
             }
-            title="H2/Normal"
+            className="ab-p-0 ab-h-8"
+            title="H5/Normal"
           >
-            <Heading5 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <Heading5 className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() =>
               get()!.action(callCommand(wrapInHeadingCommand.key, 6))
             }
-            title="H2/Normal"
+            className="ab-p-0 ab-h-8"
+            title="H6/Normal"
           >
-            <Heading6 className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <Heading6 className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <Separator
             orientation="vertical"
@@ -284,18 +289,21 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           />
           <ToolbarButton
             onClick={() => runCommand(toggleEmphasisCommand)}
+            className="ab-p-0 ab-h-8"
             title="Italic/Normal"
           >
             <ItalicIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(toggleStrongCommand)}
+            className="ab-p-0 ab-h-8"
             title="Bold/Normal"
           >
             <BoldIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(toggleStrikethroughCommand)}
+            className="ab-p-0 ab-h-8"
             title="Strikethrough/Normal"
           >
             <Strikethrough className="ab-shrink-0 !ab-w-5 !ab-h-5" />
@@ -306,36 +314,41 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           />
           <ToolbarButton
             onClick={() => runCommand(toggleLinkCommand)}
+            className="ab-p-0 ab-h-8"
             title="Link/Unlink"
           >
-            <LinkIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
+            <LinkIcon className="ab-shrink-0 !ab-w-4 !ab-h-4" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(toggleInlineCodeCommand)}
+            className="ab-p-0 ab-h-8"
             title="Code/Normal"
           >
-            <CodeIcon className="ab-shrink-0 !ab-w-5 !ab-h-5" />
+            <CodeIcon className="ab-shrink-0 !ab-w-4 !ab-h-4" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(insertHrCommand)}
+            className="ab-p-0 ab-h-8"
             title="Horizontal line/Normal"
           >
-            <Ruler className="ab-shrink-0 !ab-w-5 !ab-h-5" />
+            <Ruler className="ab-shrink-0 !ab-w-4 !ab-h-4" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => runCommand(insertTableCommand)}
+            className="ab-p-0 ab-h-8"
             title="Table"
           >
-            <Table className="ab-shrink-0 !ab-w-5 !ab-h-5" />
+            <Table className="ab-shrink-0 !ab-w-4 !ab-h-4" />
           </ToolbarButton>
 
           <ToolbarButton
             onClick={() =>
               get()!.action(callCommand(wrapInBlockquoteCommand.key))
             }
+            className="ab-p-0 ab-h-8"
             title="Blockquote/Normal"
           >
-            <QuoteIcon className="ab-shrink-0 !ab-w-6 !ab-h-6" />
+            <QuoteIcon className="ab-shrink-0 !ab-w-4 !ab-h-4" />
           </ToolbarButton>
         </div>
       )}
