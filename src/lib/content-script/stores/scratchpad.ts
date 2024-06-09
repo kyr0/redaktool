@@ -11,7 +11,7 @@ export const scratchpadEditorPlaceholderMarkdown = `# RedakTool
 
 
 
-* Texte, Bilder und Tabellen mit Formatierung **extrahieren** und **archivieren **(Markdown).
+* Texte, Bilder und Tabellen mit Formatierung **extrahieren** und **archivieren** (Markdown).
 * KI-**Übersetzung**, die Metaphern versteht, den Sprachstil und die Zielgruppe berücksichtigt.
 * KI-**Zusammenfassung**, die wahlweise nach **Bedeutung** oder **Chronologie** arbeitet (Interviews).
 * KI-**Faktencheck**, der erstaunlich **wenig halluziniert**.
