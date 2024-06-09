@@ -36,15 +36,7 @@ import "../i18n/config";
 import { useTranslation, Trans } from "react-i18next";
 import { Logo } from "./Logo";
 import { cloneAndFilterNode } from "../lib/content-script/dom";
-
-export type ZoomOptions =
-  | "ab-scale-75"
-  | "ab-scale-90"
-  | "ab-scale-95"
-  | "ab-scale-100"
-  | "ab-scale-105"
-  | "ab-scale-110"
-  | "ab-scale-125";
+import { ZoomFactorDropdown, type ZoomOptions } from "./ZoomFactor";
 
 export const AppModal: React.FC<any> = ({ children }) => {
   // disabled text selection magic ;)
@@ -59,18 +51,42 @@ export const AppModal: React.FC<any> = ({ children }) => {
     w: 1024,
     h: 768,
   });
+  const zoomFactor = prefPerPage<any>("zoom_factor", "ab-scale-100");
+
   const [positioningClasses, setPositioningClasses] = useState<string>(
     "ab-fixed ab-left-[100px] ab-top-[100px]",
   );
 
-  const [zoomClasses, setZoomClasses] = useState<ZoomOptions>("ab-scale-100");
+  const [zoomClasses, setZoomClasses] = useState<ZoomOptions>();
+
+  useEffect(() => {
+    setZoomClasses(zoomFactor.get());
+  }, []);
+
+  useEffect(() => {
+    if (!dialogRef.current) return;
+    if (
+      !zoomClasses ||
+      typeof zoomClasses !== "string" ||
+      zoomClasses.split("-").length !== 3
+    )
+      return;
+
+    const scale = Number.parseInt(zoomClasses.split("-")[2], 10) / 100;
+    dialogRef.current.style.setProperty(
+      "transform",
+      `scale(${scale.toString()})`,
+    );
+    dialogRef.current.style.setProperty("transform-origin", "top left");
+  }, [zoomClasses]);
+
   const storedSize = storedDialogSizePref.get();
 
   const dialogRef = useDraggable(
     safeDisplayPosition(storedDialogPositionPref.get()),
     (x: number, y: number) => {
       storedDialogPositionPref.set({ x, y });
-      setPositioningClasses("ab-fixed ab-transform-none");
+      setPositioningClasses("ab-fixed");
     },
     { startCentered: false, handleSelector: ".ab-dialog-drag-handle" },
   );
@@ -165,12 +181,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
   });
 
   useEffect(() => {
-    console.log("positioning classes changed", positioningClasses);
-  }, [positioningClasses]);
-
-  useEffect(() => {
     document.addEventListener("OpenFTRTools", (event) => {
-      console.log("Received in ISOLATED world: open!");
       setShowOpenButton(false);
       setShowDialog(true);
     });
@@ -196,7 +207,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
       <DialogContent
         ref={dialogRef as any}
         showOverlay={false}
-        wrapperClassName={`${positioningClasses} ${zoomClasses} ab-ftr-bg-contrast ab-z-[2147483640] ab-rounded-sm ab-flex`}
+        wrapperClassName={`${positioningClasses} ab-ftr-bg-contrast ab-z-[2147483640] ab-rounded-sm ab-flex`}
         className="!ab-p-2 !ab-gap-0"
       >
         <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
@@ -215,6 +226,14 @@ export const AppModal: React.FC<any> = ({ children }) => {
                 <PointerIcon className="ab-h-4 ab-w-4 ab-shrink-0" />
                 <span className="ab-sr-only">Select element</span>
               </button>
+
+              <ZoomFactorDropdown
+                zoomFactor={zoomClasses}
+                onChangeZoomFactor={(factor) => {
+                  setZoomClasses(factor);
+                  zoomFactor.set(factor);
+                }}
+              />
 
               <button
                 type="button"
