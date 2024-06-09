@@ -253,7 +253,11 @@ img.ProseMirror-separator{
 }
 
 /* Paragraphs */
-.ProseMirror p {
+.ProseMirror p,
+.ProseMirror em,
+.ProseMirror strong,
+.ProseMirror del,
+.ProseMirror a {
   line-height: 1.1rem !important;
 }
 
