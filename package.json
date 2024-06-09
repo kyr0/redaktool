@@ -93,6 +93,7 @@
     "react-resizable-panels": "^2.0.19",
     "react-style-tag": "^3.0.1",
     "remark-directive": "^3.0.0",
+    "sanitize-html": "^2.13.0",
     "simply-persist-sync": "^1.1.2",
     "sonner": "^1.4.0",
     "tailwind-merge": "^2.2.1",

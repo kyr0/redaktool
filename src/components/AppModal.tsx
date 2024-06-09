@@ -99,14 +99,11 @@ export const AppModal: React.FC<any> = ({ children }) => {
   const selectionGuaranteed$ = getSelectionGuaranteedStore();
 
   const activateElementSelection = useElementSelector((element) => {
-    if (element.querySelector("body")) {
-      element = element.querySelector("body")!;
-    }
-
-    element = cloneAndFilterNode(element) as HTMLElement;
-
     // set the markdown content to the selected element
-    scratchpadEditorContentAtom.set(turndown(element.innerHTML));
+
+    const markdown = turndown(cloneAndFilterNode(element));
+
+    scratchpadEditorContentAtom.set(markdown);
     setShowDialog(true);
 
     requestAnimationFrame(() => {

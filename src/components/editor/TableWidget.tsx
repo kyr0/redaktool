@@ -29,7 +29,7 @@ import {
 import clsx from "clsx";
 import type { FC } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLinkClass } from "../scratchpad/LinkPlugin";
+import { useLinkClass } from "../../lib/content-script/hooks/use-link-class";
 
 export const tableTooltipCtx = $ctx<TooltipProvider | null, "tableTooltip">(
   null,

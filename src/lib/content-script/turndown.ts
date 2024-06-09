@@ -48,4 +48,5 @@ turndownService.addRule("scripting", {
 });
 
 export const turndown = (html: string): string =>
-  turndownService.turndown(html);
+  // remove buggy characters; TODO: fix with data format change
+  turndownService.turndown(html.replace(/[®©™]/g, ""));
