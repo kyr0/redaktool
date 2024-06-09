@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { prefPerPage } from "../lib/content-script/prefs";
+import { prefChrome, prefPerPage } from "../lib/content-script/prefs";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,19 @@ export const AppModal: React.FC<any> = ({ children }) => {
   //useSelection()
   const { t, i18n } = useTranslation();
 
+  const languagePref = prefChrome("language", "de");
+
+  // language switch
+  const onChangeLanguageButtonClick = useCallback(() => {
+    if (i18n.language === "de") {
+      i18n.changeLanguage("en");
+      languagePref.set("en");
+    } else {
+      i18n.changeLanguage("de");
+      languagePref.set("de");
+    }
+  }, []);
+
   const storedDialogPositionPref = prefPerPage<any>("dialog_position", {
     x: 100,
     y: 100,
@@ -61,7 +74,11 @@ export const AppModal: React.FC<any> = ({ children }) => {
   const [zoomClasses, setZoomClasses] = useState<ZoomOptions>();
 
   useEffect(() => {
-    setZoomClasses(zoomFactor.get());
+    // restore zoom factor and language
+    (async () => {
+      setZoomClasses(zoomFactor.get());
+      i18n.changeLanguage(await languagePref.get());
+    })();
   }, []);
 
   useEffect(() => {
@@ -100,17 +117,6 @@ export const AppModal: React.FC<any> = ({ children }) => {
     const isDarkModeEnabled = await getDarkMode();
     console.log("dark mode enabled", isDarkModeEnabled);
     setDarkMode(!isDarkModeEnabled);
-  }, []);
-
-  // language switch
-  const onChangeLanguageButtonClick = useCallback(() => {
-    console.log("change language button clicked");
-
-    if (i18n.language === "de") {
-      i18n.changeLanguage("en");
-    } else {
-      i18n.changeLanguage("de");
-    }
   }, []);
 
   const selectionGuaranteed$ = getSelectionGuaranteedStore();
