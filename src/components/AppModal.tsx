@@ -20,7 +20,7 @@ import {
 import { DarkMode, FTRLogoDark, FTRLogoLight } from "./Icons";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDarkMode } from "../lib/content-script/hooks/use-darkmode";
-import { PointerIcon, X } from "lucide-react";
+import { LanguagesIcon, PointerIcon, X } from "lucide-react";
 import { getAnchorNode } from "../lib/content-script/find-closest";
 import { useElementSelector } from "../lib/content-script/hooks/use-element-selector";
 import { useSelection } from "../lib/content-script/hooks/use-selection";
@@ -37,6 +37,7 @@ import { useTranslation, Trans } from "react-i18next";
 import { Logo } from "./Logo";
 import { cloneAndFilterNode } from "../lib/content-script/dom";
 import { ZoomFactorDropdown, type ZoomOptions } from "./ZoomFactor";
+import { Separator } from "../ui/separator";
 
 export const AppModal: React.FC<any> = ({ children }) => {
   // disabled text selection magic ;)
@@ -227,12 +228,22 @@ export const AppModal: React.FC<any> = ({ children }) => {
                 <span className="ab-sr-only">Select element</span>
               </button>
 
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
+              />
+
               <ZoomFactorDropdown
                 zoomFactor={zoomClasses}
                 onChangeZoomFactor={(factor) => {
                   setZoomClasses(factor);
                   zoomFactor.set(factor);
                 }}
+              />
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
               />
 
               <button
@@ -244,6 +255,11 @@ export const AppModal: React.FC<any> = ({ children }) => {
                 <span className="ab-sr-only">Toggle Mode</span>
               </button>
 
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2"
+              />
+
               <button
                 type="button"
                 onClick={onChangeLanguageButtonClick}
@@ -252,6 +268,11 @@ export const AppModal: React.FC<any> = ({ children }) => {
                 <div>{t("language")}</div>
                 <span className="ab-sr-only">{t("language")}</span>
               </button>
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-ml-2"
+              />
 
               <DialogPrimitive.Close className={`${HeaderButtonStyle} ab-mr-1`}>
                 <X className="ab-h-4 ab-w-4 ab-shrink-0" />

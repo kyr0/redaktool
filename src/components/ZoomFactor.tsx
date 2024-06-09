@@ -1,3 +1,4 @@
+import { ZoomOutIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -11,6 +12,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 
 export type ZoomOptions =
   | "ab-scale-75"
@@ -50,6 +52,7 @@ export function ZoomFactorDropdown({
         className="ab-border-0 ab-h-6 ab-text-sm !ab-p-1 hover:ab-bg-transparent"
       >
         <Button className="!ab-p-0" variant="outline">
+          <MagnifyingGlassIcon className="ab-h-4 ab-w-4 ab-mr-1" />
           {formatZoomFactor(zoomFactor)}
         </Button>
       </DropdownMenuTrigger>
