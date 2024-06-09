@@ -293,7 +293,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
             storedDialogSizePref.set({ w, h });
           }}
           initialSize={storedSize}
-          className="ab-right-1"
+          className="ab-right-0"
         >
           {children}
         </Resizable>
