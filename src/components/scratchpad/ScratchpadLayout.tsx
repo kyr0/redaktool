@@ -12,6 +12,7 @@ import { ExtractionModule } from "./extraction/ExtractionModule";
 import { MarkdownEditor } from "../MarkdownEditor";
 import { atom } from "nanostores";
 import { DraftModule } from "./draft/DraftModule";
+import { TranslationModule } from "./translation/TranslationModule";
 
 export type ToolNames =
   | "source"
@@ -91,25 +92,25 @@ export const ScratchpadLayout = () => {
           </TabsContent>
           <TabsContent
             value="translation"
-            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
-            TODO
+            <TranslationModule />
           </TabsContent>
           <TabsContent
             value="summary"
-            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
             TODO
           </TabsContent>
           <TabsContent
             value="fact-check"
-            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
             TODO
           </TabsContent>
           <TabsContent
             value="rewrite"
-            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto !ab-overscroll-contain"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
             TODO
           </TabsContent>
