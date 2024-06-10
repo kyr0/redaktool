@@ -29,6 +29,9 @@ import {
 } from "../../../data/prompt-templates/extraction";
 import { extractedWebsiteDataAtom } from "../../AppModal";
 import { useDebouncedCallback } from "use-debounce";
+import { autoCorrelateMostRelevantContent } from "../../../lib/content-script/scrape";
+import { turndown } from "../../../lib/content-script/turndown";
+import { cloneAndFilterNode } from "../../../lib/content-script/dom";
 
 // content cache
 const editorAtom = atom<string>("");
@@ -46,6 +49,25 @@ export const ExtractionModule = () => {
     encoded: [],
     price: 0,
   });
+
+  useEffect(() => {
+    const { bestCandidate } = autoCorrelateMostRelevantContent(
+      document,
+      document.body,
+    );
+
+    if (bestCandidate?.node) {
+      const markdown = turndown(
+        cloneAndFilterNode(bestCandidate.node as HTMLElement),
+      );
+
+      console.log("markdown", markdown);
+
+      setEditorContent(markdown);
+    } else {
+      console.error("No best candidate found");
+    }
+  }, []);
 
   // sync editor content with extraction
   const onEditorChange = useCallback((markdown: string) => {

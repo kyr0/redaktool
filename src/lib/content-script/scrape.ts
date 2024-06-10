@@ -369,18 +369,21 @@ export interface AutoCorrelateMostRelevantContentResult {
   length: number;
   depth: number;
   score?: number;
+  naturalIndex?: number;
+  inclusions?: number;
 }
 
 export const autoCorrelateMostRelevantContent = (
   document: Document,
-  node: Node,
+  node: Element,
   options = { minSentences: 3 },
 ) => {
-  const results: Array<AutoCorrelateMostRelevantContentResult> = [];
+  let results: Array<AutoCorrelateMostRelevantContentResult> = [];
   let minDepth = Number.POSITIVE_INFINITY;
   let maxDepth = Number.NEGATIVE_INFINITY;
   let minSentenceCount = Number.POSITIVE_INFINITY;
   let maxSentenceCount = Number.NEGATIVE_INFINITY;
+  let maxInclusions = 0;
 
   const uniqueCombinations = new Set();
 
@@ -406,6 +409,7 @@ export const autoCorrelateMostRelevantContent = (
         sentences,
         length,
         depth,
+        inclusions: 0,
       });
 
       // add the combination to the set
@@ -429,27 +433,97 @@ export const autoCorrelateMostRelevantContent = (
     }
   });
 
+  // calculate inclusions and find the maximum inclusions
+  results.forEach((result, index) => {
+    results.forEach((otherResult, otherIndex) => {
+      if (index !== otherIndex && result.text.includes(otherResult.text)) {
+        result.inclusions! += 1;
+      }
+    });
+    if (result.inclusions! > maxInclusions) {
+      maxInclusions = result.inclusions!;
+    }
+  });
+
+  results = results.filter((v) => v.node.nodeType === ELEMENT_NODE);
+
   // calculate normalized content score for auto-correlation
-  results.forEach((result) => {
+  results.forEach((result, index) => {
     const normalizedDepth = normalize(result.depth, minDepth, maxDepth);
     const normalizedSentences = normalize(
       result.sentences,
       minSentenceCount,
       maxSentenceCount,
     );
+    const normalizedInclusions = normalize(
+      result.inclusions!,
+      0,
+      maxInclusions,
+    );
 
-    // giving equal weight to depth and sentences
-    result.score = 0.5 * normalizedDepth + 0.5 * normalizedSentences;
+    if (!result.inclusions) result.inclusions = 0;
+    results.forEach((otherResult, otherIndex) => {
+      if (index !== otherIndex && result.text.includes(otherResult.text)) {
+        result.inclusions! += 1;
+      }
+    });
+
+    // if it contains a nav element, it is MUCH less probable to be relevant content
+    const navFactorPenalty = (result.node as Element).querySelector(
+      "header,footer,nav,aside",
+    )
+      ? 0.75 /** clamp -25% */
+      : 1;
+
+    const mainBoostChildFactor = (
+      result.node.parentNode as Element
+    ).querySelector("article,main")
+      ? 1.25
+      : 1;
+
+    const mainExactMatchBoostFactor =
+      result.node.nodeName === "MAIN" || result.node.nodeName === "ARTICLE"
+        ? 1.5
+        : 1;
+
+    // the element that is contains alot of other element's text and is deep and has many sentences is the most probable to contain the actually relevant content
+    result.score = result.score =
+      (0.45 * normalizedInclusions + // if this element includes alot of the text of other candidates, it's an outer element with relevant content
+        0.4 * normalizedDepth + // the deeper the element is nested, the less probable it is to not be an outer element that includes header, footer and side navigation
+        0.15 * normalizedSentences) * // the more sentences the element has, the more probable it is to be relevant content in general
+      navFactorPenalty * // if it contains a nav element, it is MUCH less probable to be relevant content
+      mainBoostChildFactor * // if it contains a main or article element, it is MUCH more probable to be relevant content
+      mainExactMatchBoostFactor; // if it is a main or article element, it is absolutely the MOST probable to be relevant content
+    //(normalizedDepth + normalizedSentences + normalizedInclusions) / 3;
+    //result.score = 0.5 * normalizedDepth + 0.5 * normalizedSentences;
   });
 
   const relevantContent = results
-    .filter((v) => v.score! >= 0.5 && v.sentences > options.minSentences)
+    .map((result, index) => ({
+      ...result,
+      naturalIndex: index,
+    }))
+
+    .filter((v) => v.sentences > options.minSentences)
     .sort((a, b) => b.score! - a.score!);
 
   const bestCandidate = relevantContent[0];
 
+  const postProcessedResults: AutoCorrelateMostRelevantContentResult[] = results
+    .sort((a, b) => b.length - a.length)
+    .reduce((acc: AutoCorrelateMostRelevantContentResult[], result, index) => {
+      if (acc[index - 1] && acc[index - 1].text.includes(result.text)) {
+        return acc;
+      }
+      acc.push(result);
+      return acc;
+    }, [] as AutoCorrelateMostRelevantContentResult[])
+    .sort((a, b) => b.naturalIndex! - a.naturalIndex!);
+
   return {
     topP: relevantContent,
     bestCandidate,
+    results,
+    postProcessedResults,
   };
 };
