@@ -1,7 +1,6 @@
-import type { TranslatePromptValues } from "../../data/prompt-templates/translation";
-import { promptTemplateTranslation } from "../../data/prompt-templates/translation";
 import { encodingForModel } from "js-tiktoken";
 
+// TODO: replace by https://github.com/handlebars-lang/handlebars.js
 export const applyTemplateValues = (
   promptTemplate: string,
   values: Record<string, string>,
@@ -14,9 +13,8 @@ export const applyTemplateValues = (
   return result;
 };
 
-export type PromptNames = "translation";
-
 export interface Prompt {
+  original: string;
   text: string;
   encoded: number[];
   price: number;
@@ -49,20 +47,11 @@ export const calculatePrompt = (text: string): Partial<Prompt> => {
 };
 
 // TODO: pass down selected model
-export const generatePrompt = (
-  promptName: PromptNames,
-  values: TranslatePromptValues,
-): Prompt => {
-  let text = "";
-
-  switch (promptName) {
-    case "translation":
-      text = promptTemplateTranslation;
-      break;
-  }
-  text = applyTemplateValues(text, values);
+export const generatePrompt = <T>(text: string, values: T): Prompt => {
+  text = applyTemplateValues(text, values as Record<string, string>);
 
   return {
+    original: text,
     text,
     ...calculatePrompt(text),
   } as Prompt;

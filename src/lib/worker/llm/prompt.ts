@@ -1,12 +1,12 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { GenerateRequest } from "cohere-ai/api";
-import { openAIPrompt } from "./openai";
+import { openAIPrompt, openAIPromptStreaming } from "./openai";
 import { coherePrompt } from "./cohere";
 import { anthropicPrompt } from "./anthropic";
 import { type HuggingFaceBody, huggingFacePrompt } from "./huggingface";
 import { ollamaPrompt, type OllamaBody } from "./ollama";
-import { type GeminiOptions, geminiPrompt } from "./gemini";
-import type { ChatParams } from "openai-fetch";
+import type { GeminiOptions } from "./gemini";
+import type { ChatParams, ChatStreamResponse } from "openai-fetch";
 import { perplexityPrompt } from "./perplexity";
 
 export interface PromptTokenUsage {
@@ -105,6 +105,7 @@ export const systemPrompt = async (
         apiOptions,
       );
     }
+    /*
     case "gemini": {
       return geminiPrompt(
         {
@@ -119,6 +120,7 @@ export const systemPrompt = async (
         apiOptions,
       );
     }
+    */
     case "perplexity": {
       return perplexityPrompt(
         {
@@ -150,6 +152,45 @@ export const systemPrompt = async (
             },
           ],
         },
+        apiOptions,
+      );
+    }
+  }
+};
+
+export const systemPromptStreaming = async (
+  promptText: string,
+  providerType: ProviderType,
+  onChunk: (text: string) => void,
+  onDone: (elapsed: number) => void,
+  onError: (error: unknown) => void,
+  promptOptions:
+    | Partial<GenerateRequest>
+    | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
+    | Partial<ChatParams>
+    | Partial<HuggingFaceBody>
+    | Partial<OllamaBody>
+    | Partial<GeminiOptions> = {},
+  apiOptions: PromptApiOptions = {},
+): Promise<ChatStreamResponse | undefined> => {
+  switch (providerType) {
+    // TODO: implement streaming for all providers
+
+    // OpenAI
+    default: {
+      return openAIPromptStreaming(
+        {
+          ...(promptOptions as ChatParams),
+          messages: [
+            {
+              role: "system",
+              content: promptText,
+            },
+          ],
+        },
+        onChunk,
+        onDone,
+        onError,
         apiOptions,
       );
     }

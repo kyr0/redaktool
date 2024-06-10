@@ -20,12 +20,16 @@ import {
 import { DarkMode, FTRLogoDark, FTRLogoLight } from "./Icons";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDarkMode } from "../lib/content-script/hooks/use-darkmode";
-import { LanguagesIcon, PointerIcon, X } from "lucide-react";
+import {
+  LanguagesIcon,
+  MousePointerSquareDashed,
+  PointerIcon,
+  X,
+} from "lucide-react";
 import { getAnchorNode } from "../lib/content-script/find-closest";
 import { useElementSelector } from "../lib/content-script/hooks/use-element-selector";
 import { useSelection } from "../lib/content-script/hooks/use-selection";
 import { turndown } from "../lib/content-script/turndown";
-import { scratchpadEditorContentAtom } from "../lib/content-script/stores/scratchpad";
 import {
   copyToClipboard,
   deselect,
@@ -38,6 +42,9 @@ import { Logo } from "./Logo";
 import { cloneAndFilterNode } from "../lib/content-script/dom";
 import { ZoomFactorDropdown, type ZoomOptions } from "./ZoomFactor";
 import { Separator } from "../ui/separator";
+import { atom } from "nanostores";
+
+export const extractedWebsiteDataAtom = atom<string>("");
 
 export const AppModal: React.FC<any> = ({ children }) => {
   // disabled text selection magic ;)
@@ -61,10 +68,12 @@ export const AppModal: React.FC<any> = ({ children }) => {
     x: 100,
     y: 100,
   });
+
   const storedDialogSizePref = prefPerPage<any>("dialog_size", {
     w: 1024,
     h: 768,
   });
+
   const zoomFactor = prefPerPage<any>("zoom_factor", "ab-scale-100");
 
   const [positioningClasses, setPositioningClasses] = useState<string>(
@@ -126,7 +135,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
 
     const markdown = turndown(cloneAndFilterNode(element));
 
-    scratchpadEditorContentAtom.set(markdown);
+    extractedWebsiteDataAtom.set(markdown);
     setShowDialog(true);
 
     requestAnimationFrame(() => {
@@ -157,7 +166,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
       console.log("valid selection", selectionGuaranteed$);
 
       guardedSelectionGuaranteedAtom.set(selectionGuaranteed$);
-      scratchpadEditorContentAtom.set(selectionGuaranteed$.markdown);
+      //scratchpadEditorContentAtom.set(selectionGuaranteed$.markdown);
 
       requestAnimationFrame(() => {
         const prevSelectionDetails = selectEditorContent("scratchpadEditor");
@@ -228,10 +237,10 @@ export const AppModal: React.FC<any> = ({ children }) => {
               <button
                 type="button"
                 onClick={onInspectButtonClick}
-                className={HeaderButtonStyle}
+                className={`${HeaderButtonStyle} !ab-w-auto !ab-mr-1`}
               >
-                <PointerIcon className="ab-h-4 ab-w-4 ab-shrink-0" />
-                <span className="ab-sr-only">Select element</span>
+                <MousePointerSquareDashed className="ab-h-4 ab-w-4 ab-shrink-0 ab-mr-1" />
+                <span className="ab-text-sm">Inhalt extrahieren</span>
               </button>
 
               <Separator

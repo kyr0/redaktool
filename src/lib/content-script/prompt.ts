@@ -13,6 +13,7 @@ export const sendPrompt = (
       );
     } catch (error) {
       // ignore
+      console.error("updateStream error", error);
     }
   }, 500);
 

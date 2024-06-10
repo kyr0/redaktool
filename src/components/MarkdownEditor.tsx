@@ -12,6 +12,7 @@ import {
   type MilkdownPlugin,
   type Telemetry,
 } from "@milkdown/ctx";
+import { replaceAll, getMarkdown } from "@milkdown/utils";
 import { blockquoteSchema, headingSchema } from "@milkdown/preset-commonmark";
 import { $command, callCommand } from "@milkdown/utils";
 import { setBlockType, wrapIn } from "@milkdown/prose/commands";
@@ -67,6 +68,8 @@ import {
   usePluginViewContext,
   usePluginViewFactory,
   useWidgetViewFactory,
+  type ReactPluginViewUserOptions,
+  type ReactWidgetViewUserOptions,
 } from "@prosemirror-adapter/react";
 import { atom } from "nanostores";
 import { useStore } from "@nanostores/react";
@@ -74,17 +77,33 @@ import { insertTextPlugin } from "./scratchpad/plugin/InsertText";
 import { selectEditorContent } from "../lib/content-script/clipboard";
 import { Separator } from "../ui/separator";
 import { linkPlugin } from "./editor/LinkWidget";
+import type { EditorState, PluginView } from "@milkdown/prose/state";
+import type { EditorView } from "@milkdown/prose/view";
 //import { SlashView, slash } from './scratchpad/plugin/Slash';
+
+export interface MilkdownEditorCreatedArgs {
+  editor: Editor;
+  el: HTMLElement;
+  root: HTMLElement;
+  view: EditorView;
+  prevState?: EditorState;
+  widgetViewFactory: (options: ReactWidgetViewUserOptions) => any;
+  pluginViewFactory: (
+    options: ReactPluginViewUserOptions,
+  ) => (view: EditorView) => PluginView;
+}
 
 export interface MilkdownInternalProps {
   defaultValue: string;
   placeholder?: string;
   onChange: (newValue: string) => void;
+  onCreated?: (args: MilkdownEditorCreatedArgs) => void;
 }
 
 export type MarkdownEditorProps = MilkdownInternalProps & {
   name: string;
   showToolbar?: boolean;
+  value?: string;
 };
 
 // custom commands
@@ -119,6 +138,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
   showToolbar,
   placeholder,
   onChange,
+  onCreated,
 }: MarkdownEditorProps) => {
   const { view, prevState } = usePluginViewContext();
 
@@ -139,11 +159,25 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           if (status === "Created") {
             if (root) {
               // disable native spellcheck
-              const editorEl = root.querySelector(".ProseMirror");
+              const editorEl = root.querySelector(
+                ".ProseMirror",
+              ) as HTMLElement;
               editorEl?.setAttribute("spellcheck", "false");
+
+              if (typeof onCreated === "function") {
+                onCreated({
+                  editor,
+                  el: editorEl,
+                  root,
+                  view,
+                  prevState,
+                  widgetViewFactory,
+                  pluginViewFactory,
+                });
+              }
             }
           }
-          console.log("editor status change", status);
+          //console.log("editor status change", status);
         })
         .config((ctx) => {
           ctx.set(rootCtx, root);
@@ -186,8 +220,8 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
           });
 
-          const telemetry: Telemetry[] = editor.inspect();
-          console.log("telemetry", telemetry);
+          //const telemetry: Telemetry[] = editor.inspect();
+          //console.log("telemetry", telemetry);
         })
         .config(nord)
         //.use(slash)
@@ -215,10 +249,14 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
     [onChange, placeholder],
   );
 
+  /*
   useEffect(() => {
     if (!get()) return;
-    console.log("editor get()", get());
-  }, [get]);
+    //console.log("editor get()", get());
+    console.log("update internal editor value", defaultValue);
+    get()?.ctx.set(defaultValueCtx, defaultValue);
+  }, [get, defaultValue]);
+  */
 
   const runCommand = (command: any) => {
     if (!get()) return;
@@ -368,15 +406,35 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   defaultValue = "",
   placeholder,
   onChange,
+  onCreated,
 }: MarkdownEditorProps) => {
-  const [value, setValue] = useState(defaultValue);
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const [value, setValue] = useState<string>(defaultValue);
+
   const handleChange = useCallback(
     (newValue: string) => {
-      setValue(newValue);
       onChange?.(newValue);
+      setValue(newValue);
     },
-    [setValue, onChange],
+    [onChange],
   );
+
+  const handleCreated = useCallback(
+    (args: MilkdownEditorCreatedArgs) => {
+      if (typeof onCreated === "function") {
+        setEditor(args.editor);
+        onCreated(args);
+      }
+    },
+    [onCreated],
+  );
+
+  useEffect(() => {
+    if (defaultValue && editor && value !== defaultValue) {
+      editor.action(replaceAll(defaultValue));
+      setValue(defaultValue);
+    }
+  }, [defaultValue, editor, value]);
 
   return (
     <MilkdownProvider>
@@ -387,6 +445,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           showToolbar={showToolbar}
           defaultValue={defaultValue}
           onChange={handleChange}
+          onCreated={handleCreated}
           placeholder={placeholder}
         />
       </ProsemirrorAdapterProvider>

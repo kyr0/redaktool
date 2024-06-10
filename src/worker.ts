@@ -8,6 +8,7 @@ import {
 } from "openai-fetch";
 import { OPEN_AI_API_KEY_NAME, PARTIAL_RESPONSE_TEXT_NAME } from "./shared";
 import { getNamespacedKey } from "./lib/content-script/utils";
+import { systemPromptStreaming } from "./lib/worker/llm/prompt";
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
@@ -77,9 +78,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       "worker script loaded",
       await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
     );
+
+    /*
     const client = new OpenAIClient({
       apiKey: await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
     });
+    */
 
     // Process the message
     if (request.action && request.text) {
@@ -110,16 +114,51 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
         case "prompt": {
+          // TODO: define a "pipeline" for each prompt to run in parallel
+
+          console.log("prompt data", data);
           console.log("prompt", data.prompt);
 
           let partialResponseText = "";
 
+          systemPromptStreaming(
+            data.prompt,
+            "openai",
+            (text: string) => {
+              // onChunk
+              partialResponseText += text;
+              console.log("onChunk (internal)", text);
+              setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText, false);
+            },
+            (elapsed: number) => {
+              console.log("onDone (internal) elapsed", elapsed);
+              // onDone
+              sendResponse({ result: JSON.stringify(partialResponseText) });
+            },
+            (error: unknown) => {
+              // TODO: respond with error return type
+
+              // onError
+              console.error("onError (internal)", error);
+            },
+            {
+              model: "gpt-4o", // TODO: select dynamically, depending on provider and pass settings
+              temperature: 0.7, // TODO: dynamically from settings
+              n: 1,
+            } as ChatParams,
+            {
+              apiKey: await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
+            },
+          );
+
+          /*
           async function readStreamChunks(
             stream: ReadableStream,
             cb: Function,
           ) {
             const reader = stream.getReader();
 
+            console.log("reader", reader);
             // A function to handle reading each chunk
             async function read() {
               const { done, value } = await reader.read();
@@ -127,6 +166,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 cb();
                 return;
               }
+              console.log("value", value);
+
+              console.log("chunk", value.choices[0].delta.content);
 
               if (value.choices[0].delta.content) {
                 partialResponseText += value.choices[0].delta.content;
@@ -154,6 +196,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           readStreamChunks(readableStream, () => {
             sendResponse({ result: JSON.stringify(partialResponseText) });
           });
+          */
 
           break;
         }

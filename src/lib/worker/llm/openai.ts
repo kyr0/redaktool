@@ -37,3 +37,60 @@ export const openAIPrompt = async (
   };
   return response;
 };
+
+export const openAIPromptStreaming = async (
+  body: ChatParams,
+  onChunk: (text: string) => void,
+  onDone: (elapsed: number) => void,
+  onError: (error: unknown) => void,
+  apiOptions: PromptApiOptions = {},
+): Promise<ChatStreamResponse | undefined> => {
+  try {
+    apiOptions = {
+      ...apiOptions,
+      apiKey: apiOptions.apiKey,
+    };
+
+    if (!body.model) {
+      body.model = "gpt-4o";
+    }
+
+    console.log("Using model:", body.model);
+
+    const openai = new OpenAIClient(apiOptions);
+
+    async function readStreamChunks(stream: ReadableStream) {
+      try {
+        const reader = stream.getReader();
+        async function read() {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              const end = Date.now();
+              const elapsed = end - start;
+              onDone(elapsed);
+              return;
+            }
+            onChunk(value.choices[0].delta.content);
+            read();
+          } catch (error) {
+            onError(error);
+          }
+        }
+        read();
+      } catch (error) {
+        onError(error);
+      }
+    }
+
+    const start = Date.now();
+    const readableStream: ChatStreamResponse =
+      await openai.streamChatCompletion(body);
+
+    readStreamChunks(readableStream);
+
+    return readableStream;
+  } catch (error) {
+    onError(error);
+  }
+};

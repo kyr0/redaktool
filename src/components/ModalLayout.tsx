@@ -24,13 +24,14 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ScratchpadLayout } from "./scratchpad/ScratchpadLayout";
 import { ArchiveLayout } from "./archive/ArchiveLayout";
 import { TranscriptionLayout } from "./transcription/TranscriptionLayout";
 import { SettingsLayout } from "./settings/SettingsLayout";
 import { useTranslation, Trans } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { prefChrome } from "../lib/content-script/prefs";
 
 export type ModuleNames =
   | "scratchpad"
@@ -43,6 +44,14 @@ export type ModuleNames =
 export const ModalLayout = () => {
   const [activeModule, setActiveModule] = useState<ModuleNames>("scratchpad");
   const { t, i18n } = useTranslation();
+  const navClosedPref = prefChrome("navClosed", false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setCollapsed(await navClosedPref.get());
+    })();
+  }, []);
 
   const onCommandSelect = (command: string) => {
     switch (command) {
@@ -66,10 +75,9 @@ export const ModalLayout = () => {
         break;
     }
   };
-  const [collapsed, setCollapsed] = useState(false);
-
   const onToggleMenu = useCallback(() => {
     setCollapsed(!collapsed);
+    navClosedPref.set(!collapsed);
   }, [collapsed]);
 
   return (
@@ -195,7 +203,7 @@ export const ModalLayout = () => {
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel defaultSize={80} minSize={60} className="ab-ml-2">
+      <ResizablePanel defaultSize={80} minSize={60} className="ab-m-0">
         {activeModule === "scratchpad" && <ScratchpadLayout />}
         {activeModule === "transcription" && <TranscriptionLayout />}
         {activeModule === "archive" && <ArchiveLayout />}

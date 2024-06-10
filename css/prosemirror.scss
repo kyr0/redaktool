@@ -252,7 +252,7 @@ img.ProseMirror-separator{
   margin: 0.25rem 0 !important;
 }
 
-/* Paragraphs */
+/* Elements typography */
 .ProseMirror p,
 .ProseMirror em,
 .ProseMirror strong,
@@ -260,6 +260,13 @@ img.ProseMirror-separator{
 .ProseMirror a {
   line-height: 1.1rem !important;
 }
+
+.ProseMirror hr {
+  margin-top: 0.5rem !important;
+  height: 0.5rem !important;
+}
+
+
 
 /* Links */
 .ProseMirror a {
