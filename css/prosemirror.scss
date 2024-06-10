@@ -266,8 +266,11 @@ img.ProseMirror-separator{
 }
 
 .ProseMirror hr {
-  margin-top: 0.5rem !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
   height: 0.5rem !important;
+  border-width: 0.3rem;
+  border-style: double;
 }
 
 

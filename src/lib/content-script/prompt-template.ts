@@ -1,4 +1,13 @@
 import { encodingForModel } from "js-tiktoken";
+import type { ModelName } from "../worker/llm/prompt";
+
+const priceModels = {
+  "gpt-4o": {
+    input: 0.000005,
+    output: 0.000015,
+    maxContextTokens: 128000,
+  },
+};
 
 // TODO: replace by https://github.com/handlebars-lang/handlebars.js
 export const applyTemplateValues = (
@@ -18,15 +27,23 @@ export interface Prompt {
   text: string;
   encoded: number[];
   price: number;
+  priceOutput?: number;
+  priceInput?: number;
+  maxContextTokens?: number;
+  estimatedOutputTokens?: number;
 }
 
-export function calculatePrice(tokens: number): number {
-  // Define the price per token
-  const pricePerToken = 0.00001;
+export function calculatePriceValue(
+  tokens: number,
+  type: "input" | "output",
+  model: ModelName,
+): number {
+  const pricePerToken = priceModels[model][type];
   const totalPrice = tokens * pricePerToken;
   return totalPrice;
 }
 
+// TODO: deprecated
 export function calculateTokensFromBudget(budget: number): number {
   // Define the price per token
   const pricePerToken = 0.00001;
@@ -35,24 +52,44 @@ export function calculateTokensFromBudget(budget: number): number {
   return Math.floor(tokens); // Assuming you can only purchase whole tokens
 }
 
-export const calculatePrompt = (text: string): Partial<Prompt> => {
-  // @ts-ignore
-  const encoding = encodingForModel("gpt-4o");
+export const calculatePrompt = (
+  text: string,
+  model: ModelName = "gpt-4o",
+  outputScaleFactor = 2, // avg output length is 2x input length
+): Partial<Prompt> => {
+  const encoding = encodingForModel(model);
   const encoded = encoding.encode(text);
+  const priceInput = calculatePriceValue(encoded.length, "input", model);
+  const estimatedOutputTokens = Number.parseInt(
+    (encoded.length * outputScaleFactor).toFixed(0),
+  );
+  const priceOutput = calculatePriceValue(
+    estimatedOutputTokens,
+    "output",
+    model,
+  );
 
   return {
     encoded,
-    price: calculatePrice(encoded.length),
+    price: priceInput + priceOutput,
+    priceOutput,
+    priceInput,
+    estimatedOutputTokens,
+    maxContextTokens: priceModels[model].maxContextTokens,
   };
 };
 
-// TODO: pass down selected model
-export const generatePrompt = <T>(text: string, values: T): Prompt => {
+export const generatePrompt = <T>(
+  text: string,
+  values: T,
+  model: ModelName,
+  outputTokenScaleFactor: number,
+): Prompt => {
   text = applyTemplateValues(text, values as Record<string, string>);
 
   return {
     original: text,
     text,
-    ...calculatePrompt(text),
+    ...calculatePrompt(text, model, outputTokenScaleFactor),
   } as Prompt;
 };

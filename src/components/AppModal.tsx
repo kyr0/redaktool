@@ -228,7 +228,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
       >
         <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
           <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
-            <div className="ab-flex ab-flex-row ab-items-center ab-ml-2">
+            <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
               <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
               {t("productName")}
             </div>

@@ -6,8 +6,7 @@ export interface ExtractPromptValues extends Record<string, string> {
   MARKDOWN: string;
 }
 
-export const promptTemplateExtraction = `
-You are an expert data science engineer. Clean up and transform the following MARKDOWN and return it in data format: {{DATA_FORMAT}}
+export const promptTemplateExtraction = `You are an expert data science engineer. Clean up and transform the following MARKDOWN and return it in data format: {{DATA_FORMAT}}
 
 RULES:
 - MUST remove links to other articles, categories, tags, or other irrelevant content.

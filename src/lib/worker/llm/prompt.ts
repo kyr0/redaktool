@@ -35,7 +35,7 @@ export interface PromptApiOptions {
   apiKey?: string;
 }
 
-export type ProviderType =
+export type ModelProviderType =
   | "openai"
   | "anthropic"
   | "cohere"
@@ -44,10 +44,12 @@ export type ProviderType =
   | "gemini"
   | "perplexity";
 
+export type ModelName = "gpt-4o";
+
 // non-streaming, single, system-prompt completion with any LLM
 export const systemPrompt = async (
   promptText: string,
-  providerType: ProviderType,
+  providerType: ModelProviderType,
   promptOptions:
     | Partial<GenerateRequest>
     | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
@@ -160,7 +162,7 @@ export const systemPrompt = async (
 
 export const systemPromptStreaming = async (
   promptText: string,
-  providerType: ProviderType,
+  providerType: ModelProviderType,
   onChunk: (text: string) => void,
   onDone: (elapsed: number) => void,
   onError: (error: unknown) => void,

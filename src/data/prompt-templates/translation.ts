@@ -10,8 +10,7 @@ export interface TranslatePromptValues extends Record<string, string> {
   MARKDOWN: string;
 }
 
-export const promptTemplateTranslation = `
-You are a simultaneous interpreter and a professionally trained translator.
+export const promptTemplateTranslation = `You are a simultaneous interpreter and a professionally trained translator.
 Translate the following MARKDOWN into {{TARGET_LANGUAGE}}.
 
 Your AUDIENCE is {{AUDIENCE}} and CONTEXT for the tone is: {{CONTEXT}}.

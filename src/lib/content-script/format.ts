@@ -1,4 +1,13 @@
-export function formatCurrencyForDisplay(number: number) {
+export function formatCurrencyForDisplay(preformattedValue: string) {
+  const value = Number.parseFloat(preformattedValue);
+
+  if (value < 1) {
+    const cents = (value * 100).toFixed();
+    return cents === "0" ? "< 1¢" : `~${(value * 100).toFixed()}¢`;
+  }
+  return `~${value.toFixed(2)}$`;
+
+  /*
   // Convert number to string
   const numberStr = number.toString();
   // Find index of first non-zero digit after decimal point
@@ -28,6 +37,7 @@ export function formatCurrencyForDisplay(number: number) {
 
   // Return the formatted number string
   return numberStr.substring(0, cutIndex);
+  */
 }
 
 export const formatDuration = (duration: number) => {

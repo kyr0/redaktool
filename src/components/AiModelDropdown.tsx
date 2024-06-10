@@ -16,9 +16,14 @@ export function AiModelDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">OpenAI: GPT-4o</Button>
+        <Button
+          size={"sm"}
+          className="!ab-text-xs !ab-h-5 !ab-px-1 hover:!ab-bg-primary-foreground"
+        >
+          OpenAI: GPT-4o
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 ab-z-[2147483646]">
+      <DropdownMenuContent className="ab-z-[2147483646]">
         <DropdownMenuItem>
           <span>Gemini Pro</span>
         </DropdownMenuItem>
