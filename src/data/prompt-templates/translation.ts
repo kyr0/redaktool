@@ -1,19 +1,18 @@
-// CONTEXT
+// TONE
 // AUDIENCE
 // TARGET_LANGUAGE
 // CONTENT
 
 export interface TranslatePromptValues extends Record<string, string> {
-  CONTEXT: string;
+  TONE: string;
   AUDIENCE: string;
   TARGET_LANGUAGE: string;
   CONTENT: string;
 }
 
-export const promptTemplateTranslation = `You are a simultaneous interpreter and a professionally trained translator.
-Translate the following CONTENT into {{TARGET_LANGUAGE}}.
-
-Your AUDIENCE is {{AUDIENCE}} and CONTEXT for the tone is: {{CONTEXT}}.
+export const promptTemplateTranslation = `You are an expert simultaneous interpreter and a professionally trained translator.
+Translate the following CONTENT into {{TARGET_LANGUAGE}}. 
+The translation MUST be written for a {{AUDIENCE}} audience in a {{TONE}} tone.
 
 RULES:
 - response MUST NOT be wrapped in Markdown code formatting block \`\`\` 

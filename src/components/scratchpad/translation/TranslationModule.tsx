@@ -13,7 +13,7 @@ export const TranslationModule = () => {
     // TODO: get values from settings UI
     return {
       AUDIENCE: "news readers, adults, general public",
-      CONTEXT: "news article",
+      TONE: "neutral, news article",
       TARGET_LANGUAGE: "German",
     } as TranslatePromptValues;
   }, []);
@@ -21,6 +21,9 @@ export const TranslationModule = () => {
   return (
     <GenericModule
       defaultModelName="gpt-4o"
+      onCustomInstructionChange={(instruction) => {
+        //form.setValue("CUSTOM_INSTRUCTIONS", instruction);
+      }}
       defaultPromptTemplate={promptTemplateTranslation}
       name="translation"
       editorAtom={editorAtom}

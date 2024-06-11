@@ -41,11 +41,13 @@ export interface CallbackArgs {
 
 export interface GenericModuleProps extends PropsWithChildren {
   name: string;
+  promptSettingsWrapperClassName?: string;
   editorAtom: WritableAtom<string>;
   defaultPromptTemplate: string;
   outputTokenScaleFactor: number;
   defaultModelName: ModelName;
   getPromptValues: () => Record<string, string>;
+  onCustomInstructionChange: (instruction: string) => void;
   onEditorCreated?: (args: CallbackArgs) => void;
   onEditorChange?: (args: CallbackArgs) => void;
   onPromptChange?: (args: CallbackArgs) => void;
@@ -54,11 +56,13 @@ export interface GenericModuleProps extends PropsWithChildren {
 
 export const GenericModule: React.FC<GenericModuleProps> = ({
   name,
+  promptSettingsWrapperClassName,
   editorAtom,
   defaultPromptTemplate,
   outputTokenScaleFactor,
   defaultModelName,
   onEditorCreated,
+  onCustomInstructionChange,
   onEditorChange,
   onPromptChange,
   onPromptShare,
@@ -170,12 +174,22 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
 
   const onPromptSendClick = useCallback(() => {
     // actualy send the prompt to the AI
+    const finalPrompt = generatePrompt<Record<string, string>>(
+      prompt,
+      {
+        CONTENT: editorContent,
+        ...getPromptValues(),
+      },
+      defaultModelName,
+      outputTokenScaleFactor,
+    );
+
     console.log("send prompt", promptPrepared);
 
     let isBeginning = true;
 
     sendPrompt(
-      promptPrepared.text,
+      finalPrompt.text,
       (text: string) => {
         console.log("onChunk", text);
         setEditorContent(
@@ -190,7 +204,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         setEditorContent((prev) => `${prev || ""}${lastChunkText || ""}`);
       },
     );
-  }, [promptPrepared]);
+  }, [promptPrepared, editorContent, defaultModelName, outputTokenScaleFactor]);
 
   return (
     <ResizablePanelGroup direction="vertical">
@@ -219,7 +233,9 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
                 Einstellungen
               </span>
             </div>
-            <div className="ab-flex ab-h-full ab-items-center ab-justify-center ab-p-2">
+            <div
+              className={`ab-flex ab-h-full ab-items-center ab-justify-center ab-p-2 ${promptSettingsWrapperClassName}`}
+            >
               {children}
             </div>
           </ResizablePanel>
@@ -240,6 +256,10 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
                     {
                       label: "OpenAI GPT-4o",
                       value: "gpt-4o",
+                    },
+                    {
+                      label: "Anthropic Opus",
+                      value: "anthropic-opus",
                     },
                     {
                       label: "Perplexity Sonar",
@@ -272,6 +292,9 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
                   name={`${name}PromptInstructionEditor`}
                   placeholder="Spezialisierungswünsche..."
                   className="!ab-block ab-mb-2 !ab-text-sm ab-h-12 ab-max-h-12"
+                  onChange={(evt) =>
+                    onCustomInstructionChange(evt.target.value)
+                  }
                 />
                 <Button
                   size={"sm"}

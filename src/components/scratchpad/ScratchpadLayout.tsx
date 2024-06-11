@@ -13,6 +13,7 @@ import { MarkdownEditor } from "../MarkdownEditor";
 import { atom } from "nanostores";
 import { DraftModule } from "./draft/DraftModule";
 import { TranslationModule } from "./translation/TranslationModule";
+import { SummaryModule } from "./summary/SummaryModule";
 
 export type ToolNames =
   | "source"
@@ -60,9 +61,13 @@ export const ScratchpadLayout = () => {
               {t("module_translation")}
             </TabsTrigger>
             <TabsTrigger
-              disabled
+              onClick={() => setActiveView("summary")}
               value="summary"
-              className="!ab-pt-0 !ab-max-h-10 !ab-text-md "
+              className={`!ab-pt-0 !ab-max-h-10 !ab-text-md  ${
+                activeView === "summary"
+                  ? "ab-ftr-active-menu-item"
+                  : "ab-ftr-menu-item"
+              }`}
             >
               <ListBulletIcon className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
               {t("module_summary")}
@@ -100,7 +105,7 @@ export const ScratchpadLayout = () => {
             value="summary"
             className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
-            TODO
+            <SummaryModule />
           </TabsContent>
           <TabsContent
             value="fact-check"

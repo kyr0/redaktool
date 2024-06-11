@@ -15,8 +15,7 @@ const placeholderMarkdown = `# RedakTool
 * KI-**Zusammenfassung**, die wahlweise nach **Bedeutung** oder **Chronologie** arbeitet (Interviews).
 * KI-**Faktencheck**, der erstaunlich **wenig halluziniert**.
 * KI-**Formulierungshilfe**, die den **menschlichen Touch** und den **eigenen Stil** simuliert.&#x20;
-* KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.
-`;
+* KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.`;
 
 // content cache
 const writerAtom = atom<string>(placeholderMarkdown);

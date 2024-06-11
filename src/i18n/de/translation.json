@@ -10,5 +10,11 @@
   "module_scratchpad": "Notizblock",
   "module_archive": "Archiv",
   "module_transcription": "Transkription",
-  "module_settings": "Einstellungen"
+  "module_settings": "Einstellungen",
+  "summaryModule.audiencePromptPlaceholder": "Zielgruppe eingeben",
+  "summaryModule.audiencePromptLabel": "Zielgruppe",
+  "summaryModule.tonePromptPlaceholder": "Tonalität eingeben",
+  "summaryModule.tonePromptLabel": "Tonalität",
+  "summaryModule.topicCountPromptPlaceholder": "three",
+  "summaryModule.topicCountPromptLabel": "Anzahl Themen (max)"
 }
