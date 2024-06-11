@@ -9,6 +9,7 @@ const storedButtonPositionPref = prefPerPage<any>("open_button_position", {
   y: 0,
 });
 
+// deprecated/disabled: floating, movable overlay button
 export const OpenButton: React.FC<any> = () => {
   const draggableRef = useDraggable(
     safeDisplayPosition(storedButtonPositionPref.get()),

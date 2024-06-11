@@ -14,6 +14,7 @@ import { Essentials } from "@ckeditor/ckeditor5-essentials";
 import { SourceEditing } from "@ckeditor/ckeditor5-source-editing";
 import { Autoformat } from "@ckeditor/ckeditor5-autoformat";
 
+// deprecated/disabled: CKEditor integration
 export const CKEditor: React.FC<MarkdownEditorProps> = ({
   name,
   defaultValue = "",

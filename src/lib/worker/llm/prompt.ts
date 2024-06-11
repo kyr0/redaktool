@@ -44,7 +44,8 @@ export type ModelProviderType =
   | "gemini"
   | "perplexity";
 
-export type ModelName = "gpt-4o";
+// TODO: allow mapping of model names to provider types
+export type ModelName = "gpt-4o" | "perplexity-sonar";
 
 // non-streaming, single, system-prompt completion with any LLM
 export const systemPrompt = async (

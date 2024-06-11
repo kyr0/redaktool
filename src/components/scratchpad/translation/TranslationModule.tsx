@@ -1,5 +1,8 @@
 import { atom } from "nanostores";
-import { promptTemplateTranslation } from "../../../data/prompt-templates/translation";
+import {
+  promptTemplateTranslation,
+  type TranslatePromptValues,
+} from "../../../data/prompt-templates/translation";
 import { GenericModule } from "../GenericModule";
 import { useCallback } from "react";
 
@@ -7,7 +10,12 @@ const editorAtom = atom<string>("");
 
 export const TranslationModule = () => {
   const getPromptValues = useCallback(() => {
-    return {};
+    // TODO: get values from settings UI
+    return {
+      AUDIENCE: "news readers, adults, general public",
+      CONTEXT: "news article",
+      TARGET_LANGUAGE: "German",
+    } as TranslatePromptValues;
   }, []);
 
   return (

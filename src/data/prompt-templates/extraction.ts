@@ -1,14 +1,15 @@
 // DATA_FORMAT
-// MARKDOWN
+// CONTENT
 
 export interface ExtractPromptValues extends Record<string, string> {
   DATA_FORMAT: string;
-  MARKDOWN: string;
+  CONTENT: string;
 }
 
-export const promptTemplateExtraction = `You are an expert data science engineer. Clean up and transform the following MARKDOWN and return it in data format: {{DATA_FORMAT}}
+export const promptTemplateExtraction = `You are an expert data science engineer. Clean up and transform the following CONTENT and return it in data format: {{DATA_FORMAT}}
 
 RULES:
+- response MUST NOT be wrapped in Markdown code formatting block \`\`\`
 - MUST remove links to other articles, categories, tags, or other irrelevant content.
 - MUST remove any tracking or analytics code.
 - MUST remove any share links or icons.
@@ -17,6 +18,5 @@ RULES:
 - MUST respond in {{DATA_FORMAT}} data format.
 END OF RULES.
 
-MARKDOWN to clean up and transform:
-{{MARKDOWN}}
-`;
+CONTENT to clean up and transform:
+{{CONTENT}}`;

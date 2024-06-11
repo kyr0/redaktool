@@ -8,11 +8,7 @@ const placeholderMarkdown = `# RedakTool
 
 ## Die KI-Browser-Extension, die man wie einen Werkzeugkasten im Web mitnimmt.
 
-
-
 ### *2024 by Aron Homberg*
-
-
 
 * Texte, Bilder und Tabellen mit Formatierung **extrahieren** und **archivieren** (Markdown).
 * KI-**Übersetzung**, die Metaphern versteht, den Sprachstil und die Zielgruppe berücksichtigt.
@@ -20,11 +16,6 @@ const placeholderMarkdown = `# RedakTool
 * KI-**Faktencheck**, der erstaunlich **wenig halluziniert**.
 * KI-**Formulierungshilfe**, die den **menschlichen Touch** und den **eigenen Stil** simuliert.&#x20;
 * KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.
-
-|    |    |    |    |
-| :- | :- | :- | :- |
-|    |    |    |    |
-|    |    |    |    |
 `;
 
 // content cache
@@ -44,7 +35,9 @@ export const DraftModule = () => {
     <div className="ab-w-fit ab-h-full ab-ml-1.5 ab-flex ab-flex-col ab-justify-between ab-items-stretch">
       <div className="ab-mb-1 ab-mt-3 ab-flex ab-flex-row ab-w-full ab-justify-between ab-items-center">
         <NotepadTextDashed className="!ab-h-6 !ab-w-6 ab-mr-2 ab-ml-2" />
-        <span className="ab-text-md">Entwurf:</span>
+        <span className="ab-text-md ab-w-fit ab-whitespace-nowrap ab-break-keep">
+          Entwurf:
+        </span>
         <Input
           defaultValue={"Unbenannt"}
           className="ab-flex !ab-ml-2 ab-w-full ab-h-8"

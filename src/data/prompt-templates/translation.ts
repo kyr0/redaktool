@@ -1,22 +1,23 @@
 // CONTEXT
 // AUDIENCE
 // TARGET_LANGUAGE
-// MARKDOWN
+// CONTENT
 
 export interface TranslatePromptValues extends Record<string, string> {
   CONTEXT: string;
   AUDIENCE: string;
   TARGET_LANGUAGE: string;
-  MARKDOWN: string;
+  CONTENT: string;
 }
 
 export const promptTemplateTranslation = `You are a simultaneous interpreter and a professionally trained translator.
-Translate the following MARKDOWN into {{TARGET_LANGUAGE}}.
+Translate the following CONTENT into {{TARGET_LANGUAGE}}.
 
 Your AUDIENCE is {{AUDIENCE}} and CONTEXT for the tone is: {{CONTEXT}}.
 
 RULES:
-- Translate, if MARKDOWN is in a different language.
+- response MUST NOT be wrapped in Markdown code formatting block \`\`\` 
+- Translate, if CONTENT is in a different language.
 - Adjust grammar and sentence structure to sound best for the target language
 - Keep common anglicisms and terms in English, if they are widely used in the target language.
 - Translate using terms and phrases that are a perfect match for the AUDIENCE and CONTEXT.
@@ -30,6 +31,5 @@ RULES:
 - Must remove irrelevant links, such as share links, advertisements, icons, category or tag cloud links etc.
 END OF RULES.
 
-MARKDOWN to translate:
-{{MARKDOWN}}
-`;
+CONTENT to translate:
+{{CONTENT}}`;

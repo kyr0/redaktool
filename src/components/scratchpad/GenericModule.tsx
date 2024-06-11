@@ -28,6 +28,7 @@ import type { WritableAtom } from "nanostores";
 import { useDebouncedCallback } from "use-debounce";
 import { Textarea } from "../../ui/textarea";
 import type { ModelName } from "../../lib/worker/llm/prompt";
+import { Input } from "../../ui/input";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -145,7 +146,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
           generatePrompt<Record<string, string>>(
             prompt,
             {
-              MARKDOWN: editorContent,
+              CONTENT: editorContent,
               ...getPromptValues(),
             },
             defaultModelName,
@@ -169,19 +170,24 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
 
   const onPromptSendClick = useCallback(() => {
     // actualy send the prompt to the AI
-
     console.log("send prompt", promptPrepared);
+
+    let isBeginning = true;
 
     sendPrompt(
       promptPrepared.text,
       (text: string) => {
         console.log("onChunk", text);
-        setEditorContent((prev) => `${prev}${text}`);
+        setEditorContent(
+          (prev) => `${prev || ""}${isBeginning ? "\n---\n" : ""}${text || ""}`,
+        );
+
+        isBeginning = false;
       },
       (lastChunkText: string) => {
         console.log("onDone", lastChunkText);
 
-        setEditorContent((prev) => `${prev}${lastChunkText}\n---\n`);
+        setEditorContent((prev) => `${prev || ""}${lastChunkText || ""}`);
       },
     );
   }, [promptPrepared]);
@@ -228,7 +234,19 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
             <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center">
               <span className="ab-flex ab-flex-row ab-items-center">
                 <span className="ab-p-1 ab-px-2 ab-text-sm">Smart-Prompt:</span>
-                <AiModelDropdown />
+                <AiModelDropdown
+                  value={defaultModelName}
+                  options={[
+                    {
+                      label: "OpenAI GPT-4o",
+                      value: "gpt-4o",
+                    },
+                    {
+                      label: "Perplexity Sonar",
+                      value: "perplexity-sonar",
+                    },
+                  ]}
+                />
               </span>
 
               <Button
@@ -250,7 +268,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
             />
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between">
               <span className="ab-flex ab-flex-row ab-justify-between ab-items-end">
-                <Textarea
+                <Input
                   name={`${name}PromptInstructionEditor`}
                   placeholder="Spezialisierungswünsche..."
                   className="!ab-block ab-mb-2 !ab-text-sm ab-h-12 ab-max-h-12"
@@ -267,8 +285,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
                 className="ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm"
                 style={{ fontSize: "0.9rem" }}
               >
-                Tokens in: {promptPrepared.encoded.length} + ~
-                {promptPrepared.estimatedOutputTokens} out ≈{" "}
+                Tokens: {promptPrepared.encoded.length} I/O ~
+                {promptPrepared.estimatedOutputTokens} ≈{" "}
                 {formatCurrencyForDisplay(
                   promptPrepared.price.toFixed(2),
                 ).replace(".", ",")}

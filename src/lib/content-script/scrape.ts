@@ -391,7 +391,7 @@ export const autoCorrelateMostRelevantContent = (
     if ((node as HTMLElement) && !node.textContent) return;
 
     const sentencesTexts = splitIntoSentences(
-      (node as HTMLElement).innerText.trim(),
+      (node as HTMLElement).innerText?.trim() || "",
     );
     const text = sentencesTexts.join(" ").trim();
 

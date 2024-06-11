@@ -27,7 +27,7 @@
 ## 🌟 Features
 <span align="center">
 
-  ![Screenshot of RedakTool](./docs/images/redaktool_screen_3d.png)
+  ![Screenshot of RedakTool](./docs/images/redaktool_new_ui_3d.png)
 
 </span>
 
