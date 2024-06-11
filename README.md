@@ -36,7 +36,7 @@ RedakTool offers the following features:
 - ✅ **Advanced Text, Image, Table Data Extraction and Archiving**: Allows users to extract content from any website, and save it in Markdown format with a single click. The archive search applies local  vector search to find similar texts.
 -  ✅ **AI Translation**: Adapts translations to account for metaphors, style, and target audience considerations.
 -  ✅ **AI Summarization**: Focuses on summarizing content based on importance or chronology, suitable for interviews.
--  ✅ **AI Creating Writing**: Assists in rephrasing and styling content.
+-  ✅ **AI Creative Writing**: Assists in rephrasing and styling content.
 -  ✅ **AI Transcription**: Provides nearly error-free real-time transcription of audio and video on websites.
 
 AI models supported:
