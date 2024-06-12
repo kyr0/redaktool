@@ -26,7 +26,7 @@ RULES:
 - Always translate pronouns and gender AS IS.
 - Reformat numbers, currency and dates into target language standard format.
 - If the message looks like a personal email, letter etc., translate it as such and use the correct salutation and closing for the tone.
-- Make sure the spelling is correct.
+- Make sure the spelling and grammar are correct.
 - Must remove irrelevant links, such as share links, advertisements, icons, category or tag cloud links etc.
 END OF RULES.
 

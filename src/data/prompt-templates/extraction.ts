@@ -16,6 +16,7 @@ RULES:
 - MUST remove any advertisements or sponsored content.
 - MUST keep keep all relevant content AS IS and only change the data format if necessary.
 - MUST respond in {{DATA_FORMAT}} data format.
+- Make sure the spelling and grammar are correct.
 END OF RULES.
 
 CONTENT to clean up and transform:

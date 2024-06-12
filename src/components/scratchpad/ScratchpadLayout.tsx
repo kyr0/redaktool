@@ -14,13 +14,15 @@ import { atom } from "nanostores";
 import { DraftModule } from "./draft/DraftModule";
 import { TranslationModule } from "./translation/TranslationModule";
 import { SummaryModule } from "./summary/SummaryModule";
+import { CoachModule } from "./coach/CoachModule";
 
 export type ToolNames =
   | "source"
   | "translation"
   | "summary"
   | "fact-check"
-  | "rewrite";
+  | "rewrite"
+  | "coach";
 
 export const ScratchpadLayout = () => {
   const { t, i18n } = useTranslation();
@@ -73,6 +75,18 @@ export const ScratchpadLayout = () => {
               {t("module_summary")}
             </TabsTrigger>
             <TabsTrigger
+              onClick={() => setActiveView("coach")}
+              value="coach"
+              className={`!ab-pt-0 !ab-max-h-10 !ab-text-md  ${
+                activeView === "coach"
+                  ? "ab-ftr-active-menu-item"
+                  : "ab-ftr-menu-item"
+              }`}
+            >
+              <BookCheck className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              Creative Writing
+            </TabsTrigger>
+            <TabsTrigger
               disabled
               value="fact-check"
               className="!ab-pt-0 !ab-max-h-10 !ab-text-md"
@@ -106,6 +120,13 @@ export const ScratchpadLayout = () => {
             className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
             <SummaryModule />
+          </TabsContent>
+
+          <TabsContent
+            value="coach"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
+          >
+            <CoachModule />
           </TabsContent>
           <TabsContent
             value="fact-check"

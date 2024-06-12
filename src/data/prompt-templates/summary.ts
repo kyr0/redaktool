@@ -27,7 +27,7 @@ RULES:
 - MUST format response as Markdown.
 - MUST adapt metaphors, common sayings and idioms, matching meaning.
 - Always translate pronouns and gender AS IS.
-- Make sure the spelling is correct.
+- Make sure the spelling and grammar are correct.
 - Response MUST NOT be wrapped in Markdown code formatting block \`\`\`.
 - The response MUST match the EXAMPLE provided in structure.
 END OF RULES.
