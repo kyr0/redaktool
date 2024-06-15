@@ -120,6 +120,10 @@ Until end of October 2024, this project will apply a specific versioning scheme,
 
 To organize the work done, alongside it's documentation, every commit follows a the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) policy. This allows for `bun run changelog` to auto-generate the changelog with meaningful process reports every Tuesday evening. 
 
+## Website codebase
+
+The code in this repository represents the implementation of the browser extension only. The code of the [redaktool.ai](https://www.redaktool.ai) website is open source and released under the terms of the MIT license as well and can be found [here](https://github.com/kyr0/redaktool-website).
+
 ## ❤️ Acknowledgements
 
 Special thanks to our contributors and supporters, particularly Media Tech Lab, for their invaluable assistance in this project.
