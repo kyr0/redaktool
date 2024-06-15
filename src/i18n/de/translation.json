@@ -16,5 +16,16 @@
   "summaryModule.tonePromptPlaceholder": "Tonalität eingeben",
   "summaryModule.tonePromptLabel": "Tonalität",
   "summaryModule.topicCountPromptPlaceholder": "three",
-  "summaryModule.topicCountPromptLabel": "Anzahl Themen (max)"
+  "summaryModule.topicCountPromptLabel": "Anzahl Themen (max)",
+  "feedback.buttonTitle": "Feedback",
+  "feedback.modalTitle": "Feedback",
+  "feedback.modalDescription": "Haben Sie Fragen, Ideen oder konstruktive Kritik? Ich freue mich von Ihnen zu hören.",
+  "feedback.formFirstName": "Vorname",
+  "feedback.formLastName": "Nachname",
+  "feedback.formEmail": "E-Mail",
+  "feedback.formMessage": "Ihre Nachricht",
+  "feedback.registeringState": "Wird gesendet...",
+  "feedback.sendNowState": "Absenden",
+  "feedback.errorTryAgainLater": "Fehler! Bitte versuchen Sie es später nochmal.",
+  "feedback.thankYou": "Vielen Dank! Ich werde mich in Kürze bei Ihnen melden."
 }

@@ -50,7 +50,7 @@ const DialogContent = React.forwardRef<
         {showOverlay && <DialogOverlay />}
         <DialogPrimitive.Content
           className={cn(
-            "ab-ftr-bg ab-grid ab-w-full ab-gap-2 ab-border ab-bg-background ab-p-2 ab-shadow-lg ab-duration-200 data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[state=closed]:ab-slide-out-to-left-1/2 data-[state=closed]:ab-slide-out-to-top-[48%] data-[state=open]:ab-slide-in-from-left-1/2 data-[state=open]:ab-slide-in-from-top-[48%] sm:ab-rounded-lg",
+            "ab-ftr-bg ab-grid ab-w-full ab-gap-2 ab-z-[51] ab-border ab-bg-background ab-p-2 ab-shadow-lg ab-duration-200 data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[state=closed]:ab-slide-out-to-left-1/2 data-[state=closed]:ab-slide-out-to-top-[48%] data-[state=open]:ab-slide-in-from-left-1/2 data-[state=open]:ab-slide-in-from-top-[48%] sm:ab-rounded-lg",
             className,
           )}
           {...props}

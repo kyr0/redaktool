@@ -1,8 +1,9 @@
 import { atom } from "nanostores";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { MarkdownEditor } from "../../MarkdownEditor";
 import { Input } from "../../../ui/input";
 import { NotepadTextDashed, PenIcon } from "lucide-react";
+import { FeedbackButton } from "../../FeedbackButton";
 
 const placeholderMarkdown = `# RedakTool
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { prefChrome, prefPerPage } from "../lib/content-script/prefs";
 import {
   Dialog,
@@ -43,11 +43,13 @@ import { cloneAndFilterNode } from "../lib/content-script/dom";
 import { ZoomFactorDropdown, type ZoomOptions } from "./ZoomFactor";
 import { Separator } from "../ui/separator";
 import { atom } from "nanostores";
+import { FeedbackButton } from "./FeedbackButton";
 
 export const extractedWebsiteDataAtom = atom<string>("");
 
 export const AppModal: React.FC<any> = ({ children }) => {
   // disabled text selection magic ;)
+  const ref = useRef<HTMLDivElement>(null);
   //useSelection()
   const { t, i18n } = useTranslation();
 
@@ -305,6 +307,8 @@ export const AppModal: React.FC<any> = ({ children }) => {
           className="ab-right-0"
         >
           {children}
+
+          <FeedbackButton containerEl={dialogRef.current} />
         </Resizable>
       </DialogContent>
     </Dialog>
