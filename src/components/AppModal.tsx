@@ -234,9 +234,12 @@ export const AppModal: React.FC<any> = ({ children }) => {
             <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
               <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
               {t("productName")}
-            </div>
 
-            <div className="ab-flex ab-flex-row ab-items-center">
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2 !ab-ml-2"
+              />
+
               <button
                 type="button"
                 onClick={onInspectButtonClick}
@@ -258,12 +261,9 @@ export const AppModal: React.FC<any> = ({ children }) => {
                   zoomFactor.set(factor);
                 }}
               />
+            </div>
 
-              <Separator
-                orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
-              />
-
+            <div className="ab-flex ab-flex-row ab-items-center">
               <button
                 type="button"
                 className={HeaderButtonStyle}
@@ -275,7 +275,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
 
               <Separator
                 orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
               />
 
               <button
