@@ -44,6 +44,7 @@ import { ZoomFactorDropdown, type ZoomOptions } from "./ZoomFactor";
 import { Separator } from "../ui/separator";
 import { atom } from "nanostores";
 import { FeedbackButton } from "./FeedbackButton";
+import { Toaster } from "../ui/sonner";
 
 export const extractedWebsiteDataAtom = atom<string>("");
 
@@ -309,6 +310,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
           {children}
 
           <FeedbackButton containerEl={dialogRef.current} />
+          <Toaster />
         </Resizable>
       </DialogContent>
     </Dialog>

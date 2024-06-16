@@ -29,6 +29,8 @@ import { useDebouncedCallback } from "use-debounce";
 import { Textarea } from "../../ui/textarea";
 import type { ModelName } from "../../lib/worker/llm/prompt";
 import { Input } from "../../ui/input";
+import { copyToClipboard } from "../../lib/content-script/clipboard";
+import { toast } from "sonner";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -132,8 +134,36 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   );
 
   const onSharePromptClick = useCallback(() => {
-    console.log("share prompt", promptPrepared);
-  }, [promptPrepared]);
+    copyToClipboard(`# RedakTool Smart-Prompt [Module: ${name}]
+
+## Sequence 1
+      
+### Prompt
+
+${promptPrepared.original.replace(/\n/g, "\n")}
+
+---
+
+### Demo values
+
+\`\`\`json
+${JSON.stringify(promptPrepared.values, null, 2)}
+\`\`\`
+`);
+
+    toast("Prompt zum Teilen kopiert!", {
+      description:
+        "Prompt wurde in die Zwischenablage kopiert und kann jetzt geteilt werden (einfach einfügen).",
+      action: {
+        label: "Open in GitHub Discussions",
+        onClick: () =>
+          window.open(
+            "https://github.com/kyr0/redaktool/discussions/2",
+            "_blank",
+          ),
+      },
+    });
+  }, [promptPrepared, name]);
 
   // sync prompt with editor content
   const onPromptChangeInternal = useCallback(

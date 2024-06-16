@@ -31,6 +31,7 @@ export interface Prompt {
   priceInput?: number;
   maxContextTokens?: number;
   estimatedOutputTokens?: number;
+  values?: Record<string, string>;
 }
 
 export function calculatePriceValue(
@@ -85,11 +86,15 @@ export const generatePrompt = <T>(
   model: ModelName,
   outputTokenScaleFactor: number,
 ): Prompt => {
-  text = applyTemplateValues(text, values as Record<string, string>);
+  const processedText = applyTemplateValues(
+    text,
+    values as Record<string, string>,
+  );
 
   return {
+    values,
     original: text,
-    text,
-    ...calculatePrompt(text, model, outputTokenScaleFactor),
+    text: processedText,
+    ...calculatePrompt(processedText, model, outputTokenScaleFactor),
   } as Prompt;
 };
