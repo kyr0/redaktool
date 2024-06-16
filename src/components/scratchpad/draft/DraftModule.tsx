@@ -32,7 +32,7 @@ export const DraftModule = () => {
   }, []);
 
   return (
-    <div className="ab-w-fit ab-h-full ab-ml-1.5 ab-flex ab-flex-col ab-justify-between ab-items-stretch">
+    <div className="ab-w-full ab-h-full ab-ml-1.5 ab-flex ab-flex-col ab-justify-between ab-items-stretch">
       <div className="ab-mb-1 ab-mt-3 ab-flex ab-flex-row ab-w-full ab-justify-between ab-items-center">
         <NotepadTextDashed className="!ab-h-6 !ab-w-6 ab-mr-2 ab-ml-2" />
         <span className="ab-text-md ab-w-fit ab-whitespace-nowrap ab-break-keep">

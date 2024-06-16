@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, SendIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
 
@@ -23,8 +22,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
-import { useTranslation, Trans } from "react-i18next";
-import { useEditor } from "@milkdown/react";
+import { useTranslation } from "react-i18next";
 
 const FormSchema = z.object({
   email: z.string().email(),
@@ -38,7 +36,7 @@ const FormSchema = z.object({
 export const FeedbackButton = ({
   containerEl,
 }: { containerEl: HTMLElement | undefined }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [containerHeightCalc, setContainerHeightCalc] = useState<number>(600);
 
   useEffect(() => {
@@ -86,7 +84,7 @@ export const FeedbackButton = ({
       }
       setIsLoading(true);
 
-      const response = await fetch("https://redaktool.ai/api/feedback", {
+      const response = await fetch("https://www.redaktool.ai/api/feedback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -123,11 +121,11 @@ export const FeedbackButton = ({
           <div
             style={{
               position: "fixed",
-              right: -37,
+              right: -35,
               top: containerHeightCalc / 2 - 50,
               width: 100,
             }}
-            className="ab-ftr-bg ab-my-auto ab-p-0 ab-m-0 ab-pb-1 ab-origin-center -ab-rotate-90 ab-border-1 md:ab-scale-105 lg:ab-scale-110 xl:ab-scale-125 ab-flex ab-transform ab-transition-opacity ab-duration-150 ab-rounded-md"
+            className="ab-ftr-bg ab-my-auto ab-p-0 ab-m-0 ab-pb-1 ab-origin-center -ab-rotate-90 ab-border-1 md:ab-scale-105 lg:ab-scale-110 xl:ab-scale-125 ab-flex ab-transform ab-transition-opacity ab-duration-150 ab-rounded-md ab-rounded-es-none ab-rounded-br-none"
           >
             <span className="ab-mx-auto !ab-text-sm">
               {t("feedback.buttonTitle")}
@@ -207,7 +205,7 @@ export const FeedbackButton = ({
                 <Button
                   disabled={isLoading}
                   size={"sm"}
-                  className="ab-w-full ab-flex ab-justify-center ab-items-center ab-text-sm"
+                  className="ab-w-full ab-flex ab-justify-center ab-items-center ab-text-sm hover:!ab-bg-primary-foreground"
                   onClick={onSendFeedbackMessage}
                 >
                   {isLoading ? (
