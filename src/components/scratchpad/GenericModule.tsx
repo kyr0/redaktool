@@ -7,6 +7,7 @@ import {
 } from "../../ui/resizable";
 import {
   MarkdownEditor,
+  milkdownEditorAtom,
   type MilkdownEditorCreatedArgs,
 } from "../MarkdownEditor";
 import { AiModelDropdown } from "../AiModelDropdown";
@@ -31,6 +32,8 @@ import type { ModelName } from "../../lib/worker/llm/prompt";
 import { Input } from "../../ui/input";
 import { copyToClipboard } from "../../lib/content-script/clipboard";
 import { toast } from "sonner";
+import { useStore } from "@nanostores/react";
+import { scrollDownMax } from "../../lib/content-script/dom";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -83,6 +86,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     priceInput: 0,
   });
 
+  const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
+
   /*
   useEffect(() => {
     if (typeof onEditorCreated === "function") {
@@ -127,10 +132,11 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   );
 
   const onEditorCreatedInternal = useCallback(
-    ({ editor }: MilkdownEditorCreatedArgs) => {
-      console.log("editor created", editor);
+    ({ editor, el, view }: MilkdownEditorCreatedArgs) => {
+      console.log("GenericModule: editor created", editor, el, view);
+      setEditorEl(el);
     },
-    [],
+    [setEditorEl],
   );
 
   const onSharePromptClick = useCallback(() => {
@@ -223,7 +229,7 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     sendPrompt(
       finalPrompt.text,
       (text: string) => {
-        console.log("onChunk", text);
+        console.log("onChunk", text, "editorEl", editorEl);
         setEditorContent((prev) => {
           if (isBeginning) {
             originalText = prev;
@@ -235,17 +241,27 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
         });
 
         isBeginning = false;
+
+        scrollDownMax(editorEl);
       },
       (lastChunkText: string) => {
-        console.log("onDone", lastChunkText);
+        console.log("onDone", lastChunkText, "editorEl", editorEl);
 
         // re-flush the editor content (fix possibly broken markdown rendering)
         partialText += lastChunkText || "";
 
         setEditorContent(`${originalText}\n---\n${partialText || ""}`);
+
+        scrollDownMax(editorEl);
       },
     );
-  }, [promptPrepared, editorContent, defaultModelName, outputTokenScaleFactor]);
+  }, [
+    promptPrepared,
+    editorContent,
+    defaultModelName,
+    outputTokenScaleFactor,
+    editorEl,
+  ]);
 
   return (
     <ResizablePanelGroup direction="vertical">

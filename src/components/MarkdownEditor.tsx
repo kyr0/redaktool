@@ -129,7 +129,10 @@ const ToolbarButton = ({ onClick, title, children, className }: any) => (
   </Button>
 );
 
-export const milkdownEditorAtom = atom<Record<string, Editor> | null>({});
+export const milkdownEditorAtom = atom<Record<
+  string,
+  { editor: Editor; root: HTMLElement }
+> | null>({});
 export const getMilkdownEditorStore = () => useStore(milkdownEditorAtom);
 
 const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
@@ -175,6 +178,15 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
                   pluginViewFactory,
                 });
               }
+
+              // register in editor reference registry
+              milkdownEditorAtom.set({
+                ...milkdownEditorAtom.get(),
+                [name]: {
+                  editor,
+                  root,
+                },
+              });
             }
           }
           //console.log("editor status change", status);
@@ -240,9 +252,6 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
         .use(proseHistory);
       //.use([remarkDirective, directiveNode, inputRule])
       //.use(linkPlugin(widgetViewFactory));
-
-      // register in editor reference registry
-      milkdownEditorAtom.set({ ...milkdownEditorAtom.get(), [name]: editor });
 
       return editor;
     },

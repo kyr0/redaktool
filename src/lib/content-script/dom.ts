@@ -70,3 +70,11 @@ export const cloneAndFilterNode = (node: Element) => {
     });
   return html;
 };
+
+export const scrollDownMax = (el: HTMLElement | null) => {
+  if (el) {
+    requestAnimationFrame(() => {
+      el.scrollTop = Number.MAX_SAFE_INTEGER;
+    });
+  }
+};

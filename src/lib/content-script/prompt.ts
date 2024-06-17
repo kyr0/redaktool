@@ -10,9 +10,9 @@ export const sendPrompt = (
 
   const updateStream = setInterval(async () => {
     try {
-      const partial = (await prefChrome(PARTIAL_RESPONSE_TEXT_NAME).get(
-        false,
-      )) as string;
+      const partial =
+        ((await prefChrome(PARTIAL_RESPONSE_TEXT_NAME).get(false)) as string) ||
+        "";
 
       onChunk(partial.slice(state.length));
 
@@ -31,7 +31,7 @@ export const sendPrompt = (
       }),
     },
     (response) => {
-      const resultText = JSON.parse(response.result);
+      const resultText = JSON.parse(response.result) || "";
 
       onDone(resultText.slice(state.length));
 
