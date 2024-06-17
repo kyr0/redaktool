@@ -8,6 +8,7 @@ export interface SummaryPromptValues extends Record<string, string> {
   CONTENT: string;
   CUSTOM_INSTRUCTION: string;
   MAX_SENTENCES_PER_TOPIC: string;
+  USER_LANGUAGE: string;
 }
 
 export const promptTemplateSummary = `You are an expert data analyst, journalist and writer with many years of professional experience.

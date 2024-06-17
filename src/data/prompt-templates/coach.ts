@@ -1,12 +1,9 @@
-// TONE
-// AUDIENCE
-// CONTENT
-
 export interface CoachPromptValues extends Record<string, string> {
   FORMAT: string; // "title", "poem", "prose", "dialogue", "short story", "long story", "essay", "article", "blog post", "script", "lyrics", "other"
   TONE: string; // "formal", "informal", "neutral", "friendly", "professional", "academic", "creative", "persuasive", "descriptive", "narrative", "expository", "argumentative", "instructional", "other"
   AUDIENCE: string; //
   CONTENT: string;
+  USER_LANGUAGE: string;
   CUSTOM_INSTRUCTION: string;
 }
 
@@ -29,7 +26,7 @@ RULES:
 - The summary MUST be structured in a "{{TYPE}}" order.
 - Respect metaphors and idioms into the CONTENT language, matching meaning.
 - Make sure the spelling and grammar is correct.
-- MUST provide feedback in {{USER_LANGUAGE}}, but keep the CONTENT's language AS IS.
+- MUST provide feedback in language "{{USER_LANGUAGE}}", but keep the CONTENT's language AS IS.
 END OF RULES.
 
 CONTENT:

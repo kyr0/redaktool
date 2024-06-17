@@ -3,6 +3,7 @@ export interface ProofreadingPromptValues extends Record<string, string> {
   AUDIENCE: string;
   EXAMPLE: string;
   CONTENT: string;
+  USER_LANGUAGE: string;
   CUSTOM_INSTRUCTION: string;
 }
 
@@ -22,7 +23,7 @@ RULES:
 - Highlight any areas where the SCRIPT deviates from the expected format or requirements.
 - The target tone for the SCRIPT is {{TONE}}.
 - Refer to the script as "script".
-- MUST advise in {{USER_LANGUAGE}}, but keep the SCRIPT content's language AS IS.
+- MUST advise in language "{{USER_LANGUAGE}}", but keep the SCRIPT content's language AS IS.
 END OF RULES.
 
 EXAMPLE:

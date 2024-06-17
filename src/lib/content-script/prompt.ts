@@ -1,6 +1,18 @@
 import { PARTIAL_RESPONSE_TEXT_NAME } from "../../shared";
 import { prefChrome } from "./prefs";
 
+export const mapUserLanguageCode = (code: string): string => {
+  code = code.toUpperCase();
+  switch (code) {
+    case "EN":
+      return "English";
+
+    case "DE":
+      return "German";
+  }
+  return code;
+};
+
 export const sendPrompt = (
   prompt: string,
   onChunk: (text: string) => void,

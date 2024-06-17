@@ -24,7 +24,10 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { sendPrompt } from "../../lib/content-script/prompt";
+import {
+  mapUserLanguageCode,
+  sendPrompt,
+} from "../../lib/content-script/prompt";
 import type { WritableAtom } from "nanostores";
 import { useDebouncedCallback } from "use-debounce";
 import { Textarea } from "../../ui/textarea";
@@ -180,21 +183,25 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
   );
 
   const debouncedPreparePrompt = useDebouncedCallback(
-    useCallback(({ editorContent, prompt }) => {
-      requestAnimationFrame(() => {
-        setPromptPrepared(
-          generatePrompt<Record<string, string>>(
-            prompt,
-            {
-              CONTENT: editorContent,
-              ...getPromptValues(),
-            },
-            defaultModelName,
-            outputTokenScaleFactor,
-          ),
-        );
-      });
-    }, []),
+    useCallback(
+      ({ editorContent, prompt }) => {
+        requestAnimationFrame(() => {
+          setPromptPrepared(
+            generatePrompt<Record<string, string>>(
+              prompt,
+              {
+                USER_LANGUAGE: mapUserLanguageCode(i18n.language),
+                CONTENT: editorContent,
+                ...getPromptValues(),
+              },
+              defaultModelName,
+              outputTokenScaleFactor,
+            ),
+          );
+        });
+      },
+      [i18n.language],
+    ),
     250,
     { maxWait: 500 },
   );
@@ -214,7 +221,7 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
       prompt,
       {
         // always available
-        USER_LANGUAGE: i18n.language,
+        USER_LANGUAGE: mapUserLanguageCode(i18n.language),
         CONTENT: editorContent,
         ...getPromptValues(),
       },
@@ -222,7 +229,7 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
       outputTokenScaleFactor,
     );
 
-    console.log("send prompt", promptPrepared);
+    console.log("send prompt", finalPrompt);
 
     let isBeginning = true;
     let originalText = "";
@@ -231,7 +238,7 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     sendPrompt(
       finalPrompt.text,
       (text: string) => {
-        console.log("onChunk", text, "editorEl", editorEl);
+        //console.log("onChunk", text, "editorEl", editorEl);
         setEditorContent((prev) => {
           if (isBeginning) {
             originalText = prev;
@@ -258,7 +265,6 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
       },
     );
   }, [
-    promptPrepared,
     editorContent,
     defaultModelName,
     outputTokenScaleFactor,

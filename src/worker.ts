@@ -142,7 +142,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             (text: string) => {
               // onChunk
               partialResponseText += text || "";
-              console.log("onChunk (internal)", text);
+              //console.log("onChunk (internal)", text);
               setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText, false);
             },
             (elapsed: number) => {

@@ -1,9 +1,7 @@
-// DATA_FORMAT
-// CONTENT
-
 export interface ExtractPromptValues extends Record<string, string> {
   DATA_FORMAT: string;
   CONTENT: string;
+  USER_LANGUAGE: string;
 }
 
 export const promptTemplateExtraction = `You are an expert data science engineer. Clean up and transform the following CONTENT and return it in data format: {{DATA_FORMAT}}
