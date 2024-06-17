@@ -15,6 +15,7 @@ import { DraftModule } from "./draft/DraftModule";
 import { TranslationModule } from "./translation/TranslationModule";
 import { SummaryModule } from "./summary/SummaryModule";
 import { CoachModule } from "./coach/CoachModule";
+import { ProofreadingModule } from "./proofreading/ProofreadingModule";
 
 export type ToolNames =
   | "source"
@@ -87,20 +88,24 @@ export const ScratchpadLayout = () => {
               Creative Writing
             </TabsTrigger>
             <TabsTrigger
+              onClick={() => setActiveView("rewrite")}
+              value="rewrite"
+              className={`!ab-pt-0 !ab-max-h-10 !ab-text-md  ${
+                activeView === "rewrite"
+                  ? "ab-ftr-active-menu-item"
+                  : "ab-ftr-menu-item"
+              }`}
+            >
+              <BookCheck className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_rewrite")}
+            </TabsTrigger>
+            <TabsTrigger
               disabled
               value="fact-check"
               className="!ab-pt-0 !ab-max-h-10 !ab-text-md"
             >
               <Scale className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
               {t("module_factcheck")}
-            </TabsTrigger>
-            <TabsTrigger
-              disabled
-              value="rewrite"
-              className="!ab-pt-0 !ab-max-h-10 !ab-text-md "
-            >
-              <BookCheck className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
-              {t("module_rewrite")}
             </TabsTrigger>
           </TabsList>
           <TabsContent
@@ -138,7 +143,7 @@ export const ScratchpadLayout = () => {
             value="rewrite"
             className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
-            TODO
+            <ProofreadingModule />
           </TabsContent>
         </Tabs>
       </ResizablePanel>

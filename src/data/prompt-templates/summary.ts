@@ -14,6 +14,7 @@ export const promptTemplateSummary = `You are an expert data analyst, journalist
 Summarize the following CONTENT into maximum {{TOPIC_COUNT}} most relevant topics, formatted as {{FORMATTING}} in Markdown.
 
 RULES:
+- IMPORTANT RULE: MUST {{CUSTOM_INSTRUCTION}}.
 - The summary MUST be formulated in a way, so that the following audience can understand it: "{{AUDIENCE}}". Explain, if the audience might not understand the topics.
 - The summary MUST be written in a the following tone: "{{TONE}}"
 - The summary MUST be structured in a "{{TYPE}}" order.
@@ -30,15 +31,12 @@ RULES:
 - Make sure the spelling and grammar are correct.
 - Response MUST NOT be wrapped in Markdown code formatting block \`\`\`.
 - The response MUST match the EXAMPLE provided in structure.
+- MUST summarize the following CONTENT into max. {{TOPIC_COUNT}} topics.
 END OF RULES.
-
-MOST IMPORTANT RULE: 
-- MUST {{CUSTOM_INSTRUCTION}}
-END OF MOST IMPORTANT RULE.
 
 EXAMPLE:
 {{EXAMPLE}}
 END OF EXAMPLE.
 
-Summarize the following CONTENT into max. {{TOPIC_COUNT}} topics:
+CONTENT:
 {{CONTENT}}`;

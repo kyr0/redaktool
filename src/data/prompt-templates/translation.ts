@@ -15,6 +15,7 @@ Translate the following CONTENT into {{TARGET_LANGUAGE}}.
 The translation MUST be written for a {{AUDIENCE}} audience in a {{TONE}} tone.
 
 RULES:
+- IMPORTANT RULE: MUST {{CUSTOM_INSTRUCTION}}.
 - response MUST NOT be wrapped in Markdown code formatting block \`\`\` 
 - Translate, if CONTENT is in a different language.
 - Adjust grammar and sentence structure to sound best for the target language
@@ -28,7 +29,8 @@ RULES:
 - If the message looks like a personal email, letter etc., translate it as such and use the correct salutation and closing for the tone.
 - Make sure the spelling and grammar are correct.
 - Must remove irrelevant links, such as share links, advertisements, icons, category or tag cloud links etc.
+- MUST translate CONTEN into: {{TARGET_LANGUAGE}}
 END OF RULES.
 
-CONTENT to translate:
+CONTENT:
 {{CONTENT}}`;

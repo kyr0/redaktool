@@ -19,6 +19,7 @@ You'll start with a short, simple rating of your writing and what's good about i
 The AUDIENCE of the CONTENT is {{AUDIENCE}} and CONTEXT for the tone is: {{CONTEXT}}.
 
 RULES:
+- IMPORTANT RULE: MUST {{CUSTOM_INSTRUCTION}}
 - Response MUST NOT be wrapped in Markdown code formatting block \`\`\` 
 - Must format response in Markdown data format.
 - The Markdown formatting in CONTENT describes the importance of the information.
@@ -28,10 +29,8 @@ RULES:
 - The summary MUST be structured in a "{{TYPE}}" order.
 - Respect metaphors and idioms into the CONTENT language, matching meaning.
 - Make sure the spelling and grammar is correct.
+- MUST provide feedback in {{USER_LANGUAGE}}, but keep the CONTENT's language AS IS.
 END OF RULES.
 
 CONTENT:
-{{CONTENT}}
-END OF CONTENT.
-
-Feedback in the language of CONTENT:`;
+{{CONTENT}}`;

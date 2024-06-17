@@ -213,6 +213,8 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     const finalPrompt = generatePrompt<Record<string, string>>(
       prompt,
       {
+        // always available
+        USER_LANGUAGE: i18n.language,
         CONTENT: editorContent,
         ...getPromptValues(),
       },
@@ -261,6 +263,7 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     defaultModelName,
     outputTokenScaleFactor,
     editorEl,
+    i18n.language,
   ]);
 
   return (
