@@ -28,8 +28,10 @@ RULES:
 - The summary MUST be structured in a "{{TYPE}}" order.
 - Respect metaphors and idioms into the CONTENT language, matching meaning.
 - Make sure the spelling and grammar is correct.
-- 
 END OF RULES.
 
-CONTENT to provide feedback on:
-{{CONTENT}}`;
+CONTENT:
+{{CONTENT}}
+END OF CONTENT.
+
+Feedback in the language of CONTENT:`;

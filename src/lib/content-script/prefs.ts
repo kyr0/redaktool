@@ -16,8 +16,12 @@ export const prefChrome = <T>(key: string, defaultValue?: T) => {
       chrome.runtime.sendMessage(
         { action: "set", text: JSON.stringify({ key, value, local }) },
         (response) => {
+          /*console.log("prefChrome:setValue:set response", response, "for", {
+            action: "set",
+            text: JSON.stringify({ key, value, local }),
+          });*/
           if (response.success) {
-            console.log("value was set", key, value, response);
+            //console.log("value was set", key, value, response);
             resolve(key);
           } else {
             reject(`value was not set for key: ${key}`);
@@ -32,10 +36,16 @@ export const prefChrome = <T>(key: string, defaultValue?: T) => {
       chrome.runtime.sendMessage(
         { action: "get", text: JSON.stringify({ key, local }) },
         (response) => {
+          /*
+          console.log("prefChrome:getValue:get response", response, "for", {
+            action: "get",
+            text: JSON.stringify({ key, local }),
+          });
+          */
           if (response.success) {
             try {
               const value = JSON.parse(response.value);
-              console.log("got value for", key, "value", value);
+              //console.log("got value for", key, "value", value);
               resolve(value);
             } catch (error) {
               resolve(defaultValue);
@@ -48,10 +58,12 @@ export const prefChrome = <T>(key: string, defaultValue?: T) => {
     });
   }
   return {
-    get: async (local = true): Promise<T> =>
-      typeof (getValue(getNamespacedKey(key), local) as T) === "undefined"
+    get: async (local = true): Promise<T> => {
+      const v = (await getValue(getNamespacedKey(key), local)) as T;
+      return typeof v === "undefined"
         ? (Promise.resolve(defaultValue) as T)
-        : (getValue(getNamespacedKey(key)) as T),
+        : v;
+    },
     set: async (value: T, local = true) =>
       setValue(getNamespacedKey(key), value, local),
   };

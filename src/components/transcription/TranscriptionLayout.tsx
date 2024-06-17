@@ -53,7 +53,7 @@ async function transcribeInWorker(blob: Blob) {
           console.log("transcribeInWorker response", response);
           if (response.success) {
             const value = JSON.parse(response.value);
-            console.log("got value", value);
+            //console.log("got value", value);
             resolve(value);
           } else {
             reject("could not transcribe");

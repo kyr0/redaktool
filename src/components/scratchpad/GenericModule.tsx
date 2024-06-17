@@ -217,21 +217,32 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     console.log("send prompt", promptPrepared);
 
     let isBeginning = true;
+    let originalText = "";
+    let partialText = "";
 
     sendPrompt(
       finalPrompt.text,
       (text: string) => {
         console.log("onChunk", text);
-        setEditorContent(
-          (prev) => `${prev || ""}${isBeginning ? "\n---\n" : ""}${text || ""}`,
-        );
+        setEditorContent((prev) => {
+          if (isBeginning) {
+            originalText = prev;
+          }
+
+          partialText += text || "";
+
+          return `${prev || ""}${isBeginning ? "\n---\n" : ""}${text || ""}`;
+        });
 
         isBeginning = false;
       },
       (lastChunkText: string) => {
         console.log("onDone", lastChunkText);
 
-        setEditorContent((prev) => `${prev || ""}${lastChunkText || ""}`);
+        // re-flush the editor content (fix possibly broken markdown rendering)
+        partialText += lastChunkText || "";
+
+        setEditorContent(`${originalText}\n---\n${partialText || ""}`);
       },
     );
   }, [promptPrepared, editorContent, defaultModelName, outputTokenScaleFactor]);

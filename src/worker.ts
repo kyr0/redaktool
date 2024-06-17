@@ -49,11 +49,21 @@ const getValue = async (key: string, defaultValue?: string, local = true) => {
     ? chrome.storage.local
     : chrome.storage.session
   ).get([key]);
-  console.log("result", result);
+  console.log(
+    "getValue result",
+    result,
+    "for key",
+    key,
+    "default",
+    defaultValue,
+    "local",
+    local,
+  );
   return typeof result[key] === "undefined" ? defaultValue : result[key];
 };
 
 const setValue = async (key: string, value: any, local = true) => {
+  console.log("setValue value", value, "for key", key, "local", local);
   await (local ? chrome.storage.local : chrome.storage.session).set({
     [key]: value,
   });
@@ -92,6 +102,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Example processing: log action and text
       console.log("Action:", request.action);
       console.log("Data:", JSON.stringify(data));
+      console.log("Data (parsed):", data);
 
       switch (request.action) {
         case "get":
@@ -99,7 +110,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const value = await getValue(
               data.key,
               undefined,
-              data.local || true,
+              data.local === false ? false : true,
             );
 
             console.log("GET", data.key, value);
@@ -110,7 +121,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         case "set":
           console.log("SET", data.key, data.value);
-          await setValue(data.key, data.value, data.local || true);
+          await setValue(
+            data.key,
+            data.value,
+            data.local === false ? false : true,
+          );
           sendResponse({ success: true });
           break;
         case "prompt": {

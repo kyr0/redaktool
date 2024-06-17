@@ -52,7 +52,7 @@ export const fixLinks = (markdown: string): string =>
     .replace(
       /\[\s*(.+?)\s*\]\((.+?)\)/gs,
       (match, p1, p2) =>
-        `[${markdownTrim(p1.replace(/\s*\n\s*/g, " "))}](${p2})`,
+        `[${markdownTrim(p1.replace(/\s*\n\s*/g, " "))}](${markdownTrim(p2)})`,
     )
     .replace(/(\S)\[(.+?)\]\((.+?)\)(\S)/g, "$1 [$2]($3) $4") // Ensure space around links
     .replace(/(\S)\[(.+?)\]\((.+?)\)/g, "$1 [$2]($3)") // Space after the link
@@ -72,7 +72,9 @@ export const fixHeadingsWithoutNewlines = (markdown: string): string =>
   markdown.replace(/(^|\n)([^\n]*?)(?=\n?#)/g, (match, p1, p2) => {
     // Trim the leading and trailing whitespace
     const trimmed = markdownTrim(p2);
-    return trimmed ? `${p1}${trimmed}\n\n` : `${p1}${trimmed}`;
+    return trimmed
+      ? `${markdownTrim(p1)}${trimmed}\n\n`
+      : `${markdownTrim(p1)}${trimmed}`;
   });
 
 // trims leading and trailing whitespace, newline, and other non-printable characters without affecting UTF-8 symbols.
@@ -83,7 +85,7 @@ export const postProcessMarkdown = (markdown: string): string =>
   removeNonStandardProtocolHrefs(
     fixHeadingsWithoutNewlines(
       trimLeadingElementWhitespace(
-        fixMissingLinkWhenTitleIsSet(fixHeadingLinks(fixLinks(markdown))),
+        fixMissingLinkWhenTitleIsSet(fixLinks(markdown)),
       ),
     ),
   );
@@ -95,7 +97,7 @@ export const removeNonStandardProtocolHrefs = (markdown: string): string =>
       if (p2 !== undefined) {
         // This handles the heading formatting
         const trimmed = markdownTrim(p2);
-        return `${p1}${trimmed}\n\n`;
+        return `${markdownTrim(p1)}${trimmed}\n\n`;
       }
       // This handles the non-http/https link removal
       return "";
@@ -107,20 +109,23 @@ export const fixHeadingLinks = (markdown: string): string =>
   markdown.replace(/(\[#+\s*)(.+?)\s*\](\(.+?\))/g, (match, p1, p2, p3) => {
     const headingText = markdownTrim(p2);
     const headingLevel = markdownTrim(p1).replace("[", "");
-    return `${headingLevel} ${headingText}\n\n[${headingText}]${p3}`;
+    return `${headingLevel} ${headingText}\n\n[${headingText}]${markdownTrim(
+      p3,
+    )}`;
   });
 
 export const fixMissingLinkWhenTitleIsSet = (markdown: string): string =>
   markdown.replace(
     /\[\s*\]\((.+?)\s+"(.+?)"\)/g,
-    (match, p1, p2) => `[${p2}](${p1} "${p2}")`,
+    (match, p1, p2) =>
+      `[${markdownTrim(p2)}](${markdownTrim(p1)} "${markdownTrim(p2)}")`,
   );
 
 export const trimLeadingElementWhitespace = (markdown: string): string =>
   markdown.replace(/^\s+([#\[])/gm, (match) => markdownTrim(match));
 
 const escapeMarkdown = (text: string): string => {
-  return text.replace(/([\\`*{}[\]()#+\-.!_>])/g, "$1");
+  return text.replace(/([\\\`*{}[\]()#+\-.!_>])/g, "");
 };
 
 // function to transform html links to markdown links
