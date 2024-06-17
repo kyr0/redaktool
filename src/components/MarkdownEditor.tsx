@@ -91,6 +91,8 @@ export interface MilkdownEditorCreatedArgs {
   pluginViewFactory: (
     options: ReactPluginViewUserOptions,
   ) => (view: EditorView) => PluginView;
+  setValue?: (value: string) => void;
+  getValue?: () => string;
 }
 
 export interface MilkdownInternalProps {
@@ -176,6 +178,12 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
                   prevState,
                   widgetViewFactory,
                   pluginViewFactory,
+                  setValue: (value: string) => {
+                    editor.action(replaceAll(value));
+                  },
+                  getValue: () => {
+                    return editor.action(getMarkdown());
+                  },
                 });
               }
 
@@ -416,7 +424,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   placeholder,
   onChange,
   onCreated,
-}: MarkdownEditorProps) => {
+}) => {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [value, setValue] = useState<string>(defaultValue);
 

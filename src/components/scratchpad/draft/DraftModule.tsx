@@ -1,9 +1,14 @@
 import { atom } from "nanostores";
-import { useCallback, useRef, useState } from "react";
-import { MarkdownEditor } from "../../MarkdownEditor";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  MarkdownEditor,
+  type MilkdownEditorCreatedArgs,
+} from "../../MarkdownEditor";
 import { Input } from "../../../ui/input";
 import { NotepadTextDashed, PenIcon } from "lucide-react";
 import { FeedbackButton } from "../../FeedbackButton";
+import { db } from "../../../lib/content-script/db";
+import { useEditor } from "@milkdown/react";
 
 const placeholderMarkdown = `# RedakTool
 
@@ -19,17 +24,59 @@ const placeholderMarkdown = `# RedakTool
 * KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.`;
 
 // content cache
-const writerAtom = atom<string>(placeholderMarkdown);
+const writerAtom = atom<string>("Loading...");
 
 export const DraftModule = () => {
   const [writerContent, setEditorContent] = useState<string>(writerAtom.get());
 
+  const { get, set } = useMemo(() => db<string>("draft"), []);
+
+  useEffect(() => {
+    (async () => {
+      // read initially from db
+      const markdown = await get();
+      console.log("DraftModule: markdown loaded", markdown);
+      setEditorContent(markdown || placeholderMarkdown);
+      writerAtom.set(markdown);
+    })();
+  }, [get, writerAtom, setEditorContent]);
+
   // sync editor content with extraction
-  const onWriterChange = useCallback((markdown: string) => {
-    setEditorContent(markdown);
-    // cache the editor content
-    writerAtom.set(markdown);
-  }, []);
+  const onWriterChange = useCallback(
+    (markdown: string) => {
+      setEditorContent(markdown);
+
+      // save to db
+      set(markdown);
+
+      // cache the editor content
+      writerAtom.set(markdown);
+    },
+    [set],
+  );
+
+  const onEditorCreated = useCallback(
+    ({ getValue, setValue }: MilkdownEditorCreatedArgs) => {
+      //console.log("onEditorCreated getValue", getValue!());
+
+      const checkTabActiveInterval = setInterval(async () => {
+        // update the content, may be changed in other tabs, when inactive
+        if (document.hidden) {
+          console.log("tab is inactive");
+          const markdown = await get();
+          setValue!(markdown);
+          // cache the editor content
+          writerAtom.set(markdown);
+          setEditorContent(markdown);
+          return;
+        }
+      }, 50);
+      return () => {
+        clearInterval(checkTabActiveInterval);
+      };
+    },
+    [writerAtom],
+  );
 
   return (
     <div className="ab-w-full ab-h-full ab-ml-1.5 ab-flex ab-flex-col ab-justify-between ab-items-stretch">
@@ -51,6 +98,7 @@ export const DraftModule = () => {
           name="writerEditor"
           showToolbar={true}
           onChange={onWriterChange}
+          onCreated={onEditorCreated}
         />
       </div>
       <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-ftr-bg ab-rounded-sm ab-items-center ab-justify-between">

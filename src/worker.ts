@@ -9,6 +9,8 @@ import {
 import { OPEN_AI_API_KEY_NAME, PARTIAL_RESPONSE_TEXT_NAME } from "./shared";
 import { getNamespacedKey } from "./lib/content-script/utils";
 import { systemPromptStreaming } from "./lib/worker/llm/prompt";
+import { compileSmartPrompt } from "./lib/worker/prompt";
+import { dbGetValue, dbSetValue } from "./lib/worker/db";
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
@@ -105,6 +107,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log("Data (parsed):", data);
 
       switch (request.action) {
+        case "db-get": {
+          const result = await dbGetValue(data.key);
+          sendResponse({ success: true, value: JSON.stringify(result) });
+          break;
+        }
+
+        case "db-set": {
+          const pk = await dbSetValue(data.key, data.value);
+          sendResponse({ success: true, value: JSON.stringify({ pk }) });
+          break;
+        }
+
+        // persistent value storage: get
         case "get":
           try {
             const value = await getValue(
@@ -119,6 +134,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: false, value: undefined });
           }
           break;
+
+        // persistent value storage: set
         case "set":
           console.log("SET", data.key, data.value);
           await setValue(
@@ -128,6 +145,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           );
           sendResponse({ success: true });
           break;
+
+        // multi-provider LLM prompt processing
         case "prompt": {
           // TODO: define a "pipeline" for each prompt to run in parallel
 
@@ -216,6 +235,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         }
 
+        // compilation of smart prompt; handled in worker process for security context separation and for performance
+        case "compile-prompt": {
+          const compileResult = compileSmartPrompt(
+            data.promptTemplate,
+            data.inputValues,
+          );
+
+          console.log("compileResult", compileResult);
+          sendResponse({
+            success: compileResult.error ? false : true,
+            value: JSON.stringify(compileResult),
+          });
+          break;
+        }
+
+        // whisper audio transcription
         case "transcribe": {
           console.log("prompt", data.blobDataUrl);
 
@@ -233,6 +268,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         }
 
+        // news radar rss feed fetching
         case "rss": {
           console.log("rssFeedUrl", data.rssFeedUrl);
 

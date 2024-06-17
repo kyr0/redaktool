@@ -1,53 +1,46 @@
-import Dexie, { type Table } from "dexie";
-
-export interface KeyValue {
-  id?: number;
-  key?: string;
-  value?: string;
-}
-
-export class RedakDatabase extends Dexie {
-  public keyValues!: Table<KeyValue, number>;
-
-  public constructor() {
-    super("RedakDatabase");
-    this.version(1).stores({
-      keyValues: "++id,key,value",
+// async chrome extension storage-synced db key values, connected to worker
+export const db = <T>(key: string, defaultValue?: T) => {
+  async function setValue(key: string, value: any) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        { action: "db-set", text: JSON.stringify({ key, value }) },
+        (response) => {
+          if (response.success) {
+            resolve(key);
+          } else {
+            reject(`value was not set for key: ${key}`);
+          }
+        },
+      );
     });
   }
-}
 
-export const db = new RedakDatabase();
-
-export const dbGetValue = async (key: string): Promise<string | undefined> => {
-  return new Promise((resolve, reject) => {
-    db.transaction("rw", db.keyValues, async () => {
-      const records = await db.keyValues.where("key").equals(key).toArray();
-      if (records.length === 0) {
-        resolve(undefined);
-      } else {
-        resolve(records[0].value);
-      }
-    }).catch((e) => {
-      reject(e);
+  async function getValue(key: string) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        { action: "db-get", text: JSON.stringify({ key }) },
+        (response) => {
+          if (response.success) {
+            try {
+              const value = JSON.parse(response.value);
+              resolve(value);
+            } catch (error) {
+              resolve(defaultValue);
+            }
+          } else {
+            reject(`could not get value for key: ${key}`);
+          }
+        },
+      );
     });
-  });
-};
-
-export const dbSetValue = async (
-  key: string,
-  value: string,
-): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    db.transaction("rw", db.keyValues, async () => {
-      const count = await db.keyValues.where({ key }).count();
-      if (count === 0) {
-        resolve(await db.keyValues.add({ key, value }));
-      } else {
-        resolve(await db.keyValues.where({ key }).modify({ value }));
-      }
-    }).catch((e) => {
-      reject(e);
-    });
-  });
+  }
+  return {
+    get: async (): Promise<T> => {
+      const v = (await getValue(key)) as T;
+      return typeof v === "undefined"
+        ? (Promise.resolve(defaultValue) as T)
+        : v;
+    },
+    set: async (value: T) => setValue(key, value),
+  };
 };

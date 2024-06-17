@@ -83,7 +83,7 @@ export const AppModal: React.FC<any> = ({ children }) => {
     "ab-fixed ab-left-[100px] ab-top-[100px]",
   );
 
-  const [zoomClasses, setZoomClasses] = useState<ZoomOptions>();
+  const [zoomClasses, setZoomClasses] = useState<ZoomOptions>(zoomFactor.get());
 
   useEffect(() => {
     // restore zoom factor and language

@@ -9,7 +9,6 @@ const priceModels = {
   },
 };
 
-// TODO: replace by https://github.com/handlebars-lang/handlebars.js
 export const applyTemplateValues = (
   promptTemplate: string,
   values: Record<string, string>,
@@ -97,4 +96,25 @@ export const generatePrompt = <T>(
     text: processedText,
     ...calculatePrompt(processedText, model, outputTokenScaleFactor),
   } as Prompt;
+};
+
+export const compilePrompt = (
+  promptTemplate: string,
+  inputValues: Record<string, string>,
+) => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      {
+        action: "compile-prompt",
+        text: JSON.stringify({ promptTemplate, inputValues }),
+      },
+      (response) => {
+        if (response.success) {
+          resolve(response);
+        } else {
+          reject(response.error);
+        }
+      },
+    );
+  });
 };

@@ -13,6 +13,7 @@ import {
 import { AiModelDropdown } from "../AiModelDropdown";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import {
+  compilePrompt,
   generatePrompt,
   type Prompt,
 } from "../../lib/content-script/prompt-template";
@@ -56,7 +57,9 @@ export interface GenericModuleProps extends PropsWithChildren {
   defaultModelName: ModelName;
   getPromptValues: () => Record<string, string>;
   onCustomInstructionChange: (instruction: string) => void;
-  onEditorCreated?: (args: CallbackArgs) => void;
+  onEditorCreated?: (
+    args: CallbackArgs & { args: MilkdownEditorCreatedArgs },
+  ) => void;
   onEditorChange?: (args: CallbackArgs) => void;
   onPromptChange?: (args: CallbackArgs) => void;
   onPromptShare?: (args: CallbackArgs) => void;
@@ -80,6 +83,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const { t, i18n } = useTranslation();
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
   const [prompt, setPrompt] = useState<string>(defaultPromptTemplate);
+  const [internalEditorArgs, setInternalEditorArgs] =
+    useState<MilkdownEditorCreatedArgs>();
   const [promptPrepared, setPromptPrepared] = useState<Prompt>({
     original: defaultPromptTemplate,
     text: "",
@@ -114,7 +119,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   */
 
   useEffect(() => {
-    if (typeof onEditorCreated === "function") {
+    if (typeof onEditorCreated === "function" && internalEditorArgs) {
       onEditorCreated({
         editorContent,
         prompt,
@@ -122,9 +127,10 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         setPrompt,
         promptPrepared,
         setPromptPrepared,
+        args: internalEditorArgs,
       });
     }
-  }, []);
+  }, [internalEditorArgs, onEditorCreated]);
 
   // sync editor content with extraction
   const onEditorChangeInternal = useCallback(
@@ -135,11 +141,11 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   );
 
   const onEditorCreatedInternal = useCallback(
-    ({ editor, el, view }: MilkdownEditorCreatedArgs) => {
-      console.log("GenericModule: editor created", editor, el, view);
-      setEditorEl(el);
+    (args: MilkdownEditorCreatedArgs) => {
+      setEditorEl(args.el);
+      setInternalEditorArgs(args);
     },
-    [setEditorEl],
+    [setEditorEl, setInternalEditorArgs],
   );
 
   const onSharePromptClick = useCallback(() => {
@@ -185,7 +191,13 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
   const debouncedPreparePrompt = useDebouncedCallback(
     useCallback(
       ({ editorContent, prompt }) => {
-        requestAnimationFrame(() => {
+        requestAnimationFrame(async () => {
+          // TODO: implement parser for smartprompt
+          console.log(
+            "new smartprompt parser",
+            await compilePrompt(prompt, getPromptValues()),
+          );
+
           setPromptPrepared(
             generatePrompt<Record<string, string>>(
               prompt,
