@@ -8,6 +8,7 @@
     "test": "bun test",
     "scrape": "bun run ./scripts/scrape.ts",
     "parse": "bun run ./scripts/parse.ts",
+    "release": "bun run ./scripts/release.ts",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
   },
   "author": "Aron Homberg <aron.homberg@fluctura.com>",

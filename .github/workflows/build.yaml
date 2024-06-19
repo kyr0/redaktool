@@ -1,0 +1,23 @@
+name: GitHub Actions Nightly Build
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  Deploy-Production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - name: Install dependencies
+        run: bun install
+      - name: Build the project
+        run: bun run dev
+      - name: Prepare a release
+        run: bun run release
+      - name: Create tag and release
+        run: |
+          gh release create redaktool_nightly.zip -p -t "Nightly release" --latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
