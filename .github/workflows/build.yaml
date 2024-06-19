@@ -18,7 +18,7 @@ jobs:
       - name: Prepare a release
         run: bun run release
       - name: Publish pre-release
-        run: |
-          gh release create redaktool_nightly.zip -p -t "Nightly release" --latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: 'redaktool.zip'

@@ -175,5 +175,5 @@ dist
 .DS_Store
 
 # Release
-redaktool_nightly/
-redaktool_nightly.zip
+redaktool/
+redaktool.zip

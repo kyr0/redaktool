@@ -27,7 +27,7 @@ await $`rm -rf ./release`;
 const copyToReleaseFolder = async (filePath: string) => {
   const file = Bun.file(filePath);
   console.log(`Copying ${filePath}`)
-  await Bun.write(`./redaktool_nightly/${filePath}`, file);
+  await Bun.write(`./redaktool/${filePath}`, file);
 }
 
 for await (const filePath of glob.scan(".")) {
@@ -42,6 +42,4 @@ for await (const filePath of glob.scan(".")) {
   }
 }
 
-const zip = await $`zip -r redaktool_nightly.zip ./redaktool_nightly`.text();
-
-console.log(zip);
+console.log(await $`zip -r redaktool.zip ./redaktool`.text());
