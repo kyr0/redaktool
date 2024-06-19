@@ -1,4 +1,3 @@
-import { ConfigOpts } from './../release/node_modules/openai-fetch/dist/openai-client.d';
 import { Glob, $ } from "bun";
 
 const glob = new Glob("**/*");

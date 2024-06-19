@@ -1,18 +1,40 @@
-import Handlebars from "handlebars";
+import {
+  Hash,
+  Tag,
+  type TagToken,
+  type Context,
+  type TopLevelToken,
+  Liquid,
+} from "liquidjs";
+import JSON5 from "json5";
 
 export type ParseResult = {
   key: string;
-  defaultValue: string;
+  default: string;
   options: Array<string>;
+  label: string;
+  order: number;
 };
 
 export type ParseSmartPromptResult = {
-  handlebarsTemplateText: string;
+  promptTemplate: string;
   meta: Record<string, ParseResult>;
   inputValues: Record<string, string>;
   templateValues: Record<string, string>;
   prompt: string;
   error?: unknown;
+};
+
+const defaultMeta = (meta: Record<string, ParseResult>, key: string) => {
+  if (!meta[key]) {
+    meta[key] = {
+      key,
+      default: "",
+      options: [],
+      label: key,
+      order: 0,
+    };
+  }
 };
 
 /** smart prompt compiler (preprocessor for meta data followed by handlebars compilation pass) */
@@ -21,42 +43,93 @@ export const compileSmartPrompt = (
   inputValues: Record<string, string>,
 ): ParseSmartPromptResult => {
   let prompt = "";
-  let handlebarsTemplateText = "";
   let error;
   const meta: Record<string, ParseResult> = {};
   const templateValues: Record<string, string> = {};
 
   try {
-    handlebarsTemplateText = promptTemplate.replace(
-      // support {{ KEY }}, {{ KEY || "default Value" }} and {{ KEY || "defaultValue" || ["option1", "option2"] }} syntaxes
-      // parses it, and replaces it with the resolved value only
-      /{{\s*([A-Z0-9_]+)\s*(?:\|\|\s*"([^"]*)")?(?:\|\|\s*(\[.*?\]))?\s*}}/g,
-      (_, key, defaultValue = "", options = "[]") => {
-        const sanitizedKey = key.trim().toUpperCase();
-        const resolvedValue = inputValues[sanitizedKey] ?? defaultValue;
+    const engine = new Liquid();
 
-        // store the resolved value (default or input value)
-        templateValues[sanitizedKey] = resolvedValue;
+    // meta data for fields
+    /** 
+     {% field FIELD_NAME: "{ 
+        default: 'bar', 
+        label: 'foo', 
+        options: ['bar', 'baz'] 
+      }" %}
+     {% field FIELD_NAME_2 = "{ options: ['bar', 'baz'] }" %} 
+     */
 
-        meta[sanitizedKey] = {
-          key: sanitizedKey,
-          defaultValue,
-          options: JSON.parse(options),
-        };
-        return `{{${sanitizedKey}}}`;
+    let fieldIndex = 0;
+    engine.registerTag(
+      "field",
+      class DefaultTag extends Tag {
+        private hash: Hash;
+        constructor(
+          tagToken: TagToken,
+          remainTokens: TopLevelToken[],
+          liquid: Liquid,
+        ) {
+          super(tagToken, remainTokens, liquid);
+
+          const hashNonJekyllStyle = new Hash(tagToken.args);
+          const hashJekyllStyle = new Hash(tagToken.args, true);
+
+          const hashNonJekyllStyleHasUndefineds = Object.values(
+            hashNonJekyllStyle.hash,
+          ).some((v) => v === undefined);
+          const hashJekyllStyleHasUndefineds = Object.values(
+            hashJekyllStyle.hash,
+          ).some((v) => v === undefined);
+
+          // both syntaxes are supported
+          this.hash = hashNonJekyllStyleHasUndefineds
+            ? hashJekyllStyle
+            : hashJekyllStyleHasUndefineds
+              ? hashNonJekyllStyle
+              : new Hash("");
+        }
+        *render(ctx: Context) {
+          const hash: { [key: string]: string | boolean | number } =
+            yield this.hash.render(ctx);
+
+          const keys = Object.keys(hash);
+
+          for (const key of keys) {
+            // lazy JSON5 parsing
+            const value = JSON5.parse(String(hash[key])) as ParseResult;
+            value.key = key;
+
+            // evaluate default value
+            templateValues[key] = inputValues[key] ?? value.default;
+
+            defaultMeta(meta, key);
+
+            // meta data merge
+            meta[key].default = value.default;
+
+            meta[key].label = value.label ?? key;
+
+            meta[key].order = fieldIndex;
+
+            if (value.options) {
+              meta[key].options = value.options;
+            }
+            fieldIndex++;
+          }
+          return ""; // no rendering
+        }
       },
     );
 
-    // pass 2: handlebars compile / AST transform
-    const template = Handlebars.compile(handlebarsTemplateText);
-    prompt = template(templateValues); // apply handlebars with analyzed values
+    prompt = engine.parseAndRenderSync(promptTemplate, templateValues);
   } catch (e) {
-    error = e;
+    error = (e as Error).message;
   }
 
   return {
     templateValues,
-    handlebarsTemplateText,
+    promptTemplate,
     meta,
     inputValues,
     prompt,

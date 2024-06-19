@@ -109,10 +109,11 @@ export const compilePrompt = (
         text: JSON.stringify({ promptTemplate, inputValues }),
       },
       (response) => {
+        const value = JSON.parse(response.value);
         if (response.success) {
-          resolve(response);
+          resolve(value);
         } else {
-          reject(response.error);
+          reject(value.error);
         }
       },
     );

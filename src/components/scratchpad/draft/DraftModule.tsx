@@ -63,11 +63,15 @@ export const DraftModule = () => {
         // update the content, may be changed in other tabs, when inactive
         if (document.hidden) {
           console.log("tab is inactive");
-          const markdown = await get();
-          setValue!(markdown);
-          // cache the editor content
-          writerAtom.set(markdown);
-          setEditorContent(markdown);
+          try {
+            const markdown = await get();
+            setValue!(markdown);
+            // cache the editor content
+            writerAtom.set(markdown);
+            setEditorContent(markdown);
+          } catch (e) {
+            // ignore
+          }
           return;
         }
       }, 50);
