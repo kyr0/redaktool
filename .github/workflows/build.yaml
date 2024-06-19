@@ -5,7 +5,8 @@ on:
     branches:
       - main
 jobs:
-  Deploy-Production:
+  build-and-pre-release:
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +17,7 @@ jobs:
         run: bun run dev
       - name: Prepare a release
         run: bun run release
-      - name: Create tag and release
+      - name: Publish pre-release
         run: |
           gh release create redaktool_nightly.zip -p -t "Nightly release" --latest
         env:
