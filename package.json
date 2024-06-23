@@ -4,7 +4,7 @@
   "description": "Browser extension, designed for editors and professionals engaged in text-related research, writing, and evaluation tasks.",
   "scripts": {
     "predev": "mkdir -p ./dist && cp -R ./css/* ./dist/ && bun tailwindcss -i ./css/style-dark.scss -o ./dist/style-dark.css && bun tailwindcss -i ./css/style-light.scss -o ./dist/style-light.css",
-    "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/worker.js && bun build ./src/content-script.tsx --loader .css:text --outfile=./dist/content-script.js --outdir=./dist",
+    "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/worker.js && bun build ./src/content-script.tsx --loader .css:text --loader .liquid:text --outfile=./dist/content-script.js --outdir=./dist",
     "test": "bun test",
     "scrape": "bun run ./scripts/scrape.ts",
     "release": "bun run ./scripts/release.ts",

@@ -1,5 +1,6 @@
 import { encodingForModel } from "js-tiktoken";
 import type { ModelName } from "../worker/llm/prompt";
+import type { ParseSmartPromptResult } from "../worker/prompt";
 
 const priceModels = {
   "gpt-4o": {
@@ -101,7 +102,7 @@ export const generatePrompt = <T>(
 export const compilePrompt = (
   promptTemplate: string,
   inputValues: Record<string, string>,
-) => {
+): Promise<ParseSmartPromptResult> => {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
       {

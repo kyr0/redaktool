@@ -38,6 +38,13 @@ import { copyToClipboard } from "../../lib/content-script/clipboard";
 import { toast } from "sonner";
 import { useStore } from "@nanostores/react";
 import { scrollDownMax } from "../../lib/content-script/dom";
+import type {
+  ParseResult,
+  ParseSmartPromptResult,
+} from "../../lib/worker/prompt";
+import { set } from "../../../dist/worker";
+import { FormLabel } from "../../ui/form";
+import { Label } from "../../ui/label";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -95,6 +102,10 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   });
 
   const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
+  const [dynamicFields, setDynamicFields] = useState<Array<ParseResult>>([]);
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<
+    Record<string, string>
+  >({});
 
   /*
   useEffect(() => {
@@ -188,14 +199,53 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     [setPrompt],
   );
 
+  const getValidatedDynamicFieldValues = useCallback(
+    (secondPassDynamicFields?: ParseResult[]) => {
+      const fields = secondPassDynamicFields || dynamicFields;
+      let fieldValues = Object.assign({}, dynamicFieldValues);
+      for (const field of fields) {
+        // set default values for dynamic fields
+        if (typeof dynamicFieldValues[field.key] === "undefined") {
+          fieldValues = {
+            ...fieldValues,
+            [field.key]: fields.find((f) => f.key === field.key)?.default || "",
+          };
+        }
+      }
+      return fieldValues;
+    },
+    [dynamicFieldValues, dynamicFields],
+  );
+
   const debouncedPreparePrompt = useDebouncedCallback(
     useCallback(
       ({ editorContent, prompt }) => {
         requestAnimationFrame(async () => {
-          // TODO: implement parser for smartprompt
+          console.log("dynamicFieldValues");
+
+          // first pass compiler for dynamic fields
+          const parsedPrompt = await compilePrompt(
+            prompt,
+            getValidatedDynamicFieldValues(),
+          );
+          console.log("new smartprompt parser", parsedPrompt);
+
+          const dynamicFields = Object.keys(parsedPrompt.meta)
+            .map((key) => parsedPrompt.meta[key])
+            .sort((a, b) => a.order - b.order);
+
+          // trigger dynamic field re-rendering
+          setDynamicFields(dynamicFields);
+
+          // second pass value evaluation
+          const secondPassDynamicFieldValues =
+            getValidatedDynamicFieldValues(dynamicFields);
+
           console.log(
-            "new smartprompt parser",
-            await compilePrompt(prompt, getPromptValues()),
+            "dynamicFields",
+            dynamicFields,
+            "secondPassDynamicFieldValues",
+            secondPassDynamicFieldValues,
           );
 
           setPromptPrepared(
@@ -212,7 +262,7 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
           );
         });
       },
-      [i18n.language],
+      [i18n.language, dynamicFieldValues, setDynamicFieldValues],
     ),
     250,
     { maxWait: 500 },
@@ -314,6 +364,54 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
             <div
               className={`ab-flex ab-h-full ab-items-center ab-justify-center ab-p-2 ${promptSettingsWrapperClassName}`}
             >
+              {dynamicFields.map((field) => (
+                <div key={field.key} className="ab-mb-2">
+                  <Label className="ab-mb-2 ab-flex">{field.label}</Label>
+
+                  {field.type === "text" ||
+                    (field.type === "number" && (
+                      <Input
+                        type={field.type || "text"}
+                        name={`${name}${field.key}Input`}
+                        placeholder={field.label}
+                        value={dynamicFieldValues[field.key] || field.default}
+                        className="!ab-block !ab-text-sm"
+                        onChange={(evt) => {
+                          console.log(
+                            "field change",
+                            field.key,
+                            evt.target.value,
+                          );
+                          setDynamicFieldValues((prev) => ({
+                            ...prev,
+                            [field.key]: evt.target.value,
+                          }));
+                        }}
+                      />
+                    ))}
+
+                  {field.type !== "textarea" && (
+                    <Textarea
+                      name={`${name}${field.key}Input`}
+                      placeholder={field.label}
+                      value={dynamicFieldValues[field.key] || field.default}
+                      className="!ab-block !ab-text-sm"
+                      onChange={(evt) => {
+                        console.log(
+                          "field change",
+                          field.key,
+                          evt.target.value,
+                        );
+                        setDynamicFieldValues((prev) => ({
+                          ...prev,
+                          [field.key]: evt.target.value,
+                        }));
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+
               {children}
             </div>
           </ResizablePanel>

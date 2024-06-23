@@ -6,6 +6,9 @@ import {
   promptTemplateCoach,
 } from "../../../data/prompt-templates/coach";
 
+// @ts-ignore
+import coachPrompt from "../../../data/prompt-templates/coach.liquid";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -39,6 +42,8 @@ const CoachPromptValuesSchema = z.object({
 
 export const CoachModule = () => {
   const { t, i18n } = useTranslation();
+
+  console.log("liquid prompt", coachPrompt);
 
   const form = useForm<z.infer<typeof CoachPromptValuesSchema>>({
     resolver: zodResolver(CoachPromptValuesSchema),

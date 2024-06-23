@@ -7,6 +7,7 @@ import {
   Liquid,
 } from "liquidjs";
 import JSON5 from "json5";
+import type { HTMLInputTypeAttribute } from "react";
 
 export type ParseResult = {
   key: string;
@@ -14,6 +15,7 @@ export type ParseResult = {
   options: Array<string>;
   label: string;
   order: number;
+  type?: HTMLInputTypeAttribute;
 };
 
 export type ParseSmartPromptResult = {
@@ -33,6 +35,7 @@ const defaultMeta = (meta: Record<string, ParseResult>, key: string) => {
       options: [],
       label: key,
       order: 0,
+      type: "text",
     };
   }
 };
@@ -52,12 +55,15 @@ export const compileSmartPrompt = (
 
     // meta data for fields
     /** 
+     
      {% field FIELD_NAME: "{ 
         default: 'bar', 
         label: 'foo', 
         options: ['bar', 'baz'] 
       }" %}
+
      {% field FIELD_NAME_2 = "{ options: ['bar', 'baz'] }" %} 
+     
      */
 
     let fieldIndex = 0;
@@ -109,6 +115,8 @@ export const compileSmartPrompt = (
             meta[key].default = value.default;
 
             meta[key].label = value.label ?? key;
+
+            meta[key].type = value.type ?? "text";
 
             meta[key].order = fieldIndex;
 
