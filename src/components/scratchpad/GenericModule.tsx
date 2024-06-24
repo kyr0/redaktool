@@ -1,4 +1,4 @@
-import { SendIcon, ShareIcon } from "lucide-react";
+import { CogIcon, SendIcon, ShareIcon } from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from "../../ui/select";
 import { upperCaseFirst } from "../../lib/string-casing";
+import { LoadingSpinner } from "../../ui/loading-spinner";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -113,6 +114,11 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [dynamicFieldValues, setDynamicFieldValues] = useState<
     Record<string, string>
   >({});
+  const [recompilingInProgress, setRecompilingInProgress] =
+    useState<boolean>(false);
+
+  const [streamingInProgress, setStreamingInProgress] =
+    useState<boolean>(false);
 
   const [customInstruction, setCustomInstruction] = useState<string>("");
 
@@ -268,6 +274,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
   const generatePrompt = useCallback(
     ({ prompt, editorContent, customInstruction, modelName }: any) => {
       return new Promise<Prompt>((resolve, reject) => {
+        setRecompilingInProgress(true);
         (async () => {
           try {
             // second pass value evaluation
@@ -297,10 +304,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
           } catch (e) {
             reject(e);
           }
+
+          setRecompilingInProgress(false);
         })();
       });
     },
     [
+      setRecompilingInProgress,
       compilePromptAndSyncFields,
       finalizePrompt,
       mapUserLanguageCode,
@@ -358,40 +368,55 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         modelName: defaultModelName,
       });
 
-      sendPrompt(
-        finalPrompt.text,
-        (text: string) => {
-          //console.log("onChunk", text, "editorEl", editorEl);
-          setEditorContent((prev) => {
-            if (isBeginning) {
-              originalText = prev;
-            }
+      setStreamingInProgress(true);
 
-            partialText += text || "";
+      try {
+        sendPrompt(
+          finalPrompt.text,
+          (text: string) => {
+            //console.log("onChunk", text, "editorEl", editorEl);
+            setEditorContent((prev) => {
+              if (isBeginning) {
+                originalText = prev;
+              }
 
-            return `${prev || ""}${isBeginning ? "\n---\n" : ""}${text || ""}`;
-          });
+              partialText += text || "";
 
-          isBeginning = false;
+              return `${prev || ""}${isBeginning ? "\n---\n" : ""}${
+                text || ""
+              }`;
+            });
 
-          scrollDownMax(editorEl);
-        },
-        (lastChunkText: string) => {
-          console.log("onDone", lastChunkText, "editorEl", editorEl);
-
-          // re-flush the editor content (fix possibly broken markdown rendering)
-          partialText += lastChunkText || "";
-
-          requestAnimationFrame(() => {
-            setEditorContent(`${originalText}\n---\n${partialText || ""}`);
+            isBeginning = false;
 
             scrollDownMax(editorEl);
-          });
-        },
-      );
+          },
+          (lastChunkText: string) => {
+            try {
+              console.log("onDone", lastChunkText, "editorEl", editorEl);
+
+              // re-flush the editor content (fix possibly broken markdown rendering)
+              partialText += lastChunkText || "";
+
+              requestAnimationFrame(() => {
+                setEditorContent(`${originalText}\n---\n${partialText || ""}`);
+
+                scrollDownMax(editorEl);
+              });
+            } finally {
+              setStreamingInProgress(false);
+            }
+          },
+        );
+      } catch (e) {
+        setStreamingInProgress(false);
+        // TODO: show toast (error mode)
+        console.error("sendPrompt error", e);
+      }
     })();
   }, [
     generatePrompt,
+    setStreamingInProgress,
     customInstruction,
     editorContent,
     defaultModelName,
@@ -432,6 +457,23 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                 promptSettingsWrapperClassName || ""
               }`}
             >
+              {!recompilingInProgress &&
+                dynamicFields.length === 0 &&
+                promptPrepared.text === "" && (
+                  <Label className="ab-mb-2 ab-flex  ab-text-sm">
+                    <CogIcon className="ab-w-4 ab-h-4 ab-mr-2" />
+                    Smart-Prompt wird kompiliert...
+                  </Label>
+                )}
+
+              {!recompilingInProgress &&
+                dynamicFields.length === 0 &&
+                promptPrepared.text !== "" && (
+                  <Label className="ab-mb-2 ab-flex">
+                    Keine Einstellungen verfügbar
+                  </Label>
+                )}
+
               {dynamicFields.map((field) => (
                 <div key={field.key} className="ab-mb-2 ab-w-full">
                   <Label className="ab-mb-2 ab-flex">{field.label}</Label>
@@ -569,27 +611,37 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                 />
                 <Button
                   size={"sm"}
+                  disabled={
+                    recompilingInProgress ||
+                    streamingInProgress ||
+                    promptPrepared.text === ""
+                  }
                   className="ab-scale-75 ab-ftr-button ab-mr-0 !ab-h-14 !ab-w-14 !ab-rounded-full hover:!ab-bg-primary-foreground"
                   onClick={onPromptSendClick}
                 >
                   <SendIcon className="ab-w-12 ab-h-12" />
                 </Button>
               </span>
-              <span
-                className="ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm"
-                style={{ fontSize: "0.9rem" }}
-              >
-                Tokens: {promptPrepared.encoded.length} I/O ~
-                {promptPrepared.estimatedOutputTokens} ≈{" "}
-                {formatCurrencyForDisplay(
-                  promptPrepared.price.toFixed(2),
-                ).replace(".", ",")}
+              <span className="ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm ab-justify-between ab-flex ab-flex-row">
+                <span style={{ fontSize: "0.7rem" }}>
+                  Tokens: {promptPrepared.encoded.length} I/O ~
+                  {promptPrepared.estimatedOutputTokens} ≈{" "}
+                  {formatCurrencyForDisplay(
+                    promptPrepared.price.toFixed(2),
+                  ).replace(".", ",")}
+                </span>
                 {/*
                 €; verbleibende Tokens:{" "}
                 {formatCurrencyForDisplay(
                   calculateTokensFromBudget(20 ),
                 )}
                 */}
+
+                {(recompilingInProgress || streamingInProgress) && (
+                  <Label style={{ fontSize: "0.7rem" }} className="ab-flex">
+                    <LoadingSpinner className="ab-w-3 ab-h-3 ab-ml-1" />
+                  </Label>
+                )}
               </span>
             </div>
           </ResizablePanel>
