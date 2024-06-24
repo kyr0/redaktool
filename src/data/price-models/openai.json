@@ -1,0 +1,7 @@
+{
+  "gpt-4o": {
+    "input": 0.000005,
+    "output": 0.000015,
+    "maxContextTokens": 128000
+  }
+}

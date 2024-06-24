@@ -73,6 +73,64 @@ You can activate the extension on any website in a few simple ways:
 - Use the keystroke Alt+F on Windows or Control+F on Mac.
 - Alternatively, click on the extension’s menu entry in Chrome's extension dropdown.
 
+### Writing Smart Prompts or: The Smart Prompt Template Language
+
+RedakTool uses "Smart Prompts" to instruct the connected LLMs on what they should do and how it should be done.
+Smart Prompts are using the Smart Prompt Templating language, which is a compiled, statically evaluated template language.
+The Smart Prompt dialect is based on [Liquid](https://github.com/Shopify/liquid/wiki#who-uses-liquid).
+
+You can think of Smart Prompts like Word macros. Instead of writing a static set of instructions for the LLM,
+you can use *variables*, which can be defined by *fields* in the UI. It's also possible to use *logic* like 
+ *if*, *else* and *elseif* to make sure, only the right instructions are sent to the LLM, based on *variables* values.
+Further more, we sometimes need to explain instructions very explicitly to an LLM. For this, we can use *loops*,
+where instead of writing the same instruction with different values again and again, we let the Smart Prompt do so.
+Finally, *variables* can be *formatted* using *value filters*, such as rendering them uppercase, lowercase or escaping a string.
+
+To make Smart Prompt templates easy to write, it's keywords are translated into all natural languages supported in the RedakTool UI.
+
+Here is an example of a Smart Prompt:
+```liquid
+{% # This is a comment. It explains that the following tag configures a UI element that links to the EXAMPLE variable %}
+{% field EXAMPLE = "{ label: 'Beispiel', default: '- First topic here.
+- Second topic here.
+- Third topic here.' }" %}
+
+{% # At next, we write the instructions. We use a very explicit reference to CONTENT, so the LLM knows what we're referring to. %}
+You are an expert data analyst, journalist and writer with many years of professional experience. Summarize the CONTENT.
+
+RULES:
+{% # only if the field for a custom instruction was filled by the user, this rule will be rendered %}
+{% if HAS_CUSTOM_INSTRUCTION %}
+- MOST IMPORTANTLY: MUST {{CUSTOM_INSTRUCTION}}
+{% endif %}
+{% # the USER_LANGUAGE variable is always the value of the UI language you select; for example, German %}
+- MUST write the summary in target languge {{USER_LANGUAGE}}
+END OF RULES.
+
+EXAMPLE:
+{% # Here, instead of this glibberish, the value of the EXAMPLE field will be rendered: %}
+{{ EXAMPLE }}
+END OF EXAMPLE.
+
+CONTENT:
+{% # CONTENT is a variable that is always available. The text that was selected by the user will automatically be filled in here. %}
+{{CONTENT}}
+```
+
+### Output Variables
+
+Smart Prompts are truly smart. Compiling and evaluating a Smart Prompt allows for setting output variables that can control the
+next step's logic flow. Thus, a simple conditon can help approximating correct prices by setting the `OUTPUT_TOKEN_FACTOR` that
+is used to multiply the input token count. Some languages tend to use more tokens than others. This way, we can, depending on
+the input language, approximate the output tokens cost better:
+
+```liquid
+{% # prompt logic to set an output variable, depending on an input variable %}
+{% if TARGET_LANGUAGE == "Deutsch" %}
+  {% assign OUTPUT_TOKEN_FACTOR = 1.2 %}
+{% endif %}
+```
+
 ## ⚒️ Contibuting
 
 ### As a User 

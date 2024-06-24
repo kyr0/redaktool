@@ -1,21 +1,9 @@
-export interface SummaryPromptValues extends Record<string, string> {
-  TONE: string;
-  AUDIENCE: string;
-  FORMATTING: "bullet points" | "paragraphs";
-  TOPIC_COUNT: string /** e.g. five */ | "all";
-  TYPE: "chronological" | "thematic" | "chronological-thematic";
-  EXAMPLE: string;
-  CONTENT: string;
-  CUSTOM_INSTRUCTION: string;
-  MAX_SENTENCES_PER_TOPIC: string;
-  USER_LANGUAGE: string;
-}
-
-export const promptTemplateSummary = `You are an expert data analyst, journalist and writer with many years of professional experience.
+{% # Dynamischer Prompt: %}
+You are an expert data analyst, journalist and writer with many years of professional experience.
 Summarize the following CONTENT into maximum {{TOPIC_COUNT}} most relevant topics, formatted as {{FORMATTING}} in Markdown.
 
 RULES:
-- IMPORTANT RULE: MUST {{CUSTOM_INSTRUCTION}}.
+{% if CUSTOM_INSTRUCTION %}- MOST IMPORTANTLY: MUST {{CUSTOM_INSTRUCTION}}.{% endif %}
 - The summary MUST be formulated in a way, so that the following audience can understand it: "{{AUDIENCE}}". Explain, if the audience might not understand the topics.
 - The summary MUST be written in a the following tone: "{{TONE}}"
 - The summary MUST be structured in a "{{TYPE}}" order.
@@ -30,7 +18,7 @@ RULES:
 - MUST adapt metaphors, common sayings and idioms, matching meaning.
 - Always translate pronouns and gender AS IS.
 - Make sure the spelling and grammar are correct.
-- Response MUST NOT be wrapped in Markdown code formatting block \`\`\`.
+- Response MUST NOT be wrapped in Markdown code formatting block ```.
 - The response MUST match the EXAMPLE provided in structure.
 - MUST summarize the following CONTENT into max. {{TOPIC_COUNT}} topics.
 END OF RULES.
@@ -40,4 +28,22 @@ EXAMPLE:
 END OF EXAMPLE.
 
 CONTENT:
-{{CONTENT}}`;
+{{CONTENT}}
+
+{% # Feldbeschreibungen: %}
+
+{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'news readers, adults, general public' }" %}
+
+{% field TONE = "{ label: 'Tonalität', default: 'news article, neutral' }" %}
+
+{% field TOPIC_COUNT = "{ label: 'Anzahl Themen (max)', default: 5 }" %}
+
+{% field TYPE = "{ label: 'Typ', default: 'thematisch', options: ['thematisch', 'chronologisch', 'thematisch, nachfolgend chronologisch'] }" %}
+
+{% field FORMATTING = "{ label: 'Formatierung', default: 'aufzählung', options: ['aufzählung', 'absätze'] }" %}
+
+{% field MAX_SENTENCES_PER_TOPIC = "{ label: 'Max. Sätze pro Thema', default: 2 }" %}
+
+{% field EXAMPLE = "{ type: 'textarea', label: 'Beispiel', default: '- First topic here.
+- Second topic here.
+- Third topic here.' }" %}

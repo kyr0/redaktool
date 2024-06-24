@@ -2,7 +2,7 @@ import {
   Hash,
   Tag,
   type TagToken,
-  type Context,
+  Context,
   type TopLevelToken,
   Liquid,
 } from "liquidjs";
@@ -23,6 +23,7 @@ export type ParseSmartPromptResult = {
   meta: Record<string, ParseResult>;
   inputValues: Record<string, string>;
   templateValues: Record<string, string>;
+  outputValues: Record<string, string>;
   prompt: string;
   error?: unknown;
 };
@@ -40,15 +41,35 @@ const defaultMeta = (meta: Record<string, ParseResult>, key: string) => {
   }
 };
 
+export const autoDetectType = (value: ParseResult): HTMLInputTypeAttribute => {
+  if (
+    value.options &&
+    Array.isArray(value.options) &&
+    value.options.length > 0
+  ) {
+    return "select";
+  }
+
+  if (value.default && typeof value.default === "number") {
+    return "number";
+  }
+
+  if (value.default && value.default.indexOf("\n") !== -1) {
+    return "textarea";
+  }
+  return "text";
+};
+
 /** smart prompt compiler (preprocessor for meta data followed by handlebars compilation pass) */
 export const compileSmartPrompt = (
   promptTemplate: string,
-  inputValues: Record<string, string>,
+  inputValues: Record<string, string> = {},
 ): ParseSmartPromptResult => {
   let prompt = "";
   let error;
   const meta: Record<string, ParseResult> = {};
   const templateValues: Record<string, string> = {};
+  const ctx = new Context();
 
   try {
     const engine = new Liquid();
@@ -63,7 +84,7 @@ export const compileSmartPrompt = (
       }" %}
 
      {% field FIELD_NAME_2 = "{ options: ['bar', 'baz'] }" %} 
-     
+
      */
 
     let fieldIndex = 0;
@@ -103,7 +124,10 @@ export const compileSmartPrompt = (
 
           for (const key of keys) {
             // lazy JSON5 parsing
-            const value = JSON5.parse(String(hash[key])) as ParseResult;
+            const value = JSON5.parse(
+              // https://spec.json5.org/#summary-of-features => Strings may span multiple lines by escaping new line characters.
+              String(hash[key]).replace(/\n/g, "\\n"),
+            ) as ParseResult;
             value.key = key;
 
             // evaluate default value
@@ -116,12 +140,16 @@ export const compileSmartPrompt = (
 
             meta[key].label = value.label ?? key;
 
-            meta[key].type = value.type ?? "text";
+            meta[key].type = value.type ?? autoDetectType(value);
 
             meta[key].order = fieldIndex;
 
-            if (value.options) {
-              meta[key].options = value.options;
+            if (value.options && Array.isArray(value.options)) {
+              if (meta[key].default) {
+                meta[key].default = String(value.options[0]);
+              }
+
+              meta[key].options = value.options.map((v) => String(v));
             }
             fieldIndex++;
           }
@@ -130,7 +158,12 @@ export const compileSmartPrompt = (
       },
     );
 
-    prompt = engine.parseAndRenderSync(promptTemplate, templateValues);
+    ctx.globals = {
+      ...templateValues,
+      ...inputValues,
+    };
+
+    prompt = engine.parseAndRenderSync(promptTemplate, ctx).trim();
   } catch (e) {
     error = (e as Error).message;
   }
@@ -140,6 +173,7 @@ export const compileSmartPrompt = (
     promptTemplate,
     meta,
     inputValues,
+    outputValues: ctx.getAll() as Record<string, string>,
     prompt,
     error,
   };

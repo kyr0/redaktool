@@ -12,3 +12,8 @@ export const toUpperCamelCase = (str: string) =>
 
 export const isUpperCamelCase = (str: string) =>
   /^[A-Z][a-z]*([A-Z][a-z]*)*$/.test(str);
+
+export const upperCaseFirst = (text: string) =>
+  typeof text !== "string"
+    ? text
+    : text.charAt(0).toUpperCase() + text.slice(1);

@@ -7,7 +7,7 @@ You'll start with a short, simple rating of your writing and what's good about i
 The AUDIENCE of the CONTENT is {{AUDIENCE}} and CONTEXT for the tone is: {{CONTEXT}}.
 
 RULES:
-- IMPORTANT RULE: MUST {{CUSTOM_INSTRUCTION}}
+{% if CUSTOM_INSTRUCTION %}- MOST IMPORTANTLY: MUST {{CUSTOM_INSTRUCTION}}.{% endif %}
 - Response MUST NOT be wrapped in Markdown code formatting block \`\`\` 
 - Must format response in Markdown data format.
 - The Markdown formatting in CONTENT describes the importance of the information.
@@ -22,3 +22,11 @@ END OF RULES.
 
 CONTENT:
 {{CONTENT}}
+
+{% # Feldbeschreibungen: %}
+
+{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'news readers, adults, general public' }" %}
+
+{% field TONE = "{ label: 'Tonalität', default: 'news article, neutral' }" %}
+
+{% field FORMAT = "{ label: 'Format', default: 'Blog post' }" %}

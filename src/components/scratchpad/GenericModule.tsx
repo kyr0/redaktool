@@ -14,6 +14,7 @@ import { AiModelDropdown } from "../AiModelDropdown";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import {
   compilePrompt,
+  finalizePrompt,
   generatePrompt,
   type Prompt,
 } from "../../lib/content-script/prompt-template";
@@ -42,9 +43,15 @@ import type {
   ParseResult,
   ParseSmartPromptResult,
 } from "../../lib/worker/prompt";
-import { set } from "../../../dist/worker";
-import { FormLabel } from "../../ui/form";
 import { Label } from "../../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../ui/select";
+import { upperCaseFirst } from "../../lib/string-casing";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -62,8 +69,8 @@ export interface GenericModuleProps extends PropsWithChildren {
   defaultPromptTemplate: string;
   outputTokenScaleFactor: number;
   defaultModelName: ModelName;
-  getPromptValues: () => Record<string, string>;
-  onCustomInstructionChange: (instruction: string) => void;
+  getPromptValues?: () => Record<string, string>;
+  onCustomInstructionChange?: (instruction: string) => void;
   onEditorCreated?: (
     args: CallbackArgs & { args: MilkdownEditorCreatedArgs },
   ) => void;
@@ -107,27 +114,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     Record<string, string>
   >({});
 
-  /*
-  useEffect(() => {
-    if (typeof onEditorCreated === "function") {
-      onEditorCreated({
-        editorContent,
-        prompt,
-        setEditorContent,
-        setPrompt,
-        promptPrepared,
-        setPromptPrepared,
-      });
-    }
-  }, [
-    editorContent,
-    prompt,
-    promptPrepared,
-    setEditorContent,
-    setPrompt,
-    setPromptPrepared,
-  ]);
-  */
+  const [customInstruction, setCustomInstruction] = useState<string>("");
 
   useEffect(() => {
     if (typeof onEditorCreated === "function" && internalEditorArgs) {
@@ -160,23 +147,29 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   );
 
   const onSharePromptClick = useCallback(() => {
+    console.log("onSharePromptClick");
     copyToClipboard(`# RedakTool Smart-Prompt [Module: ${name}]
-
-## Sequence 1
       
 ### Prompt
 
+\`\`\`liquid
+{% # Beispielwerte: %}
+${Object.keys(promptPrepared.values || {})
+  .map((key) =>
+    promptPrepared.values?.[key]
+      ? `{% assign ${key} = ${
+          typeof promptPrepared.values?.[key] === "string"
+            ? `"${promptPrepared.values?.[key]}"`
+            : promptPrepared.values?.[key]
+        } %}`
+      : "",
+  )
+  .join("\n")}
+
 ${promptPrepared.original.replace(/\n/g, "\n")}
+\`\`\``);
 
----
-
-### Demo values
-
-\`\`\`json
-${JSON.stringify(promptPrepared.values, null, 2)}
-\`\`\`
-`);
-
+    console.log("promptPrepared", promptPrepared);
     toast("Prompt zum Teilen kopiert!", {
       description:
         "Prompt wurde in die Zwischenablage kopiert und kann jetzt geteilt werden (einfach einfügen).",
@@ -217,60 +210,135 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
     [dynamicFieldValues, dynamicFields],
   );
 
+  const compilePromptAndSyncFields = useCallback(
+    (prompt: string, values: Record<string, any> = {}) =>
+      new Promise<{
+        resolvedValues: Record<string, string>;
+        parsedPrompt: ParseSmartPromptResult;
+        dynamicFields: ParseResult[];
+      }>((resolve, reject) => {
+        (async () => {
+          try {
+            // first pass compiler for dynamic fields
+            let parsedPrompt = await compilePrompt(
+              prompt,
+              getValidatedDynamicFieldValues(),
+            );
+            console.log("new smartprompt parser", parsedPrompt);
+
+            const dynamicFields = Object.keys(parsedPrompt.meta)
+              .map((key) => parsedPrompt.meta[key])
+              .sort((a, b) => a.order - b.order);
+
+            console.log("dynamicFields", dynamicFields);
+
+            // trigger dynamic field re-rendering
+            setDynamicFields(dynamicFields);
+
+            // second pass value evaluation
+            const secondPassDynamicFieldValues =
+              getValidatedDynamicFieldValues(dynamicFields);
+
+            const finalizedValues = {
+              ...secondPassDynamicFieldValues,
+              ...values,
+            };
+
+            // second pass compiler for dynamic fields
+            parsedPrompt = await compilePrompt(prompt, finalizedValues);
+
+            resolve({
+              resolvedValues: finalizedValues,
+              parsedPrompt,
+              dynamicFields,
+            });
+          } catch (e) {
+            reject(e);
+          }
+        })();
+      }),
+    [
+      dynamicFieldValues,
+      setDynamicFieldValues,
+      getValidatedDynamicFieldValues,
+      compilePrompt,
+    ],
+  );
+
+  const generatePrompt = useCallback(
+    ({ prompt, editorContent, customInstruction, modelName }: any) => {
+      return new Promise<Prompt>((resolve, reject) => {
+        (async () => {
+          try {
+            // second pass value evaluation
+            const compiledPrompt = await compilePromptAndSyncFields(prompt, {
+              USER_LANGUAGE: mapUserLanguageCode(i18n.language),
+              CONTENT: editorContent,
+              CUSTOM_INSTRUCTION: customInstruction || undefined,
+            });
+
+            console.log("compiledPrompt", compiledPrompt);
+
+            const finalPrompt = finalizePrompt(
+              prompt,
+              compiledPrompt.parsedPrompt.prompt,
+              compiledPrompt.resolvedValues,
+              modelName,
+              compiledPrompt.parsedPrompt.outputValues.OUTPUT_TOKEN_FACTOR
+                ? Number(
+                    compiledPrompt.parsedPrompt.outputValues
+                      .OUTPUT_TOKEN_FACTOR,
+                  )
+                : outputTokenScaleFactor,
+            );
+            console.log("finalPrompt", finalPrompt);
+
+            resolve(finalPrompt);
+          } catch (e) {
+            reject(e);
+          }
+        })();
+      });
+    },
+    [
+      compilePromptAndSyncFields,
+      finalizePrompt,
+      mapUserLanguageCode,
+      i18n,
+      outputTokenScaleFactor,
+    ],
+  );
+
   const debouncedPreparePrompt = useDebouncedCallback(
     useCallback(
-      ({ editorContent, prompt }) => {
+      ({ editorContent, prompt, customInstruction }) => {
         requestAnimationFrame(async () => {
           console.log("dynamicFieldValues");
-
-          // first pass compiler for dynamic fields
-          const parsedPrompt = await compilePrompt(
-            prompt,
-            getValidatedDynamicFieldValues(),
-          );
-          console.log("new smartprompt parser", parsedPrompt);
-
-          const dynamicFields = Object.keys(parsedPrompt.meta)
-            .map((key) => parsedPrompt.meta[key])
-            .sort((a, b) => a.order - b.order);
-
-          // trigger dynamic field re-rendering
-          setDynamicFields(dynamicFields);
-
-          // second pass value evaluation
-          const secondPassDynamicFieldValues =
-            getValidatedDynamicFieldValues(dynamicFields);
-
-          console.log(
-            "dynamicFields",
-            dynamicFields,
-            "secondPassDynamicFieldValues",
-            secondPassDynamicFieldValues,
-          );
-
           setPromptPrepared(
-            generatePrompt<Record<string, string>>(
+            await generatePrompt({
               prompt,
-              {
-                USER_LANGUAGE: mapUserLanguageCode(i18n.language),
-                CONTENT: editorContent,
-                ...getPromptValues(),
-              },
-              defaultModelName,
-              outputTokenScaleFactor,
-            ),
+              editorContent,
+              customInstruction,
+              modelName: defaultModelName,
+            }),
           );
         });
       },
-      [i18n.language, dynamicFieldValues, setDynamicFieldValues],
+      [
+        i18n.language,
+        dynamicFieldValues,
+        setDynamicFieldValues,
+        customInstruction,
+        generatePrompt,
+      ],
     ),
     250,
     { maxWait: 500 },
   );
 
   useEffect(() => {
-    debouncedPreparePrompt({ editorContent, prompt });
-  }, [editorContent, prompt]);
+    debouncedPreparePrompt({ editorContent, prompt, customInstruction });
+  }, [editorContent, prompt, customInstruction]);
 
   useEffect(() => {
     // cache the editor content
@@ -278,55 +346,53 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
   }, [editorContent]);
 
   const onPromptSendClick = useCallback(() => {
-    // actualy send the prompt to the AI
-    const finalPrompt = generatePrompt<Record<string, string>>(
-      prompt,
-      {
-        // always available
-        USER_LANGUAGE: mapUserLanguageCode(i18n.language),
-        CONTENT: editorContent,
-        ...getPromptValues(),
-      },
-      defaultModelName,
-      outputTokenScaleFactor,
-    );
+    (async () => {
+      let isBeginning = true;
+      let originalText = "";
+      let partialText = "";
 
-    console.log("send prompt", finalPrompt);
+      const finalPrompt = await generatePrompt({
+        prompt,
+        editorContent,
+        customInstruction,
+        modelName: defaultModelName,
+      });
 
-    let isBeginning = true;
-    let originalText = "";
-    let partialText = "";
+      sendPrompt(
+        finalPrompt.text,
+        (text: string) => {
+          //console.log("onChunk", text, "editorEl", editorEl);
+          setEditorContent((prev) => {
+            if (isBeginning) {
+              originalText = prev;
+            }
 
-    sendPrompt(
-      finalPrompt.text,
-      (text: string) => {
-        //console.log("onChunk", text, "editorEl", editorEl);
-        setEditorContent((prev) => {
-          if (isBeginning) {
-            originalText = prev;
-          }
+            partialText += text || "";
 
-          partialText += text || "";
+            return `${prev || ""}${isBeginning ? "\n---\n" : ""}${text || ""}`;
+          });
 
-          return `${prev || ""}${isBeginning ? "\n---\n" : ""}${text || ""}`;
-        });
+          isBeginning = false;
 
-        isBeginning = false;
+          scrollDownMax(editorEl);
+        },
+        (lastChunkText: string) => {
+          console.log("onDone", lastChunkText, "editorEl", editorEl);
 
-        scrollDownMax(editorEl);
-      },
-      (lastChunkText: string) => {
-        console.log("onDone", lastChunkText, "editorEl", editorEl);
+          // re-flush the editor content (fix possibly broken markdown rendering)
+          partialText += lastChunkText || "";
 
-        // re-flush the editor content (fix possibly broken markdown rendering)
-        partialText += lastChunkText || "";
+          requestAnimationFrame(() => {
+            setEditorContent(`${originalText}\n---\n${partialText || ""}`);
 
-        setEditorContent(`${originalText}\n---\n${partialText || ""}`);
-
-        scrollDownMax(editorEl);
-      },
-    );
+            scrollDownMax(editorEl);
+          });
+        },
+      );
+    })();
   }, [
+    generatePrompt,
+    customInstruction,
     editorContent,
     defaultModelName,
     outputTokenScaleFactor,
@@ -362,35 +428,36 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
               </span>
             </div>
             <div
-              className={`ab-flex ab-h-full ab-items-center ab-justify-center ab-p-2 ${promptSettingsWrapperClassName}`}
+              className={`ab-flex ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-2 ab-overflow-y-auto ${
+                promptSettingsWrapperClassName || ""
+              }`}
             >
               {dynamicFields.map((field) => (
-                <div key={field.key} className="ab-mb-2">
+                <div key={field.key} className="ab-mb-2 ab-w-full">
                   <Label className="ab-mb-2 ab-flex">{field.label}</Label>
 
-                  {field.type === "text" ||
-                    (field.type === "number" && (
-                      <Input
-                        type={field.type || "text"}
-                        name={`${name}${field.key}Input`}
-                        placeholder={field.label}
-                        value={dynamicFieldValues[field.key] || field.default}
-                        className="!ab-block !ab-text-sm"
-                        onChange={(evt) => {
-                          console.log(
-                            "field change",
-                            field.key,
-                            evt.target.value,
-                          );
-                          setDynamicFieldValues((prev) => ({
-                            ...prev,
-                            [field.key]: evt.target.value,
-                          }));
-                        }}
-                      />
-                    ))}
+                  {(field.type === "text" || field.type === "number") && (
+                    <Input
+                      type={field.type || "text"}
+                      name={`${name}${field.key}Input`}
+                      placeholder={field.label}
+                      value={dynamicFieldValues[field.key] || field.default}
+                      className="!ab-block !ab-text-sm"
+                      onChange={(evt) => {
+                        console.log(
+                          "field change",
+                          field.key,
+                          evt.target.value,
+                        );
+                        setDynamicFieldValues((prev) => ({
+                          ...prev,
+                          [field.key]: evt.target.value,
+                        }));
+                      }}
+                    />
+                  )}
 
-                  {field.type !== "textarea" && (
+                  {field.type === "textarea" && (
                     <Textarea
                       name={`${name}${field.key}Input`}
                       placeholder={field.label}
@@ -409,10 +476,39 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
                       }}
                     />
                   )}
+
+                  {field.type === "select" && (
+                    <Select
+                      onValueChange={(value) => {
+                        console.log("onValueChange", value);
+                        setDynamicFieldValues((prev) => ({
+                          ...prev,
+                          [field.key]: value,
+                        }));
+                      }}
+                      defaultValue={
+                        dynamicFieldValues[field.key] || field.default
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={field.label} />
+                      </SelectTrigger>
+                      <SelectContent className="ab-z-[2147483646]">
+                        {(field.options || []).map((option) => (
+                          <SelectItem
+                            key={option + Math.random()}
+                            value={option}
+                          >
+                            {upperCaseFirst(option)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               ))}
 
-              {children}
+              {/* children */}
             </div>
           </ResizablePanel>
 
@@ -465,12 +561,11 @@ ${JSON.stringify(promptPrepared.values, null, 2)}
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between">
               <span className="ab-flex ab-flex-row ab-justify-between ab-items-end">
                 <Input
+                  value={customInstruction}
                   name={`${name}PromptInstructionEditor`}
                   placeholder="Spezialisierungswünsche..."
                   className="!ab-block ab-mb-2 !ab-text-sm ab-h-12 ab-max-h-12"
-                  onChange={(evt) =>
-                    onCustomInstructionChange(evt.target.value)
-                  }
+                  onChange={(evt) => setCustomInstruction(evt.target.value)}
                 />
                 <Button
                   size={"sm"}

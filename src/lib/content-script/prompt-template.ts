@@ -2,12 +2,11 @@ import { encodingForModel } from "js-tiktoken";
 import type { ModelName } from "../worker/llm/prompt";
 import type { ParseSmartPromptResult } from "../worker/prompt";
 
+import openAiPriceModel from "../../data/price-models/openai.json";
+
+// TODO: implement all providers and models
 const priceModels = {
-  "gpt-4o": {
-    input: 0.000005,
-    output: 0.000015,
-    maxContextTokens: 128000,
-  },
+  ...openAiPriceModel,
 };
 
 export const applyTemplateValues = (
@@ -119,4 +118,19 @@ export const compilePrompt = (
       },
     );
   });
+};
+
+export const finalizePrompt = (
+  prompt: string,
+  compiledPrompt: string,
+  values: Record<string, string>,
+  model: ModelName,
+  outputTokenScaleFactor: number,
+): Prompt => {
+  return {
+    values,
+    original: prompt,
+    text: compiledPrompt,
+    ...calculatePrompt(compiledPrompt, model, outputTokenScaleFactor),
+  } as Prompt;
 };

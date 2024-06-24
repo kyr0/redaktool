@@ -168,12 +168,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               console.log("onDone (internal) elapsed", elapsed);
               // onDone
               sendResponse({ result: JSON.stringify(partialResponseText) });
+              setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
             },
             (error: unknown) => {
               // TODO: respond with error return type
 
               // onError
               console.error("onError (internal)", error);
+              setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
             },
             {
               model: "gpt-4o", // TODO: select dynamically, depending on provider and pass settings
