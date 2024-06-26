@@ -1,6 +1,6 @@
 {
   "name": "redaktool",
-  "version": "0.0.0-increment-1.1.7",
+  "version": "0.0.0-increment-1.1.8",
   "description": "Browser extension, designed for editors and professionals engaged in text-related research, writing, and evaluation tasks.",
   "scripts": {
     "predev": "mkdir -p ./dist && cp -R ./css/* ./dist/ && bun tailwindcss -i ./css/style-dark.scss -o ./dist/style-dark.css && bun tailwindcss -i ./css/style-light.scss -o ./dist/style-light.css",

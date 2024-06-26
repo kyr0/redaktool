@@ -1,3 +1,13 @@
+# 0.0.0-increment-1.1.8 (2024-06-26)
+
+### Features
+
+* fully implemented SmartPrompt language and dynamic UI; fixed cache invalidation ([e1db385](https://github.com/kyr0/ftr-ki-tools/commit/e1db385f25371cbd6204e7f6c84d4a4e62990e2b))
+* proofreading changed for SmartPrompt V2; user feedback impl. ([cd22394](https://github.com/kyr0/ftr-ki-tools/commit/cd2239476d18636fa1a56c26592d65904f49d4b9))
+* rendering of UI fields parsed from prompt; .liquid tpl support, 2-pass value loop done ([aad1992](https://github.com/kyr0/ftr-ki-tools/commit/aad1992db36f7ecab7af56a2bfbb6726e2105ff1))
+* **smartprompt:** parser/compiler V2 implemented ([0bf792c](https://github.com/kyr0/ftr-ki-tools/commit/0bf792c09679f9ec0834b79e9fd5bfaea3c8bfe7))
+
+
 # 0.0.0-increment-1.1.7 (2024-06-18)
 
 
