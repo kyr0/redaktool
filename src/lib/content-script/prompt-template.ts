@@ -1,13 +1,7 @@
-import { encodingForModel } from "js-tiktoken";
-import type { ModelName } from "../worker/llm/prompt";
 import type { ParseSmartPromptResult } from "../worker/prompt";
+import { calculatePrompt } from "./pricemodels";
 
-import openAiPriceModel from "../../data/price-models/openai.json";
-
-// TODO: implement all providers and models
-const priceModels = {
-  ...openAiPriceModel,
-};
+/* deprecated
 
 export const applyTemplateValues = (
   promptTemplate: string,
@@ -19,64 +13,6 @@ export const applyTemplateValues = (
     result = result.replaceAll(`{{${key}}}`, values[key].toString());
   });
   return result;
-};
-
-export interface Prompt {
-  original: string;
-  text: string;
-  encoded: number[];
-  price: number;
-  priceOutput?: number;
-  priceInput?: number;
-  maxContextTokens?: number;
-  estimatedOutputTokens?: number;
-  values?: Record<string, string>;
-}
-
-export function calculatePriceValue(
-  tokens: number,
-  type: "input" | "output",
-  model: ModelName,
-): number {
-  const pricePerToken = priceModels[model][type];
-  const totalPrice = tokens * pricePerToken;
-  return totalPrice;
-}
-
-// TODO: deprecated
-export function calculateTokensFromBudget(budget: number): number {
-  // Define the price per token
-  const pricePerToken = 0.00001;
-  // Calculate the number of tokens that can be purchased with the given budget
-  const tokens = budget / pricePerToken;
-  return Math.floor(tokens); // Assuming you can only purchase whole tokens
-}
-
-export const calculatePrompt = (
-  text: string,
-  model: ModelName = "gpt-4o",
-  outputScaleFactor = 2, // avg output length is 2x input length
-): Partial<Prompt> => {
-  const encoding = encodingForModel(model);
-  const encoded = encoding.encode(text);
-  const priceInput = calculatePriceValue(encoded.length, "input", model);
-  const estimatedOutputTokens = Number.parseInt(
-    (encoded.length * outputScaleFactor).toFixed(0),
-  );
-  const priceOutput = calculatePriceValue(
-    estimatedOutputTokens,
-    "output",
-    model,
-  );
-
-  return {
-    encoded,
-    price: priceInput + priceOutput,
-    priceOutput,
-    priceInput,
-    estimatedOutputTokens,
-    maxContextTokens: priceModels[model].maxContextTokens,
-  };
 };
 
 export const generatePrompt = <T>(
@@ -97,6 +33,19 @@ export const generatePrompt = <T>(
     ...calculatePrompt(processedText, model, outputTokenScaleFactor),
   } as Prompt;
 };
+*/
+
+export interface Prompt {
+  original: string;
+  text: string;
+  encoded: Array<number>;
+  price: number;
+  priceOutput?: number;
+  priceInput?: number;
+  maxContextTokens?: number;
+  estimatedOutputTokens?: number;
+  values?: Record<string, string>;
+}
 
 export const compilePrompt = (
   promptTemplate: string,
@@ -124,7 +73,7 @@ export const finalizePrompt = (
   prompt: string,
   compiledPrompt: string,
   values: Record<string, string>,
-  model: ModelName,
+  model: string,
   outputTokenScaleFactor: number,
 ): Prompt => {
   return {

@@ -15,8 +15,9 @@ export const openAIPrompt = async (
     apiKey: apiOptions.apiKey,
   };
 
+  // default for OpenAI (GPT-4 Turbo, best reasoning)
   if (!body.model) {
-    body.model = "gpt-4o";
+    body.model = "gpt-4-turbo";
   }
 
   console.log("Using model:", body.model);

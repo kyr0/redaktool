@@ -15,7 +15,6 @@ import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import {
   compilePrompt,
   finalizePrompt,
-  generatePrompt,
   type Prompt,
 } from "../../lib/content-script/prompt-template";
 import { Button } from "../../ui/button";
@@ -33,7 +32,6 @@ import {
 import type { WritableAtom } from "nanostores";
 import { useDebouncedCallback } from "use-debounce";
 import { Textarea } from "../../ui/textarea";
-import type { ModelName } from "../../lib/worker/llm/prompt";
 import { Input } from "../../ui/input";
 import { copyToClipboard } from "../../lib/content-script/clipboard";
 import { toast } from "sonner";
@@ -61,26 +59,29 @@ export interface CallbackArgs {
   setPromptPrepared: (prompt: Prompt) => void;
   setEditorContent: (content: string) => void;
   setPrompt: (prompt: string) => void;
+  args: MilkdownEditorCreatedArgs;
 }
 
 export interface GenericModuleProps extends PropsWithChildren {
+  value?: string;
   name: string;
   promptSettingsWrapperClassName?: string;
   editorAtom: WritableAtom<string>;
   defaultPromptTemplate: string;
   outputTokenScaleFactor: number;
-  defaultModelName: ModelName;
+  defaultModelName: string;
   getPromptValues?: () => Record<string, string>;
   onCustomInstructionChange?: (instruction: string) => void;
   onEditorCreated?: (
     args: CallbackArgs & { args: MilkdownEditorCreatedArgs },
   ) => void;
-  onEditorChange?: (args: CallbackArgs) => void;
+  onEditorContentChange?: (markdown: string) => void;
   onPromptChange?: (args: CallbackArgs) => void;
   onPromptShare?: (args: CallbackArgs) => void;
 }
 
 export const GenericModule: React.FC<GenericModuleProps> = ({
+  value,
   name,
   promptSettingsWrapperClassName,
   editorAtom,
@@ -89,7 +90,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   defaultModelName,
   onEditorCreated,
   onCustomInstructionChange,
-  onEditorChange,
+  onEditorContentChange,
   onPromptChange,
   onPromptShare,
   getPromptValues,
@@ -350,10 +351,20 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     debouncedPreparePrompt({ editorContent, prompt, customInstruction });
   }, [editorContent, prompt, customInstruction]);
 
+  // sync
   useEffect(() => {
     // cache the editor content
     editorAtom.set(editorContent);
+
+    if (typeof onEditorContentChange === "function") {
+      onEditorContentChange(editorContent);
+    }
   }, [editorContent]);
+
+  // back-sync
+  useEffect(() => {
+    setEditorContent(value || "");
+  }, [value]);
 
   const onPromptSendClick = useCallback(() => {
     (async () => {
@@ -568,8 +579,12 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                   value={defaultModelName}
                   options={[
                     {
+                      label: "OpenAI GPT-4-Turbo",
+                      value: "openai-gpt-4-turbo",
+                    },
+                    {
                       label: "OpenAI GPT-4o",
-                      value: "gpt-4o",
+                      value: "openai-gpt-4o",
                     },
                     {
                       label: "Anthropic Opus",

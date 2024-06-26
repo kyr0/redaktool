@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { ModelName } from "../lib/worker/llm/prompt";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -10,18 +9,18 @@ import {
 import { useTranslation } from "react-i18next";
 
 export interface AiModelEntry {
-  value: ModelName;
+  value: string;
   label: string;
 }
 
 export interface AiModelDropdownProps {
-  value: ModelName;
+  value: string;
   options: Array<AiModelEntry>;
 }
 
 export function AiModelDropdown({ value, options }: AiModelDropdownProps) {
   const { t, i18n } = useTranslation();
-  const [selectedValue, setSelectedValue] = useState<ModelName>(value);
+  const [selectedValue, setSelectedValue] = useState<string>(value);
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
   );

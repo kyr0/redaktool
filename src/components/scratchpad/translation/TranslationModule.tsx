@@ -8,7 +8,7 @@ const editorAtom = atom<string>("");
 export const TranslationModule = () => {
   return (
     <GenericModule
-      defaultModelName="gpt-4o"
+      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={translationPrompt}
       name="translation"
       editorAtom={editorAtom}

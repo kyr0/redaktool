@@ -11,7 +11,7 @@ export const SummaryModule = () => {
 
   return (
     <GenericModule
-      defaultModelName="gpt-4o"
+      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={summaryPrompt}
       name="summary"
       editorAtom={editorAtom}

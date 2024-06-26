@@ -11,7 +11,7 @@ export const ProofreadingModule = () => {
   const { t, i18n } = useTranslation();
   return (
     <GenericModule
-      defaultModelName="gpt-4o"
+      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={proofreadingPrompt}
       name="proofreading"
       editorAtom={editorAtom}

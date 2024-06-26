@@ -1,7 +1,8 @@
 {
-  "gpt-4o": {
+  "openai-gpt-4o": {
     "input": 0.000005,
     "output": 0.000015,
-    "maxContextTokens": 128000
+    "maxContextTokens": 128000,
+    "tikTokenModelName": "gpt-4o"
   }
 }

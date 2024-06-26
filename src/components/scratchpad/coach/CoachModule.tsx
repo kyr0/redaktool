@@ -10,7 +10,7 @@ export const CoachModule = () => {
 
   return (
     <GenericModule
-      defaultModelName="gpt-4o"
+      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={coachPrompt}
       name="coach"
       editorAtom={editorAtom}
