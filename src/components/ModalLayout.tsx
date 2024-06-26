@@ -32,6 +32,7 @@ import { SettingsLayout } from "./settings/SettingsLayout";
 import { useTranslation, Trans } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { prefChrome } from "../lib/content-script/prefs";
+import { RadarLayout } from "./radar/RadarLayout";
 
 export type ModuleNames =
   | "scratchpad"
@@ -204,6 +205,7 @@ export const ModalLayout = () => {
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize={80} minSize={60} className="ab-m-0">
+        {activeModule === "radar" && <RadarLayout />}
         {activeModule === "scratchpad" && <ScratchpadLayout />}
         {activeModule === "transcription" && <TranscriptionLayout />}
         {activeModule === "archive" && <ArchiveLayout />}

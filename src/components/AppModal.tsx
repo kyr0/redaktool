@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { ErrorBoundary } from "react-error-boundary";
 import { prefChrome, prefPerPage } from "../lib/content-script/prefs";
 import {
   Dialog,
@@ -45,6 +47,7 @@ import { Separator } from "../ui/separator";
 import { atom } from "nanostores";
 import { FeedbackButton } from "./FeedbackButton";
 import { Toaster } from "../ui/sonner";
+import { TooltipProvider } from "../ui/tooltip";
 
 export const extractedWebsiteDataAtom = atom<string>("");
 
@@ -229,89 +232,98 @@ export const AppModal: React.FC<any> = ({ children }) => {
         wrapperClassName={`${positioningClasses} ab-ftr-bg-contrast ab-z-[2147483640] ab-rounded-sm ab-flex`}
         className="!ab-p-2 !ab-gap-0"
       >
-        <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
-          <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
-            <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
-              <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
-              {t("productName")}
-
-              <Separator
-                orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2 !ab-ml-2"
-              />
-
-              <button
-                type="button"
-                onClick={onInspectButtonClick}
-                className={`${HeaderButtonStyle} !ab-w-auto !ab-mr-1`}
-              >
-                <MousePointerSquareDashed className="ab-h-4 ab-w-4 ab-shrink-0 ab-mr-1" />
-                <span className="ab-text-sm">Inhalt extrahieren</span>
-              </button>
-
-              <Separator
-                orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
-              />
-
-              <ZoomFactorDropdown
-                zoomFactor={zoomClasses}
-                onChangeZoomFactor={(factor) => {
-                  setZoomClasses(factor);
-                  zoomFactor.set(factor);
-                }}
-              />
+        <ErrorBoundary
+          fallback={
+            <div>
+              FATAL ERROR: RedakTool crashed. Please reload the website.
             </div>
-
-            <div className="ab-flex ab-flex-row ab-items-center">
-              <button
-                type="button"
-                className={HeaderButtonStyle}
-                onClick={onDarkModeToggle}
-              >
-                <DarkMode className="ab-h-4 ab-w-4 ab-shrink-0" />
-                <span className="ab-sr-only">Toggle Mode</span>
-              </button>
-
-              <Separator
-                orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
-              />
-
-              <button
-                type="button"
-                onClick={onChangeLanguageButtonClick}
-                className={HeaderButtonStyle}
-              >
-                <div>{t("language")}</div>
-                <span className="ab-sr-only">{t("language")}</span>
-              </button>
-
-              <Separator
-                orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-ml-2"
-              />
-
-              <DialogPrimitive.Close className={`${HeaderButtonStyle} ab-mr-1`}>
-                <X className="ab-h-4 ab-w-4 ab-shrink-0" />
-                <span className="ab-sr-only">Close</span>
-              </DialogPrimitive.Close>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <Resizable
-          onUpdateSize={(w: number, h: number) => {
-            storedDialogSizePref.set({ w, h });
-          }}
-          initialSize={storedSize}
-          className="ab-right-0"
+          }
         >
-          {children}
+          <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
+            <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
+              <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
+                <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
+                {t("productName")}
 
-          <FeedbackButton containerEl={dialogRef.current} />
-          <Toaster />
-        </Resizable>
+                <Separator
+                  orientation="vertical"
+                  className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2 !ab-ml-2"
+                />
+
+                <button
+                  type="button"
+                  onClick={onInspectButtonClick}
+                  className={`${HeaderButtonStyle} !ab-w-auto !ab-mr-1`}
+                >
+                  <MousePointerSquareDashed className="ab-h-4 ab-w-4 ab-shrink-0 ab-mr-1" />
+                  <span className="ab-text-sm">Inhalt extrahieren</span>
+                </button>
+
+                <Separator
+                  orientation="vertical"
+                  className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
+                />
+
+                <ZoomFactorDropdown
+                  zoomFactor={zoomClasses}
+                  onChangeZoomFactor={(factor) => {
+                    setZoomClasses(factor);
+                    zoomFactor.set(factor);
+                  }}
+                />
+              </div>
+
+              <div className="ab-flex ab-flex-row ab-items-center">
+                <button
+                  type="button"
+                  className={HeaderButtonStyle}
+                  onClick={onDarkModeToggle}
+                >
+                  <DarkMode className="ab-h-4 ab-w-4 ab-shrink-0" />
+                  <span className="ab-sr-only">Toggle Mode</span>
+                </button>
+
+                <Separator
+                  orientation="vertical"
+                  className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
+                />
+
+                <button
+                  type="button"
+                  onClick={onChangeLanguageButtonClick}
+                  className={HeaderButtonStyle}
+                >
+                  <div>{t("language")}</div>
+                  <span className="ab-sr-only">{t("language")}</span>
+                </button>
+
+                <Separator
+                  orientation="vertical"
+                  className="!ab-w-[2px] !ab-h-4 !ab-ml-2"
+                />
+
+                <DialogPrimitive.Close
+                  className={`${HeaderButtonStyle} ab-mr-1`}
+                >
+                  <X className="ab-h-4 ab-w-4 ab-shrink-0" />
+                  <span className="ab-sr-only">Close</span>
+                </DialogPrimitive.Close>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          <Resizable
+            onUpdateSize={(w: number, h: number) => {
+              storedDialogSizePref.set({ w, h });
+            }}
+            initialSize={storedSize}
+            className="ab-right-0"
+          >
+            <TooltipProvider>{children}</TooltipProvider>
+            <FeedbackButton containerEl={dialogRef.current} />
+            <Toaster />
+          </Resizable>
+        </ErrorBoundary>
       </DialogContent>
     </Dialog>
   );
