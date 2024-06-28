@@ -8,6 +8,7 @@ import { fetchRssFeed } from "./lib/worker/rss";
 import { cron } from "./lib/worker/scheduler";
 import { getPref, getValue, setPref, setValue } from "./lib/worker/prefs";
 import { whisper } from "./lib/worker/transcription/whisper";
+import type { Prompt } from "./lib/content-script/prompt-template";
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
@@ -93,13 +94,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case "prompt": {
           // TODO: define a "pipeline" for each prompt to run in parallel
 
-          console.log("prompt data", data);
-          console.log("prompt", data.prompt);
+          const prompt = data as Prompt;
+          console.log("prompt data", prompt);
+          console.log("prompt", prompt.text);
 
           let partialResponseText = "";
 
           systemPromptStreaming(
-            data.prompt,
+            prompt.text,
             "openai", // TODO: transmit model name and resolve provider here
             (text: string) => {
               // onChunk

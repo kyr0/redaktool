@@ -1,7 +1,10 @@
 import llmsData from "../../data/llm-models";
 
+export type ProviderName = "openai" | "anthropic";
+
 export interface LLMModel {
   pk: string; // "openai-gpt-4o"
+  provider: ProviderName; // "openai";
   ident: string; // "gpt-4o";
   label: string; // "OpenAI GPT-4o";
 }

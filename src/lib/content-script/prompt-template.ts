@@ -38,7 +38,8 @@ export const generatePrompt = <T>(
 export interface Prompt {
   original: string;
   text: string;
-  encoded: Array<number>;
+  model: string;
+  estimatedInputTokens: number;
   price: number;
   priceOutput?: number;
   priceInput?: number;
@@ -79,6 +80,7 @@ export const finalizePrompt = (
   return {
     values,
     original: prompt,
+    model,
     text: compiledPrompt,
     ...calculatePrompt(compiledPrompt, model, outputTokenScaleFactor),
   } as Prompt;

@@ -51,6 +51,16 @@ import {
 } from "../../ui/select";
 import { upperCaseFirst } from "../../lib/string-casing";
 import { LoadingSpinner } from "../../ui/loading-spinner";
+import {
+  guardedSelectionGuaranteedAtom,
+  selectionGuaranteedAtom,
+} from "../../lib/content-script/stores/use-selection";
+import {
+  kmpSearchMarkdown,
+  sliceOutMarkdownTextIntersection,
+  turndown,
+} from "../../lib/content-script/turndown";
+import llmModels from "../../data/llm-models/index";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -99,17 +109,19 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const { t, i18n } = useTranslation();
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
   const [prompt, setPrompt] = useState<string>(defaultPromptTemplate);
+  const [modelPk, setModelPk] = useState<string>(defaultModelName);
   const [internalEditorArgs, setInternalEditorArgs] =
     useState<MilkdownEditorCreatedArgs>();
   const [promptPrepared, setPromptPrepared] = useState<Prompt>({
     original: defaultPromptTemplate,
     text: "",
-    encoded: [],
+    model: defaultModelName,
+    estimatedInputTokens: 0,
     price: 0,
     priceOutput: 0,
     priceInput: 0,
   });
-
+  const textSelection$ = useStore(guardedSelectionGuaranteedAtom);
   const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
   const [dynamicFields, setDynamicFields] = useState<Array<ParseResult>>([]);
   const [dynamicFieldValues, setDynamicFieldValues] = useState<
@@ -122,6 +134,52 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     useState<boolean>(false);
 
   const [customInstruction, setCustomInstruction] = useState<string>("");
+
+  const [promptContent, setPromptContent] = useState<string>("");
+
+  useEffect(() => {
+    setPromptContent(editorContent);
+    if (textSelection$?.element) {
+      const selectedMd = turndown(textSelection$.element.innerHTML);
+
+      console.log(
+        "selected text",
+        textSelection$.text,
+        "MD len",
+        selectedMd.length,
+      );
+
+      /*
+      const slicedContent = sliceOutMarkdownTextIntersection(
+        selectedMd,
+        textSelection$.text,
+      );
+      */
+
+      console.log("selectedMd", selectedMd);
+
+      let slicedContent = textSelection$.text;
+
+      const sliceIndexes = kmpSearchMarkdown(selectedMd, textSelection$.text);
+
+      if (sliceIndexes[0] !== -1 && sliceIndexes[1] !== -1) {
+        slicedContent = selectedMd.substring(sliceIndexes[0], sliceIndexes[1]);
+      }
+
+      console.log("slicedContent", slicedContent);
+
+      if (slicedContent) {
+        console.log("using selected text!", slicedContent);
+        // use selected text instead of whole editor content
+        setPromptContent(slicedContent);
+
+        //if (!selectionGuaranteedAtom.get()) {
+        // reset selection
+        guardedSelectionGuaranteedAtom.set(null);
+        //}
+      }
+    }
+  }, [textSelection$, textSelection$?.element, editorContent]);
 
   useEffect(() => {
     if (typeof onEditorCreated === "function" && internalEditorArgs) {
@@ -278,10 +336,31 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         setRecompilingInProgress(true);
         (async () => {
           try {
+            /*
+            // TODO: use a new state: promptContent and useEffect to sync
+            if (textSelection$?.element) {
+              const selectedMd = turndown(textSelection$.element.innerHTML);
+              const slicedContent = sliceOutMarkdownTextIntersection(
+                selectedMd,
+                textSelection$.text,
+              );
+              console.log("using selected text!", slicedContent);
+
+              // use selected text instead of whole editor content
+              editorContent = slicedContent;
+
+              if (!selectionGuaranteedAtom.get()) {
+                // reset selection
+                guardedSelectionGuaranteedAtom.set(null);
+              }
+            }
+            */
+
             // second pass value evaluation
             const compiledPrompt = await compilePromptAndSyncFields(prompt, {
               USER_LANGUAGE: mapUserLanguageCode(i18n.language),
               CONTENT: editorContent,
+              MODEL_NAME: modelName,
               CUSTOM_INSTRUCTION: customInstruction || undefined,
             });
 
@@ -317,39 +396,41 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       mapUserLanguageCode,
       i18n,
       outputTokenScaleFactor,
+      textSelection$,
     ],
   );
 
   const debouncedPreparePrompt = useDebouncedCallback(
     useCallback(
-      ({ editorContent, prompt, customInstruction }) => {
+      ({ promptContent, prompt, customInstruction }) => {
         requestAnimationFrame(async () => {
-          console.log("dynamicFieldValues");
           setPromptPrepared(
             await generatePrompt({
               prompt,
-              editorContent,
+              editorContent: promptContent || editorContent,
               customInstruction,
-              modelName: defaultModelName,
+              modelName: modelPk,
             }),
           );
         });
       },
       [
+        modelPk,
         i18n.language,
         dynamicFieldValues,
         setDynamicFieldValues,
         customInstruction,
         generatePrompt,
+        editorContent,
       ],
     ),
     250,
-    { maxWait: 500 },
+    //{ maxWait: 500 },
   );
 
   useEffect(() => {
-    debouncedPreparePrompt({ editorContent, prompt, customInstruction });
-  }, [editorContent, prompt, customInstruction]);
+    debouncedPreparePrompt({ promptContent, prompt, customInstruction });
+  }, [promptContent, prompt, customInstruction]);
 
   // sync
   useEffect(() => {
@@ -374,16 +455,16 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
       const finalPrompt = await generatePrompt({
         prompt,
-        editorContent,
+        editorContent: promptContent || editorContent,
         customInstruction,
-        modelName: defaultModelName,
+        modelName: modelPk,
       });
 
       setStreamingInProgress(true);
 
       try {
         sendPrompt(
-          finalPrompt.text,
+          finalPrompt,
           (text: string) => {
             //console.log("onChunk", text, "editorEl", editorEl);
             setEditorContent((prev) => {
@@ -409,11 +490,15 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               // re-flush the editor content (fix possibly broken markdown rendering)
               partialText += lastChunkText || "";
 
-              requestAnimationFrame(() => {
-                setEditorContent(`${originalText}\n---\n${partialText || ""}`);
+              setTimeout(() => {
+                requestAnimationFrame(() => {
+                  setEditorContent(
+                    `${originalText}\n---\n${partialText || ""}`,
+                  );
 
-                scrollDownMax(editorEl);
-              });
+                  scrollDownMax(editorEl);
+                });
+              }, 1);
             } finally {
               setStreamingInProgress(false);
             }
@@ -429,10 +514,11 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     generatePrompt,
     setStreamingInProgress,
     customInstruction,
+    promptContent,
     editorContent,
-    defaultModelName,
     outputTokenScaleFactor,
     editorEl,
+    modelPk,
     i18n.language,
   ]);
 
@@ -576,25 +662,14 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               <span className="ab-flex ab-flex-row ab-items-center">
                 <span className="ab-p-1 ab-px-2 ab-text-sm">Smart-Prompt:</span>
                 <AiModelDropdown
-                  value={defaultModelName}
-                  options={[
-                    {
-                      label: "OpenAI GPT-4-Turbo",
-                      value: "openai-gpt-4-turbo",
-                    },
-                    {
-                      label: "OpenAI GPT-4o",
-                      value: "openai-gpt-4o",
-                    },
-                    {
-                      label: "Anthropic Opus",
-                      value: "anthropic-opus",
-                    },
-                    {
-                      label: "Perplexity Sonar",
-                      value: "perplexity-sonar",
-                    },
-                  ]}
+                  value={modelPk}
+                  onChange={(value) => {
+                    setModelPk(value);
+                  }}
+                  options={llmModels.map((m) => ({
+                    label: m.label,
+                    value: m.pk,
+                  }))}
                 />
               </span>
 
@@ -639,7 +714,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               </span>
               <span className="ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm ab-justify-between ab-flex ab-flex-row">
                 <span style={{ fontSize: "0.7rem" }}>
-                  Tokens: {promptPrepared.encoded.length} I/O ~
+                  Tokens: {promptPrepared.estimatedInputTokens} I/O ~
                   {promptPrepared.estimatedOutputTokens} ≈{" "}
                   {formatCurrencyForDisplay(
                     promptPrepared.price.toFixed(2),

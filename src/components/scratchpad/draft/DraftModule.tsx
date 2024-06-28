@@ -6,9 +6,7 @@ import {
 } from "../../MarkdownEditor";
 import { Input } from "../../../ui/input";
 import { NotepadTextDashed, PenIcon } from "lucide-react";
-import { FeedbackButton } from "../../FeedbackButton";
 import { db } from "../../../lib/content-script/db";
-import { useEditor } from "@milkdown/react";
 
 const placeholderMarkdown = `# RedakTool
 
@@ -37,7 +35,7 @@ export const DraftModule = () => {
       const markdown = await get();
       console.log("DraftModule: markdown loaded", markdown);
       setEditorContent(markdown || placeholderMarkdown);
-      writerAtom.set(markdown);
+      writerAtom.set(markdown || placeholderMarkdown);
     })();
   }, [get, writerAtom, setEditorContent]);
 

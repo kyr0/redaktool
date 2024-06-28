@@ -155,6 +155,166 @@ export const htmlLinkToMarkdown = (html: string): string => {
   }
   return html;
 };
+export function skipMarkdownSyntaxForKmpSearch(
+  text: string,
+  index: number,
+): number {
+  // Check for escaped characters and skip them
+  if (text[index] === "\\") {
+    return index + 2; // Skip the escape character and the escaped character
+  }
+
+  // Skip code blocks
+  if (text[index] === "`") {
+    if (text.substring(index, index + 3) === "```") {
+      index += 3;
+      while (
+        index < text.length - 2 &&
+        text.substring(index, index + 3) !== "```"
+      ) {
+        index += 1;
+      }
+      return index + 3;
+    }
+    index += 1;
+    while (index < text.length && text[index] !== "`") {
+      index += 1;
+    }
+    return index + 1;
+  }
+
+  // Skip links
+  if (text[index] === "[") {
+    while (index < text.length && text[index] !== "]") {
+      index += 1;
+    }
+    if (index < text.length && text[index + 1] === "(") {
+      index += 2;
+      while (index < text.length && text[index] !== ")") {
+        index += 1;
+      }
+      return index + 1;
+    }
+  }
+
+  // Skip images
+  if (text[index] === "!" && text[index + 1] === "[") {
+    index += 2;
+    while (index < text.length && text[index] !== "]") {
+      index += 1;
+    }
+    if (index < text.length && text[index + 1] === "(") {
+      index += 2;
+      while (index < text.length && text[index] !== ")") {
+        index += 1;
+      }
+      return index + 1;
+    }
+  }
+
+  // Skip blockquotes
+  if (text[index] === ">") {
+    while (index < text.length && text[index] !== "\n") {
+      index += 1;
+    }
+    return index + 1;
+  }
+
+  // Skip tables, lists, headers, emphasis, and other markdown symbols
+  const markdownSymbols: Set<string> = new Set([
+    "*",
+    "_",
+    "~",
+    "`",
+    "#",
+    "-",
+    "+",
+    "|",
+  ]);
+  while (index < text.length && markdownSymbols.has(text[index])) {
+    if (
+      text[index] === "|" ||
+      (["-", "+"].includes(text[index]) &&
+        (index === 0 || ["\n", " "].includes(text[index - 1])))
+    ) {
+      while (index < text.length && text[index] !== "\n") {
+        index += 1;
+      }
+      return index + 1;
+    }
+    index += 1;
+  }
+  return index;
+}
+
+// KMP search function for Markdown text
+export function kmpSearchMarkdown(
+  formattedText: string,
+  searchText: string,
+): [number, number] {
+  // Compute longest suffix-prefix (LSP) array for the search text
+  const lsp: Array<number> = Array(searchText.length).fill(0);
+  let j = 0;
+  for (let i = 1; i < searchText.length; i++) {
+    while (j > 0 && searchText[i] !== searchText[j]) {
+      j = lsp[j - 1];
+    }
+    if (searchText[i] === searchText[j]) {
+      j += 1;
+      lsp[i] = j;
+    }
+  }
+
+  // Perform the KMP search in the formatted text
+  let i = 0;
+  let start_index = -1;
+
+  // TODO: case where formatting is removed at start index like slicedContent "Update**: Falls ihr euch gefr",
+  // would be smart to simply go -n characters back when they are markdown syntax
+
+  while (i < formattedText.length) {
+    i = skipMarkdownSyntaxForKmpSearch(formattedText, i);
+
+    if (
+      j < searchText.length &&
+      i < formattedText.length &&
+      formattedText[i] === searchText[j]
+    ) {
+      if (j === 0) {
+        start_index = i;
+      }
+      j += 1;
+      if (j === searchText.length) {
+        return [start_index, i];
+      }
+    } else if (j > 0) {
+      j = lsp[j - 1];
+      continue;
+    }
+    i += 1;
+  }
+
+  return [-1, -1];
+}
+
+export function sliceOutMarkdownTextIntersection(md: string, text: string) {
+  text = text.trim();
+  if (text.length < 20) {
+    return text; // too short to slice
+  }
+
+  const beginning = text.substring(0, 10).split("");
+  const middle = text.substring(10, text.length - 10).split(" ");
+  const end = text.substring(text.length - 10, text.length).split("");
+  const pattern = `(${[...beginning, ...middle, ...end].join(".+?")})`;
+
+  console.log("pattern", pattern);
+  const regex = new RegExp(pattern, "i");
+  const match = md.split(regex);
+  if (match) {
+    return match[1];
+  }
+}
 
 export const turndown = (html: string): string => {
   //const preprocessed = htmlLinkToMarkdown(html);

@@ -48,14 +48,23 @@ import { atom } from "nanostores";
 import { FeedbackButton } from "./FeedbackButton";
 import { Toaster } from "../ui/sonner";
 import { TooltipProvider } from "../ui/tooltip";
+import { useStore } from "@nanostores/react";
+import { milkdownEditorAtom } from "./MarkdownEditor";
+import { usePluginViewContext } from "@prosemirror-adapter/react";
 
 export const extractedWebsiteDataAtom = atom<string>("");
 
-export const AppModal: React.FC<any> = ({ children }) => {
+export interface AppModalProps {
+  root: ShadowRoot | Window;
+}
+
+export const AppModal: React.FC<any> = ({ children, root }) => {
   // disabled text selection magic ;)
   const ref = useRef<HTMLDivElement>(null);
-  //useSelection()
+  const editors$ = useStore(milkdownEditorAtom);
+  useSelection(root);
   const { t, i18n } = useTranslation();
+  const { view } = usePluginViewContext();
 
   const languagePref = prefChrome("language", "de");
 
@@ -163,30 +172,90 @@ export const AppModal: React.FC<any> = ({ children }) => {
   };
 
   useEffect(() => {
-    setShowOpenButton(false);
-    if (!selectionGuaranteed$) return;
+    //setShowOpenButton(false);
+    if (!selectionGuaranteed$) {
+      //guardedSelectionGuaranteedAtom.set(null);
+      return;
+    }
 
     const anchorNode = getAnchorNode(selectionGuaranteed$.selection);
 
-    if (!dialogRef.current?.contains(anchorNode)) {
-      console.log("valid selection", selectionGuaranteed$);
+    if (dialogRef.current?.contains(anchorNode)) {
+      /*
 
+      //console.log("valid selection", selectionGuaranteed$);
+
+      if (editors$) {
+        const editorNames = Object.keys(editors$);
+
+        editorNames.forEach((editorName) => {
+          const editor = editors$[editorName];
+          if (editor.el.contains(selectionGuaranteed$.element)) {
+            console.log("editor", editor);
+
+            //const md = editor.serializer!(editor.view.state.doc);
+            console.log("content", editor.view.state.selection.content());
+
+            const fragment = editor.view.state.selection.content().content;
+
+            if (fragment && fragment.size > 0) {
+              console.log("fragment", fragment);
+
+              const nodeList: Array<Node> = [];
+              fragment.forEach((node: Node) => {
+                node.forEach((node) => {
+                  nodeList.push(node);
+                });
+              });
+
+              const md = "";
+
+              nodeList.forEach((node) => {
+                console.log(
+                  "node",
+                  node,
+                );
+
+                const marks = node.marks
+                  ? node.marks
+                      .map((mark) =>
+                        Object.keys(mark.attrs)
+                              .map((key) => mark.attrs[key])
+                              .join(""),
+                      )
+                      .join("")
+                  : "";
+
+                console.log("marks", marks);
+                console.log("text", node.text);
+              });
+
+              // serialize the fragment by finding the nodes that make up this fragment
+              // and serialize them to markdown
+            }
+            //const md = editor.serializer!();
+          }
+        });
+      }
+
+              */
+      //view.state.selection
       guardedSelectionGuaranteedAtom.set(selectionGuaranteed$);
       //scratchpadEditorContentAtom.set(selectionGuaranteed$.markdown);
 
-      requestAnimationFrame(() => {
-        const prevSelectionDetails = selectEditorContent("scratchpadEditor");
+      // requestAnimationFrame(() => {
+      //   const prevSelectionDetails = selectEditorContent("scratchpadEditor");
 
-        requestAnimationFrame(() => {
-          document.execCommand("copy");
-          //deselect()
-          restorePreviousSelection(prevSelectionDetails);
-        });
-      });
+      //   requestAnimationFrame(() => {
+      //     document.execCommand("copy");
+      //     //deselect()
+      //     restorePreviousSelection(prevSelectionDetails);
+      //   });
+      // });
 
-      setShowOpenButton(true);
+      //setShowOpenButton(true);
     }
-  }, [selectionGuaranteed$, dialogRef]);
+  }, [selectionGuaranteed$, dialogRef, editors$, view]);
 
   // open with Control + f or alt + f
   useKeystroke("f", () => {

@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { GenerateRequest } from "cohere-ai/api";
+//import type { GenerateRequest } from "cohere-ai/api";
 import { openAIPrompt, openAIPromptStreaming } from "./openai";
-import { coherePrompt } from "./cohere";
+//import { coherePrompt } from "./cohere";
 import { anthropicPrompt } from "./anthropic";
 import { type HuggingFaceBody, huggingFacePrompt } from "./huggingface";
 import { ollamaPrompt, type OllamaBody } from "./ollama";
@@ -38,7 +38,7 @@ export interface PromptApiOptions {
 export type ModelProviderType =
   | "openai"
   | "anthropic"
-  | "cohere"
+  //  | "cohere"
   | "huggingface"
   | "ollama"
   | "gemini"
@@ -48,8 +48,7 @@ export type ModelProviderType =
 export const systemPrompt = async (
   promptText: string,
   providerType: ModelProviderType,
-  promptOptions:
-    | Partial<GenerateRequest>
+  promptOptions: //    | Partial<GenerateRequest>
     | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
     | Partial<ChatParams>
     | Partial<HuggingFaceBody>
@@ -58,6 +57,7 @@ export const systemPrompt = async (
   apiOptions: PromptApiOptions = {},
 ): Promise<PromptResponse> => {
   switch (providerType) {
+    /*
     case "cohere": {
       return coherePrompt(
         {
@@ -67,6 +67,7 @@ export const systemPrompt = async (
         apiOptions,
       );
     }
+      */
     case "anthropic": {
       return anthropicPrompt(
         {
@@ -164,8 +165,7 @@ export const systemPromptStreaming = async (
   onChunk: (text: string) => void,
   onDone: (elapsed: number) => void,
   onError: (error: unknown) => void,
-  promptOptions:
-    | Partial<GenerateRequest>
+  promptOptions: //    | Partial<GenerateRequest>
     | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
     | Partial<ChatParams>
     | Partial<HuggingFaceBody>

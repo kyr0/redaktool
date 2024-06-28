@@ -6,19 +6,19 @@ import {
   type TrackedSelection,
 } from "../stores/use-selection";
 import { getClosestWrappingElement } from "../find-closest";
-import { turndown } from "../turndown";
 
 // disabled for now; a bit unstable and element selection works better
 export const useSelection = (
+  root: ShadowRoot | Window,
   onSelectionChanged: (selection: TrackedSelection | null) => void = () => {},
 ) => {
   const storedSelection = getSelectionStore();
   const [prevSelectionText, setPrevSelectionText] = useState<string>("");
-
   useEffect(() => {
     const trackSelectionChange = () => {
-      const currentSelection = window.getSelection();
+      const currentSelection = (root as Window).getSelection();
 
+      //console.log("trackSelectionChange", currentSelection);
       if (
         currentSelection &&
         currentSelection!.toString().trim().length > 0 &&
@@ -30,12 +30,14 @@ export const useSelection = (
           selection: currentSelection,
           text: currentSelection.toString(),
           element: el,
-          markdown: turndown(el.innerHTML),
+          markdown: "",
+          //markdown: turndown(el.innerHTML),
         });
       } else {
         selectionAtom.set(null);
       }
     };
+    // console.log("useSelection", storedSelection);
     document.addEventListener("selectionchange", trackSelectionChange, false);
     return () => {
       document.removeEventListener(
@@ -56,6 +58,7 @@ export const useSelection = (
     }
 
     if (!storedSelection) {
+      selectionGuaranteedAtom.set(null);
       onSelectionChanged(null);
     }
   }, [storedSelection, prevSelectionText]);

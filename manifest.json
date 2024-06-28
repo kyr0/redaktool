@@ -13,9 +13,6 @@
     "default_popup": "popup.html",
     "default_title": "RedakTool anzeigen"
   },
-  "sandbox": {
-    "pages": ["sandbox.html"]
-  },
   "content_scripts": [
     {
       "run_at": "document_start",

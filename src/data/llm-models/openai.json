@@ -1,7 +1,23 @@
 [
   {
     "pk": "openai-gpt-4o",
+    "provider": "openai",
     "ident": "gpt-4o",
-    "label": "OpenAI GPT-4o"
+    "label": "OpenAI GPT-4o",
+    "cutoff": "October 2023"
+  },
+  {
+    "pk": "openai-gpt-4-turbo",
+    "provider": "openai",
+    "ident": "gpt-4-turbo",
+    "label": "OpenAI GPT-4 Turbo",
+    "cutoff": "December 2023"
+  },
+  {
+    "pk": "openai-gpt-3.5-turbo",
+    "provider": "openai",
+    "ident": "gpt-3.5-turbo",
+    "label": "OpenAI GPT-3.5 Turbo",
+    "cutoff": "September 2023"
   }
 ]

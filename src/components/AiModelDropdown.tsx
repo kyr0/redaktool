@@ -16,9 +16,14 @@ export interface AiModelEntry {
 export interface AiModelDropdownProps {
   value: string;
   options: Array<AiModelEntry>;
+  onChange: (value: string) => void;
 }
 
-export function AiModelDropdown({ value, options }: AiModelDropdownProps) {
+export function AiModelDropdown({
+  value,
+  options,
+  onChange,
+}: AiModelDropdownProps) {
   const { t, i18n } = useTranslation();
   const [selectedValue, setSelectedValue] = useState<string>(value);
   const selectedOption = options.find(
@@ -39,7 +44,10 @@ export function AiModelDropdown({ value, options }: AiModelDropdownProps) {
         {options.map((option) => (
           <DropdownMenuItem
             key={option.value}
-            onSelect={() => setSelectedValue(option.value)}
+            onSelect={() => {
+              setSelectedValue(option.value);
+              onChange(option.value);
+            }}
           >
             <span>{option.label}</span>
           </DropdownMenuItem>

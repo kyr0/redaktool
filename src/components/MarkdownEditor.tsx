@@ -5,6 +5,8 @@ import {
   commandsCtx,
   editorViewOptionsCtx,
   rootAttrsCtx,
+  editorViewCtx,
+  serializerCtx,
   SchemaReady,
 } from "@milkdown/core";
 import {
@@ -79,6 +81,7 @@ import { Separator } from "../ui/separator";
 import { linkPlugin } from "./editor/LinkWidget";
 import type { EditorState, PluginView } from "@milkdown/prose/state";
 import type { EditorView } from "@milkdown/prose/view";
+import type { Serializer } from "@milkdown/transformer";
 //import { SlashView, slash } from './scratchpad/plugin/Slash';
 
 export interface MilkdownEditorCreatedArgs {
@@ -91,6 +94,7 @@ export interface MilkdownEditorCreatedArgs {
   pluginViewFactory: (
     options: ReactPluginViewUserOptions,
   ) => (view: EditorView) => PluginView;
+  serializer?: Serializer;
   setValue?: (value: string) => void;
   getValue?: () => string;
 }
@@ -133,7 +137,7 @@ const ToolbarButton = ({ onClick, title, children, className }: any) => (
 
 export const milkdownEditorAtom = atom<Record<
   string,
-  { editor: Editor; root: HTMLElement }
+  MilkdownEditorCreatedArgs
 > | null>({});
 export const getMilkdownEditorStore = () => useStore(milkdownEditorAtom);
 
@@ -146,19 +150,13 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
   onCreated,
 }: MarkdownEditorProps) => {
   const { view, prevState } = usePluginViewContext();
-
   const pluginViewFactory = usePluginViewFactory();
   const widgetViewFactory = useWidgetViewFactory();
-
-  useEffect(() => {
-    if (view) {
-      console.log("view", view.dom);
-    }
-  }, [view]);
 
   const { get, loading } = useEditor(
     (root) => {
       const editor = Editor.make()
+
         .enableInspector()
         .onStatusChange((status) => {
           if (status === "Created") {
@@ -169,31 +167,30 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
               ) as HTMLElement;
               editorEl?.setAttribute("spellcheck", "false");
 
+              const args: MilkdownEditorCreatedArgs = {
+                editor,
+                el: editorEl,
+                root,
+                view,
+                prevState,
+                widgetViewFactory,
+                pluginViewFactory,
+                setValue: (value: string) => {
+                  editor.action(replaceAll(value));
+                },
+                getValue: () => {
+                  return editor.action(getMarkdown());
+                },
+              };
+
               if (typeof onCreated === "function") {
-                onCreated({
-                  editor,
-                  el: editorEl,
-                  root,
-                  view,
-                  prevState,
-                  widgetViewFactory,
-                  pluginViewFactory,
-                  setValue: (value: string) => {
-                    editor.action(replaceAll(value));
-                  },
-                  getValue: () => {
-                    return editor.action(getMarkdown());
-                  },
-                });
+                onCreated(args);
               }
 
               // register in editor reference registry
               milkdownEditorAtom.set({
                 ...milkdownEditorAtom.get(),
-                [name]: {
-                  editor,
-                  root,
-                },
+                [name]: args,
               });
             }
           }
@@ -238,6 +235,22 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             if (markdown !== prevMarkdown) {
               onChange(markdown);
             }
+
+            // update nano store with updates view reference
+            const view = _ctx.get(editorViewCtx);
+            const serializer = _ctx.get(serializerCtx);
+            const prevArgs = milkdownEditorAtom.get();
+            const editorNames = Object.keys(prevArgs || {});
+
+            editorNames.forEach((currentName) => {
+              if (currentName === name) {
+                prevArgs![currentName].view = view;
+                prevArgs![currentName].serializer = serializer;
+              }
+            });
+            milkdownEditorAtom.set({
+              ...prevArgs,
+            });
           });
 
           //const telemetry: Telemetry[] = editor.inspect();

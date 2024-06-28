@@ -1,0 +1,29 @@
+{
+  "anthropic-claude-3-sonnet-20240229": {
+    "provider": "anthropic",
+    "input": 0.000003,
+    "output": 0.000015,
+    "maxContextTokens": 128000,
+    "maxInputTokens": 195904,
+    "maxOutputTokens": 4096,
+    "tikTokenModelName": "claude-3"
+  },
+  "anthropic-claude-3-opus-20240229": {
+    "provider": "anthropic",
+    "input": 0.000015,
+    "output": 0.000075,
+    "maxContextTokens": 128000,
+    "maxInputTokens": 195904,
+    "maxOutputTokens": 4096,
+    "tikTokenModelName": "claude-3"
+  },
+  "anthropic-claude-3-haiku-20240307": {
+    "provider": "anthropic",
+    "input": 0.00000025,
+    "output": 0.00000125,
+    "maxContextTokens": 128000,
+    "maxInputTokens": 195904,
+    "maxOutputTokens": 4096,
+    "tikTokenModelName": "claude-3"
+  }
+}

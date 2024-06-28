@@ -12,12 +12,13 @@ export interface TrackedSelection {
 export const selectionAtom = atom<TrackedSelection | null>(null);
 
 // atom to keep track when a new selection is made, but only when text and range are not empty
-// @ts-ignore
-export const selectionGuaranteedAtom = atom<TrackedSelection>();
+export const selectionGuaranteedAtom = atom<TrackedSelection | null>(null);
 
 // atom to keep track of selections that are not empty and happened outside of the own dialog
 // @ts-ignore
-export const guardedSelectionGuaranteedAtom = atom<TrackedSelection>();
+export const guardedSelectionGuaranteedAtom = atom<TrackedSelection | null>(
+  null,
+);
 
 export const getSelectionStore = () => useStore(selectionAtom);
 export const getSelectionGuaranteedStore = () =>
