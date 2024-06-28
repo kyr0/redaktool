@@ -402,7 +402,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
   const debouncedPreparePrompt = useDebouncedCallback(
     useCallback(
-      ({ promptContent, prompt, customInstruction }) => {
+      ({ promptContent, prompt, customInstruction, modelPk }) => {
         requestAnimationFrame(async () => {
           setPromptPrepared(
             await generatePrompt({
@@ -415,7 +415,6 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         });
       },
       [
-        modelPk,
         i18n.language,
         dynamicFieldValues,
         setDynamicFieldValues,
@@ -429,8 +428,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
   );
 
   useEffect(() => {
-    debouncedPreparePrompt({ promptContent, prompt, customInstruction });
-  }, [promptContent, prompt, customInstruction]);
+    debouncedPreparePrompt({
+      promptContent,
+      prompt,
+      customInstruction,
+      modelPk,
+    });
+  }, [promptContent, prompt, customInstruction, modelPk]);
 
   // sync
   useEffect(() => {

@@ -2,7 +2,7 @@ import { Tiktoken, encodingForModel, type TiktokenModel } from "js-tiktoken";
 import priceModelsData from "../../data/price-models";
 import type { Prompt } from "./prompt-template";
 import type { ProviderName } from "./llm-models";
-//import claudeBpeRanks from "@anthropic-ai/tokenizer/claude.json";
+import claudeBpeRanks from "@anthropic-ai/tokenizer/claude.json";
 
 export interface PriceModel {
   input: number;
@@ -74,11 +74,10 @@ export const calculatePrompt = (
       break;
     }
     case "anthropic": {
-      /*
       const tokenizer = new Tiktoken(claudeBpeRanks);
       const encoded = tokenizer.encode(text.normalize("NFKC"), "all");
       estimatedInputTokens = encoded.length;
-      */
+
       break;
     }
     default:
