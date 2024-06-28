@@ -1,6 +1,10 @@
 import("webextension-polyfill");
 
-import { OPEN_AI_API_KEY_NAME, PARTIAL_RESPONSE_TEXT_NAME } from "./shared";
+import {
+  ANTHROPIC_API_KEY_NAME,
+  OPEN_AI_API_KEY_NAME,
+  PARTIAL_RESPONSE_TEXT_NAME,
+} from "./shared";
 import { systemPromptStreaming } from "./lib/worker/llm/prompt";
 import { compileSmartPrompt } from "./lib/worker/prompt";
 import { dbGetValue, dbSetValue } from "./lib/worker/db";
@@ -9,6 +13,7 @@ import { cron } from "./lib/worker/scheduler";
 import { getPref, getValue, setPref, setValue } from "./lib/worker/prefs";
 import { whisper } from "./lib/worker/transcription/whisper";
 import type { Prompt } from "./lib/content-script/prompt-template";
+import { getLLMModel } from "./lib/content-script/llm-models";
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
@@ -98,11 +103,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log("prompt data", prompt);
           console.log("prompt", prompt.text);
 
+          const model = getLLMModel(prompt.model);
+
+          let apiKey = "";
+
+          switch (model.provider) {
+            case "openai":
+              apiKey = await getPref(OPEN_AI_API_KEY_NAME, "no-key");
+              break;
+
+            case "anthropic":
+              apiKey = await getPref(ANTHROPIC_API_KEY_NAME, "no-key");
+              break;
+          }
+
           let partialResponseText = "";
 
           systemPromptStreaming(
             prompt.text,
-            "openai", // TODO: transmit model name and resolve provider here
+            model.provider,
             (text: string) => {
               // onChunk
               partialResponseText += text || "";
@@ -123,12 +142,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
             },
             {
-              model: "gpt-4o", // TODO: select dynamically, depending on provider and pass settings
+              model: model.ident,
               temperature: 0.7, // TODO: dynamically from settings
               n: 1,
             },
             {
-              apiKey: await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
+              apiKey,
             },
           );
           break;

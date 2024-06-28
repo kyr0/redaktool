@@ -1,10 +1,9 @@
 import llmsData from "../../data/llm-models";
-
-export type ProviderName = "openai" | "anthropic";
+import type { ModelProviderType } from "../worker/llm/prompt";
 
 export interface LLMModel {
   pk: string; // "openai-gpt-4o"
-  provider: ProviderName; // "openai";
+  provider: ModelProviderType; // "openai";
   ident: string; // "gpt-4o";
   label: string; // "OpenAI GPT-4o";
 }
@@ -29,3 +28,11 @@ export const validateLLMs = (llmsData: LLMs): LLMs => {
 };
 
 export const llms = validateLLMs(llmsData);
+
+export const getLLMModel = (model: string) => {
+  const llm = llms.find((llm) => llm.pk === model);
+  if (!llm) {
+    throw new Error(`Model ${model} not found in price models`);
+  }
+  return llm as LLMModel;
+};

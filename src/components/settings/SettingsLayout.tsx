@@ -11,6 +11,7 @@ import {
 } from "../../ui/resizable";
 import { useCallback, useState } from "react";
 import { OpenAiSettings } from "./OpenAI";
+import { AnthropicSettings } from "./Anthropic";
 
 export type SettingsNames =
   | "openai"
@@ -104,17 +105,7 @@ export const SettingsLayout = () => {
       <ResizablePanel defaultSize={80} minSize={60}>
         <div className="ab-flex ab-h-full ab-p-2">
           {activeSttingsModule === "openai" && <OpenAiSettings />}
-
-          {activeSttingsModule === "anthropic" && (
-            <div className="ab-flex ab-h-full ab-p-2">
-              <div className="ab-flex ab-flex-col ab-ml-4">
-                <span className="ab-text-2xl">Anthropic Settings</span>
-                <span className="ab-text-sm">
-                  Configure your Gemini API key and other settings
-                </span>
-              </div>
-            </div>
-          )}
+          {activeSttingsModule === "anthropic" && <AnthropicSettings />}
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

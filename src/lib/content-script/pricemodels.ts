@@ -1,13 +1,13 @@
 import { Tiktoken, encodingForModel, type TiktokenModel } from "js-tiktoken";
 import priceModelsData from "../../data/price-models";
 import type { Prompt } from "./prompt-template";
-import type { ProviderName } from "./llm-models";
 import claudeBpeRanks from "@anthropic-ai/tokenizer/claude.json";
+import type { ModelProviderType } from "../worker/llm/prompt";
 
 export interface PriceModel {
   input: number;
   output: number;
-  provider: ProviderName;
+  provider: ModelProviderType;
   maxContextTokens: number;
   maxInputTokens: number;
   maxOutputTokens: number;
