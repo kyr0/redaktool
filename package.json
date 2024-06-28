@@ -25,7 +25,6 @@
     "@milkdown/plugin-emoji": "^7.3.5",
     "@milkdown/plugin-history": "^7.3.5",
     "@milkdown/plugin-listener": "^7.3.5",
-    "@milkdown/plugin-menu": "^6.5.4",
     "@milkdown/plugin-slash": "^7.3.5",
     "@milkdown/plugin-tooltip": "^7.3.6",
     "@milkdown/preset-commonmark": "^7.3.5",
