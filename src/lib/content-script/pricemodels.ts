@@ -1,11 +1,16 @@
-import { encodingForModel, type TiktokenModel } from "js-tiktoken";
+import { Tiktoken, encodingForModel, type TiktokenModel } from "js-tiktoken";
 import priceModelsData from "../../data/price-models";
 import type { Prompt } from "./prompt-template";
+import type { ProviderName } from "./llm-models";
+import claudeBpeRanks from "@anthropic-ai/tokenizer/claude.json";
 
 export interface PriceModel {
   input: number;
   output: number;
+  provider: ProviderName;
   maxContextTokens: number;
+  maxInputTokens: number;
+  maxOutputTokens: number;
   tikTokenModelName: TiktokenModel;
 }
 
@@ -59,16 +64,34 @@ export const calculatePrompt = (
   outputScaleFactor = 2, // avg output length is 2x input length
 ): Partial<Prompt> => {
   const priceModel = getPriceModel(model);
-  const encoding = encodingForModel(priceModel.tikTokenModelName);
-  const encoded = encoding.encode(text);
-  const priceInput = encoded.length * priceModel.input;
+  let estimatedInputTokens = 0;
+
+  switch (priceModel.provider) {
+    case "openai": {
+      const encoding = encodingForModel(priceModel.tikTokenModelName);
+      const encoded = encoding.encode(text);
+      estimatedInputTokens = encoded.length;
+      break;
+    }
+    case "anthropic": {
+      const tokenizer = new Tiktoken(claudeBpeRanks);
+      const encoded = tokenizer.encode(text.normalize("NFKC"), "all");
+      estimatedInputTokens = encoded.length;
+
+      break;
+    }
+    default:
+      throw new Error(`Provider ${priceModel.provider} not supported`);
+  }
+
+  const priceInput = estimatedInputTokens * priceModel.input;
   const estimatedOutputTokens = Number.parseInt(
-    (encoded.length * outputScaleFactor).toFixed(0),
+    (estimatedInputTokens * outputScaleFactor).toFixed(0),
   );
   const priceOutput = estimatedOutputTokens * priceModel.output;
 
   return {
-    encoded,
+    estimatedInputTokens,
     price: priceInput + priceOutput,
     priceOutput,
     priceInput,

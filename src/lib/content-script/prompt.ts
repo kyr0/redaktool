@@ -1,5 +1,6 @@
 import { PARTIAL_RESPONSE_TEXT_NAME } from "../../shared";
 import { prefChrome } from "./prefs";
+import type { Prompt } from "./prompt-template";
 
 export const mapUserLanguageCode = (code: string): string => {
   code = code.toUpperCase();
@@ -14,7 +15,7 @@ export const mapUserLanguageCode = (code: string): string => {
 };
 
 export const sendPrompt = (
-  prompt: string,
+  prompt: Prompt,
   onChunk: (text: string) => void,
   onDone: (lastChunkText: string) => void,
 ) => {
@@ -38,9 +39,7 @@ export const sendPrompt = (
   chrome.runtime.sendMessage(
     {
       action: "prompt",
-      text: JSON.stringify({
-        prompt,
-      }),
+      text: JSON.stringify(prompt),
     },
     (response) => {
       const resultText = JSON.parse(response.result) || "";

@@ -48,14 +48,23 @@ import { atom } from "nanostores";
 import { FeedbackButton } from "./FeedbackButton";
 import { Toaster } from "../ui/sonner";
 import { TooltipProvider } from "../ui/tooltip";
+import { useStore } from "@nanostores/react";
+import { milkdownEditorAtom } from "./MarkdownEditor";
+import { usePluginViewContext } from "@prosemirror-adapter/react";
 
 export const extractedWebsiteDataAtom = atom<string>("");
 
-export const AppModal: React.FC<any> = ({ children }) => {
+export interface AppModalProps {
+  root: ShadowRoot | Window;
+}
+
+export const AppModal: React.FC<any> = ({ children, root }) => {
   // disabled text selection magic ;)
   const ref = useRef<HTMLDivElement>(null);
-  //useSelection()
+  const editors$ = useStore(milkdownEditorAtom);
+  useSelection(root);
   const { t, i18n } = useTranslation();
+  const { view } = usePluginViewContext();
 
   const languagePref = prefChrome("language", "de");
 
@@ -163,30 +172,90 @@ export const AppModal: React.FC<any> = ({ children }) => {
   };
 
   useEffect(() => {
-    setShowOpenButton(false);
-    if (!selectionGuaranteed$) return;
+    //setShowOpenButton(false);
+    if (!selectionGuaranteed$) {
+      //guardedSelectionGuaranteedAtom.set(null);
+      return;
+    }
 
     const anchorNode = getAnchorNode(selectionGuaranteed$.selection);
 
-    if (!dialogRef.current?.contains(anchorNode)) {
-      console.log("valid selection", selectionGuaranteed$);
+    if (dialogRef.current?.contains(anchorNode)) {
+      /*
 
+      //console.log("valid selection", selectionGuaranteed$);
+
+      if (editors$) {
+        const editorNames = Object.keys(editors$);
+
+        editorNames.forEach((editorName) => {
+          const editor = editors$[editorName];
+          if (editor.el.contains(selectionGuaranteed$.element)) {
+            console.log("editor", editor);
+
+            //const md = editor.serializer!(editor.view.state.doc);
+            console.log("content", editor.view.state.selection.content());
+
+            const fragment = editor.view.state.selection.content().content;
+
+            if (fragment && fragment.size > 0) {
+              console.log("fragment", fragment);
+
+              const nodeList: Array<Node> = [];
+              fragment.forEach((node: Node) => {
+                node.forEach((node) => {
+                  nodeList.push(node);
+                });
+              });
+
+              const md = "";
+
+              nodeList.forEach((node) => {
+                console.log(
+                  "node",
+                  node,
+                );
+
+                const marks = node.marks
+                  ? node.marks
+                      .map((mark) =>
+                        Object.keys(mark.attrs)
+                              .map((key) => mark.attrs[key])
+                              .join(""),
+                      )
+                      .join("")
+                  : "";
+
+                console.log("marks", marks);
+                console.log("text", node.text);
+              });
+
+              // serialize the fragment by finding the nodes that make up this fragment
+              // and serialize them to markdown
+            }
+            //const md = editor.serializer!();
+          }
+        });
+      }
+
+              */
+      //view.state.selection
       guardedSelectionGuaranteedAtom.set(selectionGuaranteed$);
       //scratchpadEditorContentAtom.set(selectionGuaranteed$.markdown);
 
-      requestAnimationFrame(() => {
-        const prevSelectionDetails = selectEditorContent("scratchpadEditor");
+      // requestAnimationFrame(() => {
+      //   const prevSelectionDetails = selectEditorContent("scratchpadEditor");
 
-        requestAnimationFrame(() => {
-          document.execCommand("copy");
-          //deselect()
-          restorePreviousSelection(prevSelectionDetails);
-        });
-      });
+      //   requestAnimationFrame(() => {
+      //     document.execCommand("copy");
+      //     //deselect()
+      //     restorePreviousSelection(prevSelectionDetails);
+      //   });
+      // });
 
-      setShowOpenButton(true);
+      //setShowOpenButton(true);
     }
-  }, [selectionGuaranteed$, dialogRef]);
+  }, [selectionGuaranteed$, dialogRef, editors$, view]);
 
   // open with Control + f or alt + f
   useKeystroke("f", () => {
@@ -232,98 +301,96 @@ export const AppModal: React.FC<any> = ({ children }) => {
         wrapperClassName={`${positioningClasses} ab-ftr-bg-contrast ab-z-[2147483640] ab-rounded-sm ab-flex`}
         className="!ab-p-2 !ab-gap-0"
       >
-        <ErrorBoundary
-          fallback={
-            <div>
-              FATAL ERROR: RedakTool crashed. Please reload the website.
+        <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
+          <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
+            <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
+              <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
+              {t("productName")}
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2 !ab-ml-2"
+              />
+
+              <button
+                type="button"
+                onClick={onInspectButtonClick}
+                className={`${HeaderButtonStyle} !ab-w-auto !ab-mr-1`}
+              >
+                <MousePointerSquareDashed className="ab-h-4 ab-w-4 ab-shrink-0 ab-mr-1" />
+                <span className="ab-text-sm">Inhalt extrahieren</span>
+              </button>
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
+              />
+
+              <ZoomFactorDropdown
+                zoomFactor={zoomClasses}
+                onChangeZoomFactor={(factor) => {
+                  setZoomClasses(factor);
+                  zoomFactor.set(factor);
+                }}
+              />
             </div>
-          }
+
+            <div className="ab-flex ab-flex-row ab-items-center">
+              <button
+                type="button"
+                className={HeaderButtonStyle}
+                onClick={onDarkModeToggle}
+              >
+                <DarkMode className="ab-h-4 ab-w-4 ab-shrink-0" />
+                <span className="ab-sr-only">Toggle Mode</span>
+              </button>
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
+              />
+
+              <button
+                type="button"
+                onClick={onChangeLanguageButtonClick}
+                className={HeaderButtonStyle}
+              >
+                <div>{t("language")}</div>
+                <span className="ab-sr-only">{t("language")}</span>
+              </button>
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-ml-2"
+              />
+
+              <DialogPrimitive.Close className={`${HeaderButtonStyle} ab-mr-1`}>
+                <X className="ab-h-4 ab-w-4 ab-shrink-0" />
+                <span className="ab-sr-only">Close</span>
+              </DialogPrimitive.Close>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        <Resizable
+          onUpdateSize={(w: number, h: number) => {
+            storedDialogSizePref.set({ w, h });
+          }}
+          initialSize={storedSize}
+          className="ab-right-0"
         >
-          <DialogHeader className="ab-select-none ab-h-8 ab-pt-1 ab-pr-1 ab-pl-1 ab-space-0 ab-dialog-drag-handle ab-ftr-bg-halfcontrast ab-rounded-sm">
-            <DialogTitle className="ab-text-lg ab-flex ab-flex-row ab-justify-between ab-items-center">
-              <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
-                <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
-                {t("productName")}
-
-                <Separator
-                  orientation="vertical"
-                  className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2 !ab-ml-2"
-                />
-
-                <button
-                  type="button"
-                  onClick={onInspectButtonClick}
-                  className={`${HeaderButtonStyle} !ab-w-auto !ab-mr-1`}
-                >
-                  <MousePointerSquareDashed className="ab-h-4 ab-w-4 ab-shrink-0 ab-mr-1" />
-                  <span className="ab-text-sm">Inhalt extrahieren</span>
-                </button>
-
-                <Separator
-                  orientation="vertical"
-                  className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
-                />
-
-                <ZoomFactorDropdown
-                  zoomFactor={zoomClasses}
-                  onChangeZoomFactor={(factor) => {
-                    setZoomClasses(factor);
-                    zoomFactor.set(factor);
-                  }}
-                />
+          <ErrorBoundary
+            fallback={
+              <div>
+                FATAL ERROR: RedakTool crashed. Please reload the website.
               </div>
-
-              <div className="ab-flex ab-flex-row ab-items-center">
-                <button
-                  type="button"
-                  className={HeaderButtonStyle}
-                  onClick={onDarkModeToggle}
-                >
-                  <DarkMode className="ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span className="ab-sr-only">Toggle Mode</span>
-                </button>
-
-                <Separator
-                  orientation="vertical"
-                  className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
-                />
-
-                <button
-                  type="button"
-                  onClick={onChangeLanguageButtonClick}
-                  className={HeaderButtonStyle}
-                >
-                  <div>{t("language")}</div>
-                  <span className="ab-sr-only">{t("language")}</span>
-                </button>
-
-                <Separator
-                  orientation="vertical"
-                  className="!ab-w-[2px] !ab-h-4 !ab-ml-2"
-                />
-
-                <DialogPrimitive.Close
-                  className={`${HeaderButtonStyle} ab-mr-1`}
-                >
-                  <X className="ab-h-4 ab-w-4 ab-shrink-0" />
-                  <span className="ab-sr-only">Close</span>
-                </DialogPrimitive.Close>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
-
-          <Resizable
-            onUpdateSize={(w: number, h: number) => {
-              storedDialogSizePref.set({ w, h });
-            }}
-            initialSize={storedSize}
-            className="ab-right-0"
+            }
           >
             <TooltipProvider>{children}</TooltipProvider>
             <FeedbackButton containerEl={dialogRef.current} />
             <Toaster />
-          </Resizable>
-        </ErrorBoundary>
+          </ErrorBoundary>
+        </Resizable>
       </DialogContent>
     </Dialog>
   );

@@ -84,7 +84,7 @@ class FtrElement extends HTMLElement {
 
         root.render(
           <>
-            <AppModal>
+            <AppModal root={this.shadowRoot}>
               <ModalLayout />
             </AppModal>
           </>,
