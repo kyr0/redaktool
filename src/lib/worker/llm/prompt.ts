@@ -10,22 +10,24 @@ import type { ChatParams, ChatStreamResponse } from "openai-fetch";
 import { perplexityPrompt } from "./perplexity";
 
 export interface PromptTokenUsage {
-  completion_tokens: number | undefined;
-  prompt_tokens: number | undefined;
-  total_tokens: number | undefined;
+  completion_tokens?: number;
+  prompt_tokens?: number;
+  total_tokens?: number;
 }
+
+export type PromptFinishReason =
+  | string
+  | null
+  | "function_call"
+  | "stop"
+  | "length"
+  | "tool_calls"
+  | "content_filter";
 
 export interface PromptResponse {
   message?: string | null;
-  actualUsage: PromptTokenUsage | undefined;
-  finishReason:
-    | string
-    | null
-    | "function_call"
-    | "stop"
-    | "length"
-    | "tool_calls"
-    | "content_filter";
+  actualUsage?: PromptTokenUsage;
+  finishReason: PromptFinishReason;
   elapsed: number; // in milliseconds
 }
 
@@ -162,9 +164,9 @@ export const systemPrompt = async (
 export const systemPromptStreaming = async (
   promptText: string,
   providerType: ModelProviderType,
-  onChunk: (text: string) => void,
-  onDone: (elapsed: number) => void,
-  onError: (error: unknown) => void,
+  onChunk: (text: string, elapsed: number) => void,
+  onDone: (text: string, elapsed: number, usage: PromptTokenUsage) => void,
+  onError: (error: unknown, elapsed: number) => void,
   promptOptions: //    | Partial<GenerateRequest>
     | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
     | Partial<ChatParams>

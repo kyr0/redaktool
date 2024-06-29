@@ -15,7 +15,7 @@ export const SummaryModule = () => {
       defaultPromptTemplate={summaryPrompt}
       name="summary"
       editorAtom={editorAtom}
-      outputTokenScaleFactor={0.5}
+      outputTokenScaleFactor={0.2}
     />
   );
 };

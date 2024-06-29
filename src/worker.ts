@@ -3,16 +3,27 @@ import("webextension-polyfill");
 import {
   ANTHROPIC_API_KEY_NAME,
   OPEN_AI_API_KEY_NAME,
+  PARTIAL_RESPONSE_NAME,
   PARTIAL_RESPONSE_TEXT_NAME,
 } from "./shared";
-import { systemPromptStreaming } from "./lib/worker/llm/prompt";
-import { compileSmartPrompt } from "./lib/worker/prompt";
+import {
+  systemPromptStreaming,
+  type PromptTokenUsage,
+} from "./lib/worker/llm/prompt";
+import {
+  compileSmartPrompt,
+  getLastPartialPromptResponse,
+  setLastPartialPromptResponse,
+} from "./lib/worker/prompt";
 import { dbGetValue, dbSetValue } from "./lib/worker/db";
 import { fetchRssFeed } from "./lib/worker/rss";
 import { cron } from "./lib/worker/scheduler";
 import { getPref, getValue, setPref, setValue } from "./lib/worker/prefs";
 import { whisper } from "./lib/worker/transcription/whisper";
-import type { Prompt } from "./lib/content-script/prompt-template";
+import type {
+  Prompt,
+  PromptPartialResponse,
+} from "./lib/content-script/prompt-template";
 import { getLLMModel } from "./lib/content-script/llm-models";
 
 // inject the activate.js script into the current tab
@@ -97,8 +108,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         // multi-provider LLM prompt processing
         case "prompt": {
-          // TODO: define a "pipeline" for each prompt to run in parallel
-
           const prompt = data as Prompt;
           console.log("prompt data", prompt);
           console.log("prompt", prompt.text);
@@ -122,20 +131,56 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           systemPromptStreaming(
             prompt.text,
             model.provider,
-            (text: string) => {
+            async (text: string, elapsed: number) => {
               // onChunk
               partialResponseText += text || "";
+
+              const partialData: PromptPartialResponse =
+                await getLastPartialPromptResponse(prompt.id);
+
+              await setLastPartialPromptResponse(prompt.id, {
+                ...partialData,
+                text: partialResponseText,
+                finished: false,
+                elapsed,
+              });
+
               //console.log("onChunk (internal)", text);
               setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText, false);
             },
-            (elapsed: number) => {
+            async (text: string, elapsed: number, usage: PromptTokenUsage) => {
               console.log("onDone (internal) elapsed", elapsed);
+
+              const partialData: PromptPartialResponse =
+                await getLastPartialPromptResponse(prompt.id);
+
+              await setLastPartialPromptResponse(prompt.id, {
+                ...partialData,
+                text,
+                actualUsage: usage,
+                elapsed,
+                finished: true,
+              });
+
               // onDone
               sendResponse({ result: JSON.stringify(partialResponseText) });
               setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
             },
-            (error: unknown) => {
+            async (error: unknown, elapsed: number) => {
               // TODO: respond with error return type
+
+              const partialData: PromptPartialResponse =
+                await getLastPartialPromptResponse(prompt.id);
+
+              await setLastPartialPromptResponse(prompt.id, {
+                ...partialData,
+                errorMessage: error
+                  ? (error as Error).message
+                  : "Unknown error",
+                finished: true,
+                elapsed,
+              });
+              sendResponse({ result: JSON.stringify("") });
 
               // onError
               console.error("onError (internal)", error);

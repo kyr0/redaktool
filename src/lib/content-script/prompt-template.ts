@@ -1,5 +1,10 @@
+import type {
+  PromptFinishReason,
+  PromptTokenUsage,
+} from "../worker/llm/prompt";
 import type { ParseSmartPromptResult } from "../worker/prompt";
 import { calculatePrompt } from "./pricemodels";
+import { uuid } from "./uuid";
 
 /* deprecated
 
@@ -36,6 +41,7 @@ export const generatePrompt = <T>(
 */
 
 export interface Prompt {
+  id: string;
   original: string;
   text: string;
   model: string;
@@ -46,6 +52,16 @@ export interface Prompt {
   maxContextTokens?: number;
   estimatedOutputTokens?: number;
   values?: Record<string, string>;
+}
+
+export interface PromptPartialResponse {
+  id: string;
+  text: string;
+  errorMessage?: string;
+  finishReason?: PromptFinishReason;
+  actualUsage?: PromptTokenUsage;
+  finished: boolean;
+  elapsed: number;
 }
 
 export const compilePrompt = (
@@ -78,6 +94,7 @@ export const finalizePrompt = (
   outputTokenScaleFactor: number,
 ): Prompt => {
   return {
+    id: uuid(),
     values,
     original: prompt,
     model,

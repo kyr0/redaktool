@@ -23,7 +23,12 @@ import { DarkMode, FTRLogoDark, FTRLogoLight } from "./Icons";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDarkMode } from "../lib/content-script/hooks/use-darkmode";
 import {
+  BombIcon,
+  CheckCheck,
+  FileWarning,
+  InfoIcon,
   LanguagesIcon,
+  Loader2Icon,
   MousePointerSquareDashed,
   PointerIcon,
   X,
@@ -388,7 +393,7 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
           >
             <TooltipProvider>{children}</TooltipProvider>
             <FeedbackButton containerEl={dialogRef.current} />
-            <Toaster />
+            <Toaster closeButton />
           </ErrorBoundary>
         </Resizable>
       </DialogContent>

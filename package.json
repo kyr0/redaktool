@@ -79,7 +79,7 @@
     "milkdown-plugin-placeholder": "^0.2.1",
     "nanostores": "^0.9.5",
     "next-themes": "^0.2.1",
-    "openai-fetch": "^2.0.1",
+    "openai-fetch": "2.0.3",
     "postcss-import": "^16.0.1",
     "postcss-prefix-selector": "^1.16.0",
     "react": "^18.2.0",

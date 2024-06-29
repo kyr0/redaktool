@@ -8,6 +8,9 @@ import {
 } from "liquidjs";
 import JSON5 from "json5";
 import type { HTMLInputTypeAttribute } from "react";
+import type { PromptPartialResponse } from "../content-script/prompt-template";
+import { PARTIAL_RESPONSE_NAME } from "../../shared";
+import { dbGetValue, dbSetValue } from "./db";
 
 export type ParseResult = {
   key: string;
@@ -177,4 +180,31 @@ export const compileSmartPrompt = (
     prompt,
     error,
   };
+};
+
+export const getLastPartialPromptResponse = async (
+  promptId: string,
+): Promise<PromptPartialResponse> => {
+  const text = await dbGetValue(`${PARTIAL_RESPONSE_NAME}_${promptId}`);
+
+  if (!text) {
+    return {
+      id: promptId,
+      text: "",
+      elapsed: 0,
+      errorMessage: "",
+      finished: false,
+    };
+  }
+  return JSON.parse(text);
+};
+
+export const setLastPartialPromptResponse = async (
+  promptId: string,
+  response: PromptPartialResponse,
+): Promise<void> => {
+  await dbSetValue(
+    `${PARTIAL_RESPONSE_NAME}_${promptId}`,
+    JSON.stringify(response),
+  );
 };

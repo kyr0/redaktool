@@ -1,4 +1,10 @@
-import { CogIcon, SendIcon, ShareIcon } from "lucide-react";
+import {
+  BombIcon,
+  CogIcon,
+  MessageCircleWarning,
+  SendIcon,
+  ShareIcon,
+} from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -61,6 +67,9 @@ import {
   turndown,
 } from "../../lib/content-script/turndown";
 import llmModels from "../../data/llm-models/index";
+import { uuid } from "../../lib/content-script/uuid";
+import { StopIcon } from "@radix-ui/react-icons";
+import type { PromptTokenUsage } from "../../lib/worker/llm/prompt";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -109,10 +118,14 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const { t, i18n } = useTranslation();
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
   const [prompt, setPrompt] = useState<string>(defaultPromptTemplate);
+  const [stopStreamCallback, setStopStreamCallback] = useState<{
+    stopStream: Function;
+  }>();
   const [modelPk, setModelPk] = useState<string>(defaultModelName);
   const [internalEditorArgs, setInternalEditorArgs] =
     useState<MilkdownEditorCreatedArgs>();
   const [promptPrepared, setPromptPrepared] = useState<Prompt>({
+    id: uuid(),
     original: defaultPromptTemplate,
     text: "",
     model: defaultModelName,
@@ -134,8 +147,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     useState<boolean>(false);
 
   const [customInstruction, setCustomInstruction] = useState<string>("");
-
   const [promptContent, setPromptContent] = useState<string>("");
+  const [lastActualUsage, setLastActualUsage] = useState<PromptTokenUsage>();
 
   useEffect(() => {
     setPromptContent(editorContent);
@@ -318,7 +331,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               dynamicFields,
             });
           } catch (e) {
-            reject(e);
+            //reject(e);
+            toast.error("Fehler beim Kompilieren des Smart-Prompt", {
+              icon: (
+                <MessageCircleWarning className="ab-shrink-0 !ab-w-8 !ab-h-8" />
+              ),
+              description: (e as Error).message,
+            });
           }
         })();
       }),
@@ -467,10 +486,10 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       setStreamingInProgress(true);
 
       try {
-        sendPrompt(
+        const stopStream = sendPrompt(
           finalPrompt,
           (text: string) => {
-            //console.log("onChunk", text, "editorEl", editorEl);
+            console.log("onChunk", text, "editorEl", editorEl);
             setEditorContent((prev) => {
               if (isBeginning) {
                 originalText = prev;
@@ -487,17 +506,23 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
             scrollDownMax(editorEl);
           },
-          (lastChunkText: string) => {
+          (completeText: string, usage: PromptTokenUsage) => {
             try {
-              console.log("onDone", lastChunkText, "editorEl", editorEl);
+              console.log(
+                "onDone",
+                completeText,
+                "editorEl",
+                editorEl,
+                "usage",
+                usage,
+              );
 
-              // re-flush the editor content (fix possibly broken markdown rendering)
-              partialText += lastChunkText || "";
+              setLastActualUsage(usage);
 
               setTimeout(() => {
                 requestAnimationFrame(() => {
                   setEditorContent(
-                    `${originalText}\n---\n${partialText || ""}`,
+                    `${originalText}\n---\n${completeText || ""}`,
                   );
 
                   scrollDownMax(editorEl);
@@ -507,11 +532,27 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               setStreamingInProgress(false);
             }
           },
+          (error: string) => {
+            console.error("onError", error);
+            setStreamingInProgress(false);
+            toast.error("Fehler beim Ausführen des Prompts", {
+              icon: (
+                <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
+              ),
+              description: error,
+            });
+          },
         );
+
+        setStopStreamCallback(stopStream);
       } catch (e) {
         setStreamingInProgress(false);
-        // TODO: show toast (error mode)
-        console.error("sendPrompt error", e);
+        toast.error("Fehler beim Ausführen des Prompts", {
+          icon: (
+            <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
+          ),
+          description: (e as Error).message,
+        });
       }
     })();
   }, [
@@ -525,6 +566,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     modelPk,
     i18n.language,
   ]);
+
+  const onStopPromptStreamingClick = useCallback(() => {
+    if (stopStreamCallback) {
+      console.log("onStopPromptStreamingClick");
+      stopStreamCallback.stopStream();
+    }
+  }, [stopStreamCallback]);
 
   return (
     <ResizablePanelGroup direction="vertical">
@@ -703,26 +751,42 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                   className="!ab-block ab-mb-2 !ab-text-sm ab-h-12 ab-max-h-12"
                   onChange={(evt) => setCustomInstruction(evt.target.value)}
                 />
-                <Button
-                  size={"sm"}
-                  disabled={
-                    recompilingInProgress ||
-                    streamingInProgress ||
-                    promptPrepared.text === ""
-                  }
-                  className="ab-scale-75 ab-ftr-button ab-mr-0 !ab-h-14 !ab-w-14 !ab-rounded-full hover:!ab-bg-primary-foreground"
-                  onClick={onPromptSendClick}
-                >
-                  <SendIcon className="ab-w-12 ab-h-12" />
-                </Button>
+                {!streamingInProgress && (
+                  <Button
+                    size={"sm"}
+                    disabled={
+                      recompilingInProgress ||
+                      streamingInProgress ||
+                      promptPrepared.text === ""
+                    }
+                    className="ab-scale-75 ab-ftr-button ab-mr-0 !ab-h-14 !ab-w-14 !ab-rounded-full hover:!ab-bg-primary-foreground"
+                    onClick={onPromptSendClick}
+                  >
+                    <SendIcon className="ab-w-12 ab-h-12" />
+                    {streamingInProgress && (
+                      <StopIcon className="ab-w-12 ab-h-12" />
+                    )}
+                  </Button>
+                )}
+                {streamingInProgress && (
+                  <Button
+                    size={"sm"}
+                    className="ab-scale-75 ab-ftr-button ab-mr-0 !ab-h-14 !ab-w-14 !ab-rounded-full hover:!ab-bg-primary-foreground"
+                    onClick={onStopPromptStreamingClick}
+                  >
+                    <StopIcon className="ab-w-12 ab-h-12" />
+                  </Button>
+                )}
               </span>
               <span className="ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm ab-justify-between ab-flex ab-flex-row">
                 <span style={{ fontSize: "0.7rem" }}>
-                  Tokens: {promptPrepared.estimatedInputTokens} I/O ~
+                  Geschätzt: ~{promptPrepared.estimatedInputTokens} I/O ~
                   {promptPrepared.estimatedOutputTokens} ≈{" "}
                   {formatCurrencyForDisplay(
                     promptPrepared.price.toFixed(2),
-                  ).replace(".", ",")}
+                  ).replace(".", ",")}{" "}
+                  {lastActualUsage &&
+                    `| Letzte Ausführung: ${lastActualUsage.prompt_tokens} I/O ${lastActualUsage.completion_tokens}`}
                 </span>
                 {/*
                 €; verbleibende Tokens:{" "}
