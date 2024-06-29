@@ -22,7 +22,11 @@ export const mapUserLanguageCode = (code: string): string => {
 export const sendPrompt = (
   prompt: Prompt,
   onChunk: (text: string) => void,
-  onDone: (wholeText: string, usage: PromptTokenUsage) => void,
+  onDone: (
+    wholeText: string,
+    usage: PromptTokenUsage,
+    totalPrice: number,
+  ) => void,
   onError: (error: string) => void,
 ) => {
   //let state = "";
@@ -94,7 +98,7 @@ export const sendPrompt = (
 
         console.log("done slice new", partialDbText.slice(stateNew.length));
 
-        onDone(partialDbText, partialDb!.actualUsage!);
+        onDone(partialDbText, partialDb!.actualUsage!, partialDb!.totalPrice!);
         console.log("partialDb (on response)", partialDb);
 
         stateNew = "";

@@ -62,6 +62,7 @@ export interface PromptPartialResponse {
   actualUsage?: PromptTokenUsage;
   finished: boolean;
   elapsed: number;
+  totalPrice?: number;
 }
 
 export const compilePrompt = (

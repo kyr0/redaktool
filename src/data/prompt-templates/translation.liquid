@@ -19,10 +19,6 @@ RULES:
 - MUST translate CONTENT into language: "{{TARGET_LANGUAGE}}".
 END OF RULES.
 
-EXAMPLE:
-{{EXAMPLE}}
-END OF EXAMPLE.
-
 CONTENT:
 {{CONTENT}}
 
@@ -33,10 +29,6 @@ CONTENT:
 {% field TONE = "{ label: 'Tonalität', default: 'news article, neutral' }" %}
 
 {% field TARGET_LANGUAGE = "{ label: 'Zielsprache', default: 'Deutsch', options: ['Deutsch', 'Englisch', 'Französisch', 'Spanisch', 'Chinesisch'] }" %}
-
-{% field EXAMPLE = "{ type: 'textarea', label: 'Stil-Beispiel', default: '- First topic here.
-- Second topic here.
-- Third topic here.' }" %}
 
 {% # Prompt-Logik: %}
 {% if TARGET_LANGUAGE == "Deutsch" %}

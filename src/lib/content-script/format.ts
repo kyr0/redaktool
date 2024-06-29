@@ -2,8 +2,8 @@ export function formatCurrencyForDisplay(preformattedValue: string) {
   const value = Number.parseFloat(preformattedValue);
 
   if (value < 1) {
-    const cents = (value * 100).toFixed();
-    return cents === "0" ? "< 1¢" : `~${(value * 100).toFixed()}¢`;
+    const cents = (value * 100).toFixed(2);
+    return cents.split(".")[1].startsWith("00") ? "< 0.00¢" : `${cents}¢`;
   }
   return `~${value.toFixed(2)}$`;
 

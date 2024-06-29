@@ -131,3 +131,14 @@ export const openAIPromptStreaming = async (
     onError(error, Date.now() - start);
   }
 };
+
+export type OpenAIPromptOptionsUnion = Partial<ChatParams>;
+
+export const mapOpenAIPromptOptions = <T>(
+  promptOptions: OpenAIPromptOptionsUnion,
+): T =>
+  ({
+    model: promptOptions.model,
+    temperature: promptOptions.temperature,
+    n: promptOptions.n,
+  }) as T;

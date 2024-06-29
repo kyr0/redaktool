@@ -58,6 +58,26 @@ export const getPriceModel = (model: string) => {
   return priceModels[model];
 };
 
+export interface EffectivePrice {
+  input: number;
+  output: number;
+  total: number;
+}
+
+export const calculateEffectivePrice = (
+  priceModel: PriceModel,
+  inputTokens: number,
+  outputTokens: number,
+): EffectivePrice => {
+  const input = priceModel.input * inputTokens;
+  const output = priceModel.output * outputTokens;
+  return {
+    input,
+    output,
+    total: input + output,
+  };
+};
+
 export const calculatePrompt = (
   text: string,
   model = "openai-gpt-4-turbo",
@@ -84,17 +104,21 @@ export const calculatePrompt = (
       throw new Error(`Provider ${priceModel.provider} not supported`);
   }
 
-  const priceInput = estimatedInputTokens * priceModel.input;
   const estimatedOutputTokens = Number.parseInt(
     (estimatedInputTokens * outputScaleFactor).toFixed(0),
   );
-  const priceOutput = estimatedOutputTokens * priceModel.output;
+
+  const effectivePrice = calculateEffectivePrice(
+    priceModel,
+    estimatedInputTokens,
+    estimatedOutputTokens,
+  );
 
   return {
     estimatedInputTokens,
-    price: priceInput + priceOutput,
-    priceOutput,
-    priceInput,
+    price: effectivePrice.total,
+    priceOutput: effectivePrice.output,
+    priceInput: effectivePrice.input,
     estimatedOutputTokens,
     maxContextTokens: priceModelsData[model].maxContextTokens,
   };

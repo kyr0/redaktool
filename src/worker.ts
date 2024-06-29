@@ -25,6 +25,10 @@ import type {
   PromptPartialResponse,
 } from "./lib/content-script/prompt-template";
 import { getLLMModel } from "./lib/content-script/llm-models";
+import {
+  calculateEffectivePrice,
+  getPriceModel,
+} from "./lib/content-script/pricemodels";
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
@@ -113,7 +117,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log("prompt", prompt.text);
 
           const model = getLLMModel(prompt.model);
+          const costModel = getPriceModel(model.pk);
 
+          console.log("model", model);
           let apiKey = "";
 
           switch (model.provider) {
@@ -123,6 +129,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             case "anthropic":
               apiKey = await getPref(ANTHROPIC_API_KEY_NAME, "no-key");
+              console.log("anthropic key", apiKey);
               break;
           }
 
@@ -159,6 +166,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 text,
                 actualUsage: usage,
                 elapsed,
+                totalPrice: calculateEffectivePrice(
+                  costModel,
+                  usage.prompt_tokens || 0,
+                  usage.completion_tokens || 0,
+                ).total,
                 finished: true,
               });
 
@@ -188,6 +200,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             },
             {
               model: model.ident,
+              max_tokens: costModel.maxOutputTokens,
               temperature: 0.7, // TODO: dynamically from settings
               n: 1,
             },

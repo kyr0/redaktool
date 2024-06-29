@@ -149,6 +149,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [customInstruction, setCustomInstruction] = useState<string>("");
   const [promptContent, setPromptContent] = useState<string>("");
   const [lastActualUsage, setLastActualUsage] = useState<PromptTokenUsage>();
+  const [lastTotalPrice, setLastTotalPrice] = useState<number>();
 
   useEffect(() => {
     setPromptContent(editorContent);
@@ -485,8 +486,20 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
       setStreamingInProgress(true);
 
+      const reflush = () => {
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            setEditorContent(`${originalText}\n---\n${partialText || ""}`);
+
+            scrollDownMax(editorEl);
+
+            setStreamingInProgress(false);
+          });
+        }, 1);
+      };
+
       try {
-        const stopStream = sendPrompt(
+        const stopStreamCb = sendPrompt(
           finalPrompt,
           (text: string) => {
             console.log("onChunk", text, "editorEl", editorEl);
@@ -506,31 +519,26 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
             scrollDownMax(editorEl);
           },
-          (completeText: string, usage: PromptTokenUsage) => {
-            try {
-              console.log(
-                "onDone",
-                completeText,
-                "editorEl",
-                editorEl,
-                "usage",
-                usage,
-              );
+          (
+            completeText: string,
+            usage: PromptTokenUsage,
+            totalPrice: number,
+          ) => {
+            console.log(
+              "onDone",
+              completeText,
+              "editorEl",
+              editorEl,
+              "usage",
+              usage,
+            );
 
-              setLastActualUsage(usage);
+            setLastActualUsage(usage);
+            setLastTotalPrice(totalPrice);
 
-              setTimeout(() => {
-                requestAnimationFrame(() => {
-                  setEditorContent(
-                    `${originalText}\n---\n${completeText || ""}`,
-                  );
+            partialText = completeText;
 
-                  scrollDownMax(editorEl);
-                });
-              }, 1);
-            } finally {
-              setStreamingInProgress(false);
-            }
+            reflush();
           },
           (error: string) => {
             console.error("onError", error);
@@ -544,7 +552,12 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
           },
         );
 
-        setStopStreamCallback(stopStream);
+        setStopStreamCallback({
+          stopStream: () => {
+            stopStreamCb.stopStream();
+            reflush();
+          },
+        });
       } catch (e) {
         setStreamingInProgress(false);
         toast.error("Fehler beim Ausführen des Prompts", {
@@ -571,7 +584,6 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     if (stopStreamCallback) {
       console.log("onStopPromptStreamingClick");
       stopStreamCallback.stopStream();
-      setStreamingInProgress(false);
     }
   }, [stopStreamCallback, setStreamingInProgress]);
 
@@ -784,10 +796,18 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                   Geschätzt: ~{promptPrepared.estimatedInputTokens} I/O ~
                   {promptPrepared.estimatedOutputTokens} ≈{" "}
                   {formatCurrencyForDisplay(
-                    promptPrepared.price.toFixed(2),
-                  ).replace(".", ",")}{" "}
+                    promptPrepared.price.toFixed(4),
+                  ).replace(".", i18n.language === "en" ? "." : ",")}{" "}
                   {lastActualUsage &&
-                    `| Letzte Ausführung: ${lastActualUsage.prompt_tokens} I/O ${lastActualUsage.completion_tokens}`}
+                    `| Ausgeführt: ${lastActualUsage.prompt_tokens} I/O ${
+                      lastActualUsage.completion_tokens
+                    } = ${
+                      lastTotalPrice
+                        ? formatCurrencyForDisplay(
+                            lastTotalPrice.toFixed(4),
+                          ).replace(".", i18n.language === "en" ? "." : ",")
+                        : ""
+                    }`}
                 </span>
                 {/*
                 €; verbleibende Tokens:{" "}

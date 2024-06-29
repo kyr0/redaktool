@@ -1,8 +1,17 @@
 import type Anthropic from "@anthropic-ai/sdk";
 //import type { GenerateRequest } from "cohere-ai/api";
-import { openAIPrompt, openAIPromptStreaming } from "./openai";
+import {
+  mapOpenAIPromptOptions,
+  openAIPrompt,
+  openAIPromptStreaming,
+} from "./openai";
 //import { coherePrompt } from "./cohere";
-import { anthropicPrompt } from "./anthropic";
+import {
+  anthropicPrompt,
+  anthropicPromptStreaming,
+  mapAnthropicPromptOptions,
+  type AnthropicPromptOptionsUnion,
+} from "./anthropic";
 import { type HuggingFaceBody, huggingFacePrompt } from "./huggingface";
 import { ollamaPrompt, type OllamaBody } from "./ollama";
 import type { GeminiOptions } from "./gemini";
@@ -46,16 +55,20 @@ export type ModelProviderType =
   | "gemini"
   | "perplexity";
 
+export type PromptOptionsUnion =
+  //    | Partial<GenerateRequest>
+  | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
+  | Partial<Anthropic.Messages.MessageCreateParamsStreaming>
+  | Partial<ChatParams>
+  | Partial<HuggingFaceBody>
+  | Partial<OllamaBody>
+  | Partial<GeminiOptions>;
+
 // non-streaming, single, system-prompt completion with any LLM
 export const systemPrompt = async (
   promptText: string,
   providerType: ModelProviderType,
-  promptOptions: //    | Partial<GenerateRequest>
-    | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
-    | Partial<ChatParams>
-    | Partial<HuggingFaceBody>
-    | Partial<OllamaBody>
-    | Partial<GeminiOptions> = {},
+  promptOptions: PromptOptionsUnion = {},
   apiOptions: PromptApiOptions = {},
 ): Promise<PromptResponse> => {
   switch (providerType) {
@@ -73,7 +86,9 @@ export const systemPrompt = async (
     case "anthropic": {
       return anthropicPrompt(
         {
-          ...(promptOptions as Anthropic.Messages.MessageCreateParamsNonStreaming),
+          ...mapAnthropicPromptOptions<Anthropic.Messages.MessageCreateParamsNonStreaming>(
+            promptOptions as AnthropicPromptOptionsUnion,
+          ),
           messages: [{ role: "user", content: promptText }],
           system: promptText,
         },
@@ -147,7 +162,7 @@ export const systemPrompt = async (
     default: {
       return openAIPrompt(
         {
-          ...(promptOptions as ChatParams),
+          ...mapOpenAIPromptOptions(promptOptions as ChatParams),
           messages: [
             {
               role: "system",
@@ -167,22 +182,35 @@ export const systemPromptStreaming = async (
   onChunk: (text: string, elapsed: number) => void,
   onDone: (text: string, elapsed: number, usage: PromptTokenUsage) => void,
   onError: (error: unknown, elapsed: number) => void,
-  promptOptions: //    | Partial<GenerateRequest>
-    | Partial<Anthropic.Messages.MessageCreateParamsNonStreaming>
-    | Partial<ChatParams>
-    | Partial<HuggingFaceBody>
-    | Partial<OllamaBody>
-    | Partial<GeminiOptions> = {},
+  promptOptions: PromptOptionsUnion = {},
   apiOptions: PromptApiOptions = {},
-): Promise<ChatStreamResponse | undefined> => {
+) => {
   switch (providerType) {
     // TODO: implement streaming for all providers
 
+    case "anthropic": {
+      console.log("calling anthropic streaming");
+      anthropicPromptStreaming(
+        {
+          ...mapAnthropicPromptOptions<Anthropic.Messages.MessageCreateParamsStreaming>(
+            promptOptions as AnthropicPromptOptionsUnion,
+          ),
+          messages: [{ role: "user", content: promptText }],
+          system: promptText,
+        },
+        onChunk,
+        onDone,
+        onError,
+        apiOptions,
+      );
+      break;
+    }
+
     // OpenAI
     default: {
-      return openAIPromptStreaming(
+      openAIPromptStreaming(
         {
-          ...(promptOptions as ChatParams),
+          ...mapOpenAIPromptOptions(promptOptions as ChatParams),
           messages: [
             {
               role: "system",
