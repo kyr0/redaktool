@@ -138,3 +138,38 @@ export const mapAnthropicPromptOptions = <T>(
     model: promptOptions.model,
     temperature: promptOptions.temperature,
   }) as T;
+
+export const autoTuneAnthropicHyperparameters = <T>(
+  promptOptions: AnthropicPromptOptionsUnion,
+  options: PromptApiOptions = {},
+): T => {
+  if (typeof promptOptions.temperature === "undefined") {
+    const creativitySet = typeof options.autoTuneCreativity === "number";
+    const variabilitySet = typeof options.autoTuneGlossary === "number";
+    const focusSet = typeof options.autoTuneFocus === "number";
+
+    if (creativitySet && variabilitySet) {
+      // direct mapping, as scale is the same [0.0, 1.0]
+      promptOptions.temperature =
+        (options.autoTuneCreativity! + options.autoTuneGlossary!) / 2;
+    } else if (creativitySet) {
+      // direct mapping, as scale is the same [0.0, 1.0]
+      promptOptions.temperature = options.autoTuneCreativity!;
+    } else if (variabilitySet) {
+      // direct mapping, as scale is the same [0.0, 1.0]
+      promptOptions.temperature = options.autoTuneGlossary!;
+    }
+
+    if (focusSet) {
+      // reduce temperature by focus, as focus is the opposite of creativity, but never below 0
+      promptOptions.temperature = Math.max(
+        0,
+        (promptOptions.temperature || 0) - options.autoTuneFocus!,
+      );
+
+      // applying nucleus sampling, so that the cumulative probability mass is limited (and thus, the output is likely to be more focussed)
+      promptOptions.top_p = 1 - Math.max(0, options.autoTuneFocus! / 2);
+    }
+  }
+  return promptOptions as T;
+};

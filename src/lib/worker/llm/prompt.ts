@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 //import type { GenerateRequest } from "cohere-ai/api";
 import {
+  autoTuneOpenAIHyperparameters,
   mapOpenAIPromptOptions,
   openAIPrompt,
   openAIPromptStreaming,
@@ -9,6 +10,7 @@ import {
 import {
   anthropicPrompt,
   anthropicPromptStreaming,
+  autoTuneAnthropicHyperparameters,
   mapAnthropicPromptOptions,
   type AnthropicPromptOptionsUnion,
 } from "./anthropic";
@@ -44,6 +46,15 @@ export interface PromptApiOptions {
   baseURL?: string;
   hostingLocation?: string;
   apiKey?: string;
+
+  /** linear scale [0..1], whereas 0 is close to determinism */
+  autoTuneCreativity?: number;
+
+  /** how much variety of terms is desired? [0..1], whereas 0 means: use the same terms over and over */
+  autoTuneGlossary?: number;
+
+  /** how much should the model stay focused and on topic? [0..1], whereas 1 means: alot of focus, less topics */
+  autoTuneFocus?: number;
 }
 
 export type ModelProviderType =
@@ -86,8 +97,11 @@ export const systemPrompt = async (
     case "anthropic": {
       return anthropicPrompt(
         {
-          ...mapAnthropicPromptOptions<Anthropic.Messages.MessageCreateParamsNonStreaming>(
-            promptOptions as AnthropicPromptOptionsUnion,
+          ...autoTuneAnthropicHyperparameters(
+            mapAnthropicPromptOptions<Anthropic.Messages.MessageCreateParamsNonStreaming>(
+              promptOptions as AnthropicPromptOptionsUnion,
+            ),
+            apiOptions,
           ),
           messages: [{ role: "user", content: promptText }],
           system: promptText,
@@ -162,7 +176,10 @@ export const systemPrompt = async (
     default: {
       return openAIPrompt(
         {
-          ...mapOpenAIPromptOptions(promptOptions as ChatParams),
+          ...autoTuneOpenAIHyperparameters(
+            mapOpenAIPromptOptions(promptOptions as ChatParams),
+            apiOptions,
+          ),
           messages: [
             {
               role: "system",
@@ -192,8 +209,11 @@ export const systemPromptStreaming = async (
       console.log("calling anthropic streaming");
       anthropicPromptStreaming(
         {
-          ...mapAnthropicPromptOptions<Anthropic.Messages.MessageCreateParamsStreaming>(
-            promptOptions as AnthropicPromptOptionsUnion,
+          ...autoTuneAnthropicHyperparameters(
+            mapAnthropicPromptOptions<Anthropic.Messages.MessageCreateParamsStreaming>(
+              promptOptions as AnthropicPromptOptionsUnion,
+            ),
+            apiOptions,
           ),
           messages: [{ role: "user", content: promptText }],
           system: promptText,
@@ -210,7 +230,10 @@ export const systemPromptStreaming = async (
     default: {
       openAIPromptStreaming(
         {
-          ...mapOpenAIPromptOptions(promptOptions as ChatParams),
+          ...autoTuneOpenAIHyperparameters(
+            mapOpenAIPromptOptions(promptOptions as ChatParams),
+            apiOptions,
+          ),
           messages: [
             {
               role: "system",

@@ -1,11 +1,6 @@
 import("webextension-polyfill");
 
-import {
-  ANTHROPIC_API_KEY_NAME,
-  OPEN_AI_API_KEY_NAME,
-  PARTIAL_RESPONSE_NAME,
-  PARTIAL_RESPONSE_TEXT_NAME,
-} from "./shared";
+import { ANTHROPIC_API_KEY_NAME, OPEN_AI_API_KEY_NAME } from "./shared";
 import {
   systemPromptStreaming,
   type PromptTokenUsage,
@@ -18,7 +13,7 @@ import {
 import { dbGetValue, dbSetValue } from "./lib/worker/db";
 import { fetchRssFeed } from "./lib/worker/rss";
 import { cron } from "./lib/worker/scheduler";
-import { getPref, getValue, setPref, setValue } from "./lib/worker/prefs";
+import { getPref, getValue, setValue } from "./lib/worker/prefs";
 import { whisper } from "./lib/worker/transcription/whisper";
 import type {
   Prompt,
@@ -50,17 +45,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
 
   (async () => {
-    console.log(
-      "worker script loaded",
-      await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
-    );
-
-    /*
-    const client = new OpenAIClient({
-      apiKey: await getPref(OPEN_AI_API_KEY_NAME, "no-key"),
-    });
-    */
-
     // Process the message
     if (request.action && request.text) {
       const data = JSON.parse(request.text);
@@ -153,7 +137,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
 
               //console.log("onChunk (internal)", text);
-              setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText, false);
+              //setPref(PARTIAL_RESPONSE_TEXT_NAME, partialResponseText, false);
             },
             async (text: string, elapsed: number, usage: PromptTokenUsage) => {
               console.log("onDone (internal) elapsed", elapsed);
@@ -176,7 +160,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
               // onDone
               sendResponse({ result: JSON.stringify(partialResponseText) });
-              setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
+              // setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
             },
             async (error: unknown, elapsed: number) => {
               // TODO: respond with error return type
@@ -196,16 +180,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
               // onError
               console.error("onError (internal)", error);
-              setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
+              //  setPref(PARTIAL_RESPONSE_TEXT_NAME, "", false); // reset/clear
             },
             {
+              // union of parameters passed down, mapped internally
               model: model.ident,
               max_tokens: costModel.maxOutputTokens,
-              temperature: 0.7, // TODO: dynamically from settings
-              n: 1,
             },
             {
+              // union of options passed down, mapped internally
               apiKey,
+              // auto-tuning of hyperparameters
+              autoTuneCreativity: prompt.autoTuneCreativity || 0.7,
+              autoTuneFocus: prompt.autoTuneFocus || undefined,
+              autoTuneGlossary: prompt.autoTuneGlossary || undefined,
             },
           );
           break;

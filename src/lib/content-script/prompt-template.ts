@@ -52,6 +52,11 @@ export interface Prompt {
   maxContextTokens?: number;
   estimatedOutputTokens?: number;
   values?: Record<string, string>;
+
+  // hyperparameter auto-tuning
+  autoTuneFocus?: number;
+  autoTuneGlossary?: number;
+  autoTuneCreativity?: number;
 }
 
 export interface PromptPartialResponse {

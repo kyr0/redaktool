@@ -70,6 +70,7 @@ import llmModels from "../../data/llm-models/index";
 import { uuid } from "../../lib/content-script/uuid";
 import { StopIcon } from "@radix-ui/react-icons";
 import type { PromptTokenUsage } from "../../lib/worker/llm/prompt";
+import { Slider } from "../../ui/slider";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -619,6 +620,10 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                 promptSettingsWrapperClassName || ""
               }`}
             >
+              <div key={"temperature"} className="ab-mb-2 ab-w-full">
+                <Label className="ab-mb-2 ab-flex">Kreativität</Label>
+                <Slider defaultValue={[70]} max={100} step={1} />
+              </div>
               {!recompilingInProgress &&
                 dynamicFields.length === 0 &&
                 promptPrepared.text === "" && (
@@ -632,7 +637,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                 dynamicFields.length === 0 &&
                 promptPrepared.text !== "" && (
                   <Label className="ab-mb-2 ab-flex">
-                    Keine Einstellungen verfügbar
+                    Keine dynamischen Einstellungen verfügbar
                   </Label>
                 )}
 
