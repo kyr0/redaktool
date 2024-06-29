@@ -571,8 +571,9 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     if (stopStreamCallback) {
       console.log("onStopPromptStreamingClick");
       stopStreamCallback.stopStream();
+      setStreamingInProgress(false);
     }
-  }, [stopStreamCallback]);
+  }, [stopStreamCallback, setStreamingInProgress]);
 
   return (
     <ResizablePanelGroup direction="vertical">
