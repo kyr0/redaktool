@@ -11,6 +11,7 @@
   "module_archive": "Archive",
   "module_transcription": "Transcription",
   "module_settings": "Settings",
+  "module_titles": "Titeles",
   "summaryModule.audiencePromptPlaceholder": "Enter the audience",
   "summaryModule.audiencePromptLabel": "Audience",
   "summaryModule.tonePromptPlaceholder": "Enter the tone",

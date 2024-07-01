@@ -1,0 +1,44 @@
+{% # Dynamischer Prompt: %}
+You are an expert journalist and writer with many years of professional experience.
+Come up with {{ COUNT  }} {{ TONE  }} title suggestions that would make a great title for the CONTENT, formatted as {{FORMATTING}} in Markdown.
+
+RULES:
+{% if CUSTOM_INSTRUCTION %}
+- MOST IMPORTANTLY: MUST {{CUSTOM_INSTRUCTION}}.
+{% endif %}
+- Each title MUST be formulated in a way, so that the following audience will be engaged by it: "{{AUDIENCE}}".
+- Each title MUST be written in a the following tone: "{{TONE}}"
+- MUST respond in the language of CONTENT.
+- ONLY and EXCLUSIVELY work by the information provided in the CONTENT data, and nothing else (evidence-based).
+- MUST only have one sentence per title.
+- MUST format response as Markdown.
+- MUST adapt metaphors, common sayings and idioms, matching meaning.
+- Always translate pronouns and gender AS IS.
+- Make sure the spelling and grammar are correct.
+- Response MUST NOT be wrapped in Markdown code formatting block ```.
+{% if EXAMPLE %}
+- The response MUST be influenced by the EXAMPLE provided.
+{% endif %}
+- MUST come up with max. {{COUNT}} titles.
+END OF RULES.
+
+{% if EXAMPLE %}
+EXAMPLE:
+{{EXAMPLE}}
+END OF EXAMPLE.
+{% endif %}
+
+CONTENT:
+{{CONTENT}}
+
+{% # Feldbeschreibungen: %}
+
+{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'news readers, adults, general public' }" %}
+
+{% field TONE = "{ label: 'Tonalität', default: 'news article, neutral' }" %}
+
+{% field COUNT = "{ label: 'Anzahl Titel (max)', default: 5 }" %}
+
+{% field EXAMPLE = "{ type: 'textarea', label: 'Beispiel', default: '#### WOW! Baby bears found in Steglitz!
+#### Look at these cute baby bears found in Steglitz.
+#### These four Groar-Groars drive Berlin to ROFL-Copter mode' }" %}

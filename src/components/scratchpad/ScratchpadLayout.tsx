@@ -1,4 +1,10 @@
-import { BookCheck, Languages, Newspaper, Scale } from "lucide-react";
+import {
+  BookCheck,
+  FileSignature,
+  Languages,
+  Newspaper,
+  Scale,
+} from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -16,12 +22,13 @@ import { TranslationModule } from "./translation/TranslationModule";
 import { SummaryModule } from "./summary/SummaryModule";
 import { CoachModule } from "./coach/CoachModule";
 import { ProofreadingModule } from "./proofreading/ProofreadingModule";
+import { TitlesModule } from "./titles/TitlesModule";
 
 export type ToolNames =
   | "source"
   | "translation"
   | "summary"
-  | "fact-check"
+  | "titles"
   | "rewrite"
   | "coach";
 
@@ -100,12 +107,16 @@ export const ScratchpadLayout = () => {
               {t("module_rewrite")}
             </TabsTrigger>
             <TabsTrigger
-              disabled
-              value="fact-check"
-              className="!ab-pt-0 !ab-max-h-10 !ab-text-md"
+              onClick={() => setActiveView("titles")}
+              value="titles"
+              className={`!ab-pt-0 !ab-max-h-10 !ab-text-md  ${
+                activeView === "titles"
+                  ? "ab-ftr-active-menu-item"
+                  : "ab-ftr-menu-item"
+              }`}
             >
-              <Scale className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
-              {t("module_factcheck")}
+              <Newspaper className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_titles")}
             </TabsTrigger>
           </TabsList>
           <TabsContent
@@ -134,16 +145,16 @@ export const ScratchpadLayout = () => {
             <CoachModule />
           </TabsContent>
           <TabsContent
-            value="fact-check"
-            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
-          >
-            TODO
-          </TabsContent>
-          <TabsContent
             value="rewrite"
             className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
             <ProofreadingModule />
+          </TabsContent>
+          <TabsContent
+            value="titles"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
+          >
+            <TitlesModule />
           </TabsContent>
         </Tabs>
       </ResizablePanel>
