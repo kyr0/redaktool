@@ -10,7 +10,6 @@
     "128": "icons/icon.png"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_title": "RedakTool anzeigen"
   },
   "content_scripts": [

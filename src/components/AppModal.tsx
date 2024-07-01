@@ -278,6 +278,7 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
 
   useEffect(() => {
     document.addEventListener("OpenFTRTools", (event) => {
+      console.log("open ftr tools event", event);
       setShowOpenButton(false);
       setShowDialog(true);
     });

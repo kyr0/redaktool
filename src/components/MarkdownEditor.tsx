@@ -198,8 +198,10 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
         })
         .config((ctx) => {
           ctx.set(rootCtx, root);
-          ctx.set(defaultValueCtx, defaultValue);
 
+          if (placeholder !== undefined) {
+            ctx.set(defaultValueCtx, defaultValue);
+          }
           /*
               ctx.set(slash.key, {
                 view: pluginViewFactory({

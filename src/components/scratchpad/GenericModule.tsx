@@ -1,6 +1,9 @@
 import {
+  ArrowDown,
   BombIcon,
+  BookIcon,
   CogIcon,
+  InfoIcon,
   MessageCircleWarning,
   SendIcon,
   ShareIcon,
@@ -68,9 +71,31 @@ import {
 } from "../../lib/content-script/turndown";
 import llmModels from "../../data/llm-models/index";
 import { uuid } from "../../lib/content-script/uuid";
-import { StopIcon } from "@radix-ui/react-icons";
+import {
+  QuestionMarkCircledIcon,
+  QuestionMarkIcon,
+  StopIcon,
+} from "@radix-ui/react-icons";
 import type { PromptTokenUsage } from "../../lib/worker/llm/prompt";
 import { Slider } from "../../ui/slider";
+import { Toggle } from "../../ui/toggle";
+import { Switch } from "../../ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../../ui/tooltip";
+import { MiniInfoButton } from "../MiniInfoButton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../../ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
+import { cn } from "../../lib/content-script/utils";
+import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -85,6 +110,7 @@ export interface CallbackArgs {
 export interface GenericModuleProps extends PropsWithChildren {
   value?: string;
   name: string;
+  placeholder?: string;
   promptSettingsWrapperClassName?: string;
   editorAtom: WritableAtom<string>;
   defaultPromptTemplate: string;
@@ -104,6 +130,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   value,
   name,
   promptSettingsWrapperClassName,
+  placeholder,
   editorAtom,
   defaultPromptTemplate,
   outputTokenScaleFactor,
@@ -151,6 +178,18 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [promptContent, setPromptContent] = useState<string>("");
   const [lastActualUsage, setLastActualUsage] = useState<PromptTokenUsage>();
   const [lastTotalPrice, setLastTotalPrice] = useState<number>();
+  const [activeTab, setActiveTab] = useState<"settings" | "promptEditor">(
+    "settings",
+  );
+
+  // auto-tune parameters
+  const [autoTuneCreativity, setAutoTuneCreativity] = useState<number>(70);
+  const [autoTuneFocusActivated, setAutoTuneFocusActivated] =
+    useState<boolean>(false);
+  const [autoTuneFocus, setAutoTuneFocus] = useState<number>(0);
+  const [autoTuneGlossaryActivated, setAutoTuneGlossaryActivated] =
+    useState<boolean>(false);
+  const [autoTuneGlossary, setAutoTuneGlossary] = useState<number>(100);
 
   useEffect(() => {
     setPromptContent(editorContent);
@@ -588,13 +627,17 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     }
   }, [stopStreamCallback, setStreamingInProgress]);
 
+  const onHelpClick = useCallback(() => {
+    window.open("https://github.com/kyr0/redaktool/wiki", "_blank");
+  }, []);
+
   return (
     <ResizablePanelGroup direction="vertical">
       <ResizablePanel defaultSize={65} minSize={20}>
         <div className="ab-w-full ab-h-full ab-overflow-y-auto">
           <MarkdownEditor
             defaultValue={editorContent}
-            placeholder={"Extrahierte Inhalte"}
+            placeholder={placeholder}
             name={`${name}Editor`}
             showToolbar={true}
             onChange={onEditorChangeInternal}
@@ -608,116 +651,120 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
           <ResizablePanel
             defaultSize={30}
             minSize={10}
-            className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pr-2"
+            className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pr-2 ab-overflow-y-auto"
           >
-            <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center">
-              <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-sm">
-                Einstellungen
+            <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center ab-mb-2">
+              <span className="ab-flex ab-flex-row ab-items-center">
+                <span className="ab-p-1 ab-px-2 ab-text-sm">Modell:</span>
+              </span>
+
+              <span className="ab-mr-1">
+                <AiModelDropdown
+                  value={modelPk}
+                  onChange={(value) => {
+                    setModelPk(value);
+                  }}
+                  options={llmModels.map((m) => ({
+                    label: m.label
+                      .replace(new RegExp(m.provider, "gi"), "")
+                      .trim(),
+                    value: m.pk,
+                  }))}
+                />
               </span>
             </div>
-            <div
-              className={`ab-flex ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-2 ab-overflow-y-auto ${
-                promptSettingsWrapperClassName || ""
-              }`}
-            >
-              <div key={"temperature"} className="ab-mb-2 ab-w-full">
-                <Label className="ab-mb-2 ab-flex">Kreativität</Label>
-                <Slider defaultValue={[70]} max={100} step={1} />
+
+            <div className="ab-flex ab-flex-col ab-w-full ab-h-full ab-overflow-auto">
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center ab-mb-2">
+                <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-sm">
+                  Parameter
+                </span>
+                <span className="ab-mr-1">
+                  <Button
+                    size={"sm"}
+                    className="ab-scale-75 ab-ftr-button !ab-h-6 hover:!ab-bg-primary-foreground ab-origin-right"
+                    onClick={onHelpClick}
+                  >
+                    <QuestionMarkCircledIcon className="ab-w-4 ab-h-4 ab-mr-1" />
+                    <span>Hilfe</span>
+                  </Button>
+                </span>
               </div>
-              {!recompilingInProgress &&
-                dynamicFields.length === 0 &&
-                promptPrepared.text === "" && (
-                  <Label className="ab-mb-2 ab-flex  ab-text-sm">
-                    <CogIcon className="ab-w-4 ab-h-4 ab-mr-2" />
-                    Smart-Prompt wird kompiliert...
-                  </Label>
-                )}
+              <div
+                className={`ab-flex ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-2 ab-overflow-y-auto ${
+                  promptSettingsWrapperClassName || ""
+                }`}
+              >
+                <div key={"autoTuneCreativity"} className="ab-mb-2 ab-w-full">
+                  <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
+                    <Label className="ab-mb-2 ab-flex">Kreativität</Label>
 
-              {!recompilingInProgress &&
-                dynamicFields.length === 0 &&
-                promptPrepared.text !== "" && (
-                  <Label className="ab-mb-2 ab-flex">
-                    Keine dynamischen Einstellungen verfügbar
-                  </Label>
-                )}
-
-              {dynamicFields.map((field) => (
-                <div key={field.key} className="ab-mb-2 ab-w-full">
-                  <Label className="ab-mb-2 ab-flex">{field.label}</Label>
-
-                  {(field.type === "text" || field.type === "number") && (
-                    <Input
-                      type={field.type || "text"}
-                      name={`${name}${field.key}Input`}
-                      placeholder={field.label}
-                      value={dynamicFieldValues[field.key] || field.default}
-                      className="!ab-block !ab-text-sm"
-                      onChange={(evt) => {
-                        console.log(
-                          "field change",
-                          field.key,
-                          evt.target.value,
-                        );
-                        setDynamicFieldValues((prev) => ({
-                          ...prev,
-                          [field.key]: evt.target.value,
-                        }));
-                      }}
-                    />
-                  )}
-
-                  {field.type === "textarea" && (
-                    <Textarea
-                      name={`${name}${field.key}Input`}
-                      placeholder={field.label}
-                      value={dynamicFieldValues[field.key] || field.default}
-                      className="!ab-block !ab-text-sm"
-                      onChange={(evt) => {
-                        console.log(
-                          "field change",
-                          field.key,
-                          evt.target.value,
-                        );
-                        setDynamicFieldValues((prev) => ({
-                          ...prev,
-                          [field.key]: evt.target.value,
-                        }));
-                      }}
-                    />
-                  )}
-
-                  {field.type === "select" && (
-                    <Select
-                      onValueChange={(value) => {
-                        console.log("onValueChange", value);
-                        setDynamicFieldValues((prev) => ({
-                          ...prev,
-                          [field.key]: value,
-                        }));
-                      }}
-                      defaultValue={
-                        dynamicFieldValues[field.key] || field.default
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={field.label} />
-                      </SelectTrigger>
-                      <SelectContent className="ab-z-[2147483646]">
-                        {(field.options || []).map((option) => (
-                          <SelectItem
-                            key={option + Math.random()}
-                            value={option}
-                          >
-                            {upperCaseFirst(option)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                    <MiniInfoButton>
+                      Beeinflusst das Vorkommen neuer Assoziationen, Wörter,
+                      Strukturen sowie die Abweichung vom definierten Stil.
+                    </MiniInfoButton>
+                  </div>
+                  <Slider
+                    max={100}
+                    step={1}
+                    value={[autoTuneCreativity]}
+                    onChange={(value) => setAutoTuneCreativity(value[0])}
+                  />
                 </div>
-              ))}
 
-              {/* children */}
+                <div key={"autoTuneFocus"} className="ab-mb-2 ab-w-full">
+                  <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
+                    <div className="ab-flex">
+                      <Input
+                        id="autoTuneFocus"
+                        type="checkbox"
+                        className="!ab-w-4 ab-h-4 !ab-mr-1"
+                      />
+                      <Label htmlFor="autoTuneFocus">Fokus erhöhen</Label>
+                    </div>
+                    <MiniInfoButton>
+                      Ein höherer Fokus limitiert die Anzahl der Themen und die
+                      Diversität der Assoziationen über den gesamten Text
+                      hinweg. Das kann hilfreich sein, wenn von einem
+                      spezifischen Thema und einem Konsens weniger abgewichen
+                      werden soll.
+                    </MiniInfoButton>
+                  </div>
+                  <Slider
+                    max={100}
+                    step={1}
+                    value={[autoTuneCreativity]}
+                    onChange={(value) => setAutoTuneCreativity(value[0])}
+                  />
+                </div>
+
+                <div key={"autoTuneGlossary"} className="ab-mb-2 ab-w-full">
+                  <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
+                    <div className="ab-flex ab-mb-1">
+                      <Input
+                        id="autoTuneGlossary"
+                        type="checkbox"
+                        className="!ab-w-4 ab-h-4 !ab-mr-1"
+                      />
+                      <Label htmlFor="autoTuneGlossary">
+                        Wortvielfalt verringern
+                      </Label>
+                    </div>
+                    <MiniInfoButton>
+                      Limitiert die Anzahl unterschiedlicher Wörter und
+                      verringert somit den lexikalischen Reichtum. Das kann bei
+                      Übersetzungen und Fachtexten hilfreich sein, wenn es auf
+                      eine spezifische Terminologie ankommt.
+                    </MiniInfoButton>
+                  </div>
+                  <Slider
+                    max={100}
+                    step={1}
+                    value={[autoTuneCreativity]}
+                    onChange={(value) => setAutoTuneCreativity(value[0])}
+                  />
+                </div>
+              </div>
             </div>
           </ResizablePanel>
 
@@ -728,44 +775,182 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
             minSize={60}
             className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pl-2"
           >
-            <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center">
-              <span className="ab-flex ab-flex-row ab-items-center">
-                <span className="ab-p-1 ab-px-2 ab-text-sm">Smart-Prompt:</span>
-                <AiModelDropdown
-                  value={modelPk}
-                  onChange={(value) => {
-                    setModelPk(value);
-                  }}
-                  options={llmModels.map((m) => ({
-                    label: m.label,
-                    value: m.pk,
-                  }))}
-                />
-              </span>
-
-              <Button
-                size={"sm"}
-                className="ab-scale-75 ab-ftr-button ab-mr-0 !ab-h-6 hover:!ab-bg-primary-foreground"
-                onClick={onSharePromptClick}
+            <div className="ab-flex ab-w-full ab-h-full  ab-overflow-auto">
+              <Tabs
+                defaultValue={activeTab}
+                className="ab-w-full ab-flex ab-flex-col ab-h-full ab-overflow-auto"
               >
-                <ShareIcon className="ab-w-4 ab-h-4" />
-                <span>Teilen</span>
-              </Button>
+                <div className="ab-flex ab-justify-between">
+                  <TabsList className="!ab-p-0 !ab-m-0  !ab-min-h-8 !ab-h-8">
+                    <TabsTrigger
+                      className={cn(
+                        "ab-text-sm",
+                        activeTab === "settings"
+                          ? "ab-ftr-active-menu-item"
+                          : "ab-ftr-menu-item ab-bg-secondary",
+                      )}
+                      value="settings"
+                      onClick={() => setActiveTab("settings")}
+                    >
+                      Einstellungen
+                    </TabsTrigger>
+                    <TabsTrigger
+                      className={cn(
+                        "ab-text-sm !ab-ml-2",
+                        activeTab === "promptEditor"
+                          ? "ab-ftr-active-menu-item"
+                          : "ab-ftr-menu-item ab-bg-secondary",
+                      )}
+                      value="promptEditor"
+                      onClick={() => setActiveTab("promptEditor")}
+                    >
+                      Smart-Prompt
+                    </TabsTrigger>
+                  </TabsList>
+                  {activeTab === "promptEditor" && (
+                    <Button
+                      size={"sm"}
+                      className=" ab-ftr-button  ab-bg-secondary  !ab-h-6 hover:ab-ftr-bg-halfcontrast ab-origin-right"
+                      onClick={onSharePromptClick}
+                    >
+                      <ShareIcon className="ab-w-4 ab-h-4 ab-mr-1" />
+                      <span>Teilen</span>
+                    </Button>
+                  )}
+                </div>
+                <TabsContent
+                  value="settings"
+                  className="ab-flex-1 ab-h-full ab-overflow-y-scroll "
+                >
+                  <div className="ab-grid ab-grid-cols-2 ab-gap-4 ">
+                    {!recompilingInProgress &&
+                      dynamicFields.length === 0 &&
+                      promptPrepared.text === "" && (
+                        <Label className="ab-mb-2 ab-flex ab-text-sm">
+                          <CogIcon className="ab-w-4 ab-h-4 ab-mr-2" />
+                          Smart-Prompt wird kompiliert...
+                        </Label>
+                      )}
+
+                    {!recompilingInProgress &&
+                      dynamicFields.length === 0 &&
+                      promptPrepared.text !== "" && (
+                        <Label className="ab-mb-2 ab-flex">
+                          Keine dynamischen Einstellungen verfügbar
+                        </Label>
+                      )}
+
+                    {dynamicFields.map((field) => (
+                      <div key={field.key} className="ab-mb-2 ab-w-full">
+                        <Label className="ab-mb-2 ab-flex">{field.label}</Label>
+
+                        {(field.type === "text" || field.type === "number") && (
+                          <Input
+                            type={field.type || "text"}
+                            name={`${name}${field.key}Input`}
+                            placeholder={field.label}
+                            value={
+                              dynamicFieldValues[field.key] || field.default
+                            }
+                            className="!ab-block !ab-text-sm"
+                            onChange={(evt) => {
+                              console.log(
+                                "field change",
+                                field.key,
+                                evt.target.value,
+                              );
+                              setDynamicFieldValues((prev) => ({
+                                ...prev,
+                                [field.key]: evt.target.value,
+                              }));
+                            }}
+                          />
+                        )}
+
+                        {field.type === "textarea" && (
+                          <Textarea
+                            name={`${name}${field.key}Input`}
+                            placeholder={field.label}
+                            value={
+                              dynamicFieldValues[field.key] || field.default
+                            }
+                            className="!ab-block !ab-text-sm"
+                            onChange={(evt) => {
+                              console.log(
+                                "field change",
+                                field.key,
+                                evt.target.value,
+                              );
+                              setDynamicFieldValues((prev) => ({
+                                ...prev,
+                                [field.key]: evt.target.value,
+                              }));
+                            }}
+                          />
+                        )}
+
+                        {field.type === "select" && (
+                          <Select
+                            onValueChange={(value) => {
+                              console.log("onValueChange", value);
+                              setDynamicFieldValues((prev) => ({
+                                ...prev,
+                                [field.key]: value,
+                              }));
+                            }}
+                            defaultValue={
+                              dynamicFieldValues[field.key] || field.default
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={field.label} />
+                            </SelectTrigger>
+                            <SelectContent className="ab-z-[2147483646]">
+                              {(field.options || []).map((option) => (
+                                <SelectItem
+                                  key={option + Math.random()}
+                                  value={option}
+                                >
+                                  {upperCaseFirst(option)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="promptEditor" className="ab-flex-1">
+                  <textarea
+                    onChange={onPromptChangeInternal}
+                    name={`${name}PromptEditor`}
+                    placeholder="Change the extracted content to re-generate the prompt"
+                    value={prompt}
+                    style={{ resize: "none" }}
+                    className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm"
+                  />
+                </TabsContent>
+              </Tabs>
+              {/*
+              <textarea
+                onChange={onPromptChangeInternal}
+                name={`${name}PromptEditor`}
+                placeholder="Change the extracted content to re-generate the prompt"
+                value={prompt}
+                style={{ resize: "none" }}
+                className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 ab-p-2 ab-outline-none !ab-text-sm"
+              />
+              */}
             </div>
-            <textarea
-              onChange={onPromptChangeInternal}
-              name={`${name}PromptEditor`}
-              placeholder="Change the extracted content to re-generate the prompt"
-              value={prompt}
-              style={{ resize: "none" }}
-              className="ab-flex-1 ab-overflow-auto ab-w-full  ab-overscroll-contain ab-ml-1 ab-p-2 ab-outline-none !ab-text-sm"
-            />
+
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between">
               <span className="ab-flex ab-flex-row ab-justify-between ab-items-end">
                 <Input
                   value={customInstruction}
                   name={`${name}PromptInstructionEditor`}
-                  placeholder="Spezialisierungswünsche..."
+                  placeholder="Weitere Wünsche..."
                   className="!ab-block ab-mb-2 !ab-text-sm ab-h-12 ab-max-h-12"
                   onChange={(evt) => setCustomInstruction(evt.target.value)}
                 />

@@ -22,6 +22,7 @@ export const ExtractionModule = () => {
   const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
 
   // auto-extract content
+  /*
   useEffect(() => {
     console.log("auto-extract existing!!", autoExtractAtom.get());
 
@@ -51,6 +52,7 @@ export const ExtractionModule = () => {
       console.error("No best candidate found");
     }
   }, []);
+  */
 
   const debouncedAppendExtracted = useDebouncedCallback(
     useCallback(
@@ -94,6 +96,7 @@ export const ExtractionModule = () => {
   return (
     <GenericModule
       value={editorContent}
+      placeholder="Extracted content will appear here"
       defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={extractionPrompt}
       name="extraction"

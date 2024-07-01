@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
+import { ArrowDown } from "lucide-react";
 
 export interface AiModelEntry {
   value: string;
@@ -38,6 +39,8 @@ export function AiModelDropdown({
           className="!ab-text-xs !ab-h-5 !ab-px-1 hover:!ab-bg-primary-foreground"
         >
           {selectedOption?.label || "Select Model"}
+
+          <ArrowDown className="ab-w-3 ab-h-3 ab-ml-1" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="ab-z-[2147483646]">
