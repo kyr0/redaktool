@@ -820,9 +820,9 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                 </div>
                 <TabsContent
                   value="settings"
-                  className="ab-flex-1 ab-h-full ab-overflow-y-scroll "
+                  className="ab-flex-1 ab-h-full ab-overflow-y-scroll"
                 >
-                  <div className="ab-grid ab-grid-cols-2 ab-gap-4 ">
+                  <div className="ab-grid ab-grid-cols-2 ab-gap-2 ab-pr-1">
                     {!recompilingInProgress &&
                       dynamicFields.length === 0 &&
                       promptPrepared.text === "" && (
@@ -841,8 +841,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                       )}
 
                     {dynamicFields.map((field) => (
-                      <div key={field.key} className="ab-mb-2 ab-w-full">
-                        <Label className="ab-mb-2 ab-flex">{field.label}</Label>
+                      <div
+                        key={field.key}
+                        className={`ab-w-full ${
+                          field.type === "textarea" ? "ab-col-span-2" : ""
+                        }`}
+                      >
+                        <Label className="ab-mb-1 ab-flex">{field.label}</Label>
 
                         {(field.type === "text" || field.type === "number") && (
                           <Input
@@ -852,7 +857,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                             value={
                               dynamicFieldValues[field.key] || field.default
                             }
-                            className="!ab-block !ab-text-sm"
+                            className="!ab-block !ab-text-sm ab-h-8"
                             onChange={(evt) => {
                               console.log(
                                 "field change",
@@ -902,7 +907,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                               dynamicFieldValues[field.key] || field.default
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="ab-h-8">
                               <SelectValue placeholder={field.label} />
                             </SelectTrigger>
                             <SelectContent className="ab-z-[2147483646]">
