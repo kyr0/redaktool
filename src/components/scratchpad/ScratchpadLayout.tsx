@@ -24,6 +24,7 @@ import { SummaryModule } from "./summary/SummaryModule";
 import { CoachModule } from "./coach/CoachModule";
 import { ProofreadingModule } from "./proofreading/ProofreadingModule";
 import { TitlesModule } from "./titles/TitlesModule";
+import { InterviewModule } from "./interview/InterviewModule";
 
 export type ToolNames =
   | "source"
@@ -31,7 +32,8 @@ export type ToolNames =
   | "summary"
   | "titles"
   | "rewrite"
-  | "coach";
+  | "coach"
+  | "interview";
 
 export const ScratchpadLayout = () => {
   const { t, i18n } = useTranslation();
@@ -119,6 +121,18 @@ export const ScratchpadLayout = () => {
               <ALargeSmall className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
               {t("module_titles")}
             </TabsTrigger>
+            <TabsTrigger
+              onClick={() => setActiveView("interview")}
+              value="interview"
+              className={`!ab-pt-0 !ab-max-h-10 !ab-text-md  ${
+                activeView === "interview"
+                  ? "ab-ftr-active-menu-item"
+                  : "ab-ftr-menu-item"
+              }`}
+            >
+              <ALargeSmall className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              {t("module_interview")}
+            </TabsTrigger>
           </TabsList>
           <TabsContent
             value="source"
@@ -156,6 +170,12 @@ export const ScratchpadLayout = () => {
             className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
           >
             <TitlesModule />
+          </TabsContent>
+          <TabsContent
+            value="interview"
+            className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
+          >
+            <InterviewModule />
           </TabsContent>
         </Tabs>
       </ResizablePanel>

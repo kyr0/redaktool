@@ -12,6 +12,7 @@
   "module_archive": "Archiv",
   "module_transcription": "Transkription",
   "module_settings": "Einstellungen",
+  "module_interview": "Interview",
   "summaryModule.audiencePromptPlaceholder": "Zielgruppe eingeben",
   "summaryModule.audiencePromptLabel": "Zielgruppe",
   "summaryModule.tonePromptPlaceholder": "Tonalität eingeben",
