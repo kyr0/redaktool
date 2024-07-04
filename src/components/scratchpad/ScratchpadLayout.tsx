@@ -3,6 +3,7 @@ import {
   BookCheck,
   FileSignature,
   Languages,
+  MessageCircleDashed,
   Newspaper,
   Scale,
 } from "lucide-react";
@@ -130,7 +131,7 @@ export const ScratchpadLayout = () => {
                   : "ab-ftr-menu-item"
               }`}
             >
-              <ALargeSmall className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              <MessageCircleDashed className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
               {t("module_interview")}
             </TabsTrigger>
           </TabsList>
