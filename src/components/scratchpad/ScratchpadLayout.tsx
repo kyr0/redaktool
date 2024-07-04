@@ -1,4 +1,5 @@
 import {
+  ALargeSmall,
   BookCheck,
   FileSignature,
   Languages,
@@ -115,7 +116,7 @@ export const ScratchpadLayout = () => {
                   : "ab-ftr-menu-item"
               }`}
             >
-              <Newspaper className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              <ALargeSmall className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
               {t("module_titles")}
             </TabsTrigger>
           </TabsList>

@@ -4,10 +4,12 @@
   "description": "Browser extension, designed for editors and professionals engaged in text-related research, writing, and evaluation tasks.",
   "scripts": {
     "predev": "mkdir -p ./dist && cp -R ./css/* ./dist/ && bun tailwindcss -i ./css/style-dark.scss -o ./dist/style-dark.css && bun tailwindcss -i ./css/style-light.scss -o ./dist/style-light.css",
-    "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/worker.js && bun build ./src/content-script.tsx --loader .css:text --loader .liquid:text --outfile=./dist/content-script.js --outdir=./dist",
+    "dev": "bun build ./src/activate.ts --outfile ./dist/activate.js && bun build ./src/events-prehook.ts --outfile ./dist/events-prehook.js && bun build ./src/worker.ts --outfile ./dist/background.worker.js && bun run post-process-worker  && bun build ./src/content-script.tsx --loader .css:text --loader .liquid:text --outfile=./dist/content-script.js --outdir=./dist",
     "test": "bun test",
     "scrape": "bun run ./scripts/scrape.ts",
     "release": "bun run ./scripts/release.ts",
+    "download-model": "bun run ./scripts/download-model.ts",
+    "post-process-worker": "bun run ./scripts/post-process-worker.ts",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
   },
   "author": "Aron Homberg <aron.homberg@fluctura.com>",
@@ -79,6 +81,7 @@
     "milkdown-plugin-placeholder": "^0.2.1",
     "nanostores": "^0.9.5",
     "next-themes": "^0.2.1",
+    "onnxruntime-web": "^1.18.0",
     "openai-fetch": "2.0.3",
     "postcss-import": "^16.0.1",
     "postcss-prefix-selector": "^1.16.0",
@@ -114,6 +117,7 @@
     "@types/react-dom": "^18.2.19",
     "@types/webextension-polyfill": "^0.10.7",
     "autoprefixer": "^10.4.19",
+    "@xenova/transformers": "^2.17.2",
     "conventional-changelog-cli": "^5.0.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.0.0"

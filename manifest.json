@@ -36,10 +36,14 @@
       "world": "ISOLATED"
     }
   ],
+  "host_permissions": ["*://*/*"],
   "permissions": ["scripting", "activeTab", "storage", "unlimitedStorage"],
   "background": {
-    "service_worker": "dist/worker.js",
-    "content_security_policy": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    "service_worker": "dist/background.worker.js",
+    "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   },
   "web_accessible_resources": [
     {
@@ -48,6 +52,10 @@
     },
     {
       "resources": ["fonts/*"],
+      "matches": ["http://*/*", "https://*/*", "file://*/*"]
+    },
+    {
+      "resources": ["models/*"],
       "matches": ["http://*/*", "https://*/*", "file://*/*"]
     }
   ]

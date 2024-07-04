@@ -14,12 +14,13 @@ const placeholderMarkdown = `# RedakTool
 
 ### *2024 by Aron Homberg*
 
-* Texte, Bilder und Tabellen mit Formatierung **extrahieren** und **archivieren** (Markdown).
-* KI-**Übersetzung**, die Metaphern versteht, den Sprachstil und die Zielgruppe berücksichtigt.
-* KI-**Zusammenfassung**, die wahlweise nach **Bedeutung** oder **Chronologie** arbeitet (Interviews).
-* KI-**Faktencheck**, der erstaunlich **wenig halluziniert**.
-* KI-**Formulierungshilfe**, die den **menschlichen Touch** und den **eigenen Stil** simuliert.&#x20;
-* KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.`;
+* Texte, Bilder und Tabellen mit Formatierung **extrahieren** und **archivieren** (Markdown, HTML, JSON).
+* KI-**Übersetzung**, die Metaphern, den Sprachstil und die Zielgruppe berücksichtigt.
+* KI-**Zusammenfassung**, die wahlweise nach **Bedeutung** oder **Chronologie** arbeitet (z.B. für Interviews).
+* KI-**Formulierungshilfe**, die den **menschlichen Touch** und den **eigenen Stil** simuliert.
+* KI-**Titelvorschläge** in vielen verschiedenen Stilen.
+* KI-**Transkription**, die **Audio**- und **Video** auf Webseiten erkennt und nahezu fehlerfrei in Echtzeit arbeitet.
+* Funktioniert (bald) mit fast **allen KI-Modellen** - auch **Open Source**-Modellen und **lokal** betriebenen Modellen (z. B. mittels Ollama).`;
 
 // content cache
 const writerAtom = atom<string>("Loading...");

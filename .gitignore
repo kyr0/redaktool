@@ -177,3 +177,6 @@ dist
 # Release
 redaktool/
 redaktool.zip
+
+# ML Models
+models/

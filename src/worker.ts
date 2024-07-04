@@ -1,5 +1,12 @@
 import("webextension-polyfill");
 
+/*
+globalThis.URL.createObjectURL = (blob: Blob) => {
+  const objectURL = `data:;base64,${blob}`;
+  return objectURL;
+};
+*/
+
 import { ANTHROPIC_API_KEY_NAME, OPEN_AI_API_KEY_NAME } from "./shared";
 import {
   systemPromptStreaming,
@@ -24,9 +31,12 @@ import {
   calculateEffectivePrice,
   getPriceModel,
 } from "./lib/content-script/pricemodels";
+import { loadEmbeddingModel } from "./lib/worker/embedding/env";
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
+  loadEmbeddingModel();
+
   chrome.scripting.executeScript({
     target: { tabId: tab.id as number },
     files: ["dist/activate.js"],

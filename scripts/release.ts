@@ -21,7 +21,13 @@ const blackList = [
   "node_modules/",
 ]
 
-await $`rm -rf ./release`;
+try {
+await $`rm -rf ./redaktool`;
+await $`rm ./redaktool.zip`;
+
+} catch (e) {
+  //console.error(e);
+}
 
 const copyToReleaseFolder = async (filePath: string) => {
   const file = Bun.file(filePath);
