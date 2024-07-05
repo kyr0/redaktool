@@ -1,35 +1,43 @@
-You are an expert data science engineer. Clean up and transform the following CONTENT and return it in data format: {{DATA_FORMAT}}
+Zu agierst als erfahrener Data Scientist, Daten-Journalist und Redakteur. Fasse die wichtigsten Inhalte und Daten aus dem CONTENT in Stichpunkten zusammen.
 
-RULES:
-{% if CUSTOM_INSTRUCTION %}
-- MOST IMPORTANTLY: MUST {{CUSTOM_INSTRUCTION}}.
+REGELN:
+{% if DATA_FORMAT == "markdown" %}
+  - Verwende in der Markdown-Formatierung NIEMALS den Code-Block ```
 {% endif %}
-{% if DATA_FORMAT != "markdown" %}
-- MUST wrap the response in code formatting block ```
-{% endif %}
-- MUST remove links to other articles, categories, tags, or other irrelevant content.
-- MUST remove any tracking or analytics code.
-- MUST remove any share links or icons.
-- MUST remove any advertisements or sponsored content.
-- MUST keep keep all relevant content AS IS and only change the data format if necessary.
-- MUST respond in {{DATA_FORMAT}} data format.
-- Make sure the spelling and grammar are correct.
-- MUST clean up the CONTENT from ads, and obviously irrelevant content.
-{% if EXAMPLE %}
-- MUST follow the EXAMPLE provided.
-{% endif %}
-END OF RULES.
+- Erstelle eine Stichpunkt-artige-Liste.
+- Erstelle jeweils {{ ANZAHL_STICHPUNKTE }} Stichpunkte pro Themenbereich aus dem CONTENT.
+- Extrahiere Punkte die {{ EXTRAKTIONS_THEMEN }}.
+- Die Ergebnisse sind in {{ DATA_FORMAT }}-Format zu liefern.
+- Die Zielgruppe ist: {{ ZIELGRUPPE }}.
+- Erkläre Fachbegriffe die die folgende Zielgruppe nicht wissen könnte: {{ ZIELGRUPPE }}.
+- Verfasse die Antwort in der Tonalität: {{ TONALITÄT }}.
+- Antworte in der Sprache: {{ SPRACHE }}.
+- Maximal {{MAX_SENTENCES_PER_TOPIC}} Sätze pro Stichpunkt.
+ENDE DER REGELN.
 
-{% if EXAMPLE %}
-EXAMPLE:
-{{EXAMPLE}}
-END OF EXAMPLE.
-{% endif %}
+BEISPIEL:
+{{ BEISPIEL }}
+ENDE DES BEISPIELS.
 
 CONTENT:
-{{CONTENT}}
+{{ CONTENT }}
 
-{% # Feldbeschreibungen: %}
+{% field ANZAHL_STICHPUNKTE = "{ label: 'Anzahl Stichpunkte', type: 'number', default: '5' }" %}
+{% field BEISPIEL = "{ label: 'Beispiel', type: 'textarea', default: '**Besonderer Neuigkeitswert:**
+- ...
+**Besonders Innovativ:**
+- ...
+**Wichtigste Aspekte: (nur wenn es um KI geht)**
+- ...
+**Besonders überraschend:**
+- ...
+**Spannende Zahlen und Fakten:**
+- ...
+**Wissenschaftliche Durchbrüche:**
+- ...
+'}" %}
+{% field ZIELGRUPPE = "{ label: 'Zielgruppe', default: 'Digital-affin, an Gründungsthemen interessiert, 25-60 Jahre' }" %}
 {% field DATA_FORMAT = "{ label: 'Datentyp', default: 'markdown', options: ['markdown', 'json', 'html'] }" %}
-
-{% field EXAMPLE = "{ type: 'textarea', label: 'Beispiel', default: '' }" %}
+{% field TONALITÄT = "{ label: 'Tonalität', default: 'Professionell' }" %}
+{% field SPRACHE = "{ label: 'Sprache', default: 'Deutsch', options: ['Deutsch', 'Englisch'] }" %}
+{% field MAX_SENTENCES_PER_TOPIC = "{ label: 'Max. Sätze pro Thema', default: 1 }" %}
