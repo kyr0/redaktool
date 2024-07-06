@@ -7,7 +7,11 @@ globalThis.URL.createObjectURL = (blob: Blob) => {
 };
 */
 
-import { ANTHROPIC_API_KEY_NAME, OPEN_AI_API_KEY_NAME } from "./shared";
+import {
+  ANTHROPIC_API_KEY_NAME,
+  OPEN_AI_API_KEY_NAME,
+  type TunnelMessage,
+} from "./shared";
 import {
   systemPromptStreaming,
   type PromptTokenUsage,
@@ -31,12 +35,25 @@ import {
   calculateEffectivePrice,
   getPriceModel,
 } from "./lib/content-script/pricemodels";
-import { loadEmbeddingModel } from "./lib/worker/embedding/env";
+import { useMessageChannel } from "./lib/worker/message-channel";
+
+// establish fast, MessageChannel-based communication between content script and worker
+const { postMessage, addListener } = useMessageChannel<TunnelMessage>();
+
+addListener((e) => {
+  // prints both in the background console and in the iframe's console
+  console.log("from content script:", e.data);
+
+  switch (e.data.action) {
+    case "model": {
+      console.log("model payload", e.data.payload);
+      break;
+    }
+  }
+});
 
 // inject the activate.js script into the current tab
 chrome.action.onClicked.addListener((tab) => {
-  loadEmbeddingModel();
-
   chrome.scripting.executeScript({
     target: { tabId: tab.id as number },
     files: ["dist/activate.js"],

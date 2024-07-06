@@ -10,6 +10,8 @@ import {
   isDarkModeEnabledInPrefs,
   setDarkModeEnabledInPrefs,
 } from "./lib/content-script/dark-mode";
+import type { TunnelMessage } from "./shared";
+import { useMessageChannel } from "./lib/content-script/message-channel";
 // biome-ignore lint/suspicious/noGlobalAssign: extension technical requirement to cross-reference
 history = window.history;
 
@@ -19,10 +21,20 @@ document = window.document;
 const fontGeistBold = chrome.runtime.getURL("fonts/Geist-Bold.woff2");
 const fontGeistRegular = chrome.runtime.getURL("fonts/Geist-Regular.woff2");
 
+const mlModels = [
+  {
+    type: "onnx",
+    id: "Xenova/multilingual-e5-small",
+    fileName: "model_quantized.with_runtime_opt.ort",
+    path: "models/Xenova/multilingual-e5-small/onnx/model_quantized.with_runtime_opt.ort",
+  },
+];
+
 class FtrElement extends HTMLElement {
   constructor() {
     super();
 
+    this.loadMLModels();
     this.attachShadow({ mode: "open" });
 
     if (this.shadowRoot) {
@@ -45,6 +57,24 @@ class FtrElement extends HTMLElement {
                 }
             </style>
             <div class="lm_ab ab-absolute ab-left-0 ab-top-0 ab-z-[2147483640]" id="ftr_root"></div>`;
+    }
+  }
+
+  async loadMLModels() {
+    const { postMessage, addListener } =
+      await useMessageChannel<TunnelMessage>();
+
+    console.log("Loading ML models...");
+    for (const model of mlModels) {
+      const modelResponse = await fetch(chrome.runtime.getURL(model.path));
+      console.log("model", model);
+      postMessage({
+        action: "model",
+        payload: {
+          ...model,
+          blob: await modelResponse.blob(),
+        },
+      });
     }
   }
 
