@@ -10,7 +10,9 @@ globalThis.URL.createObjectURL = (blob: Blob) => {
 import {
   ANTHROPIC_API_KEY_NAME,
   OPEN_AI_API_KEY_NAME,
-  type TunnelMessage,
+  type EmbeddingModelMessage,
+  type MLModel,
+  type MessageChannelMessage,
 } from "./shared";
 import {
   systemPromptStreaming,
@@ -36,17 +38,16 @@ import {
   getPriceModel,
 } from "./lib/content-script/pricemodels";
 import { useMessageChannel } from "./lib/worker/message-channel";
+import { loadEmbeddingModel } from "./lib/worker/embedding/model";
 
 // establish fast, MessageChannel-based communication between content script and worker
-const { postMessage, addListener } = useMessageChannel<TunnelMessage>();
+const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
 
 addListener((e) => {
-  // prints both in the background console and in the iframe's console
-  console.log("from content script:", e.data);
-
   switch (e.data.action) {
     case "model": {
-      console.log("model payload", e.data.payload);
+      const model = e.data.payload as MLModel;
+      loadEmbeddingModel(model);
       break;
     }
   }
@@ -67,6 +68,19 @@ const job = cron(() => {
 job.runNow();
 
 // TODO: Archive with IndexedDB and Vector Embeddings
+
+/**
+ * Could use this for LLM message streaming
+chrome.runtime.onConnect.addListener(function (port) {
+  console.assert(port.name === "web_llm_service_worker");
+  if (handler === undefined) {
+    handler = new ExtensionServiceWorkerMLCEngineHandler(port);
+  } else {
+    handler.setPort(port);
+  }
+  port.onMessage.addListener(handler.onmessage.bind(handler));
+});
+ */
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);

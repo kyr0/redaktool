@@ -10,7 +10,7 @@ import {
   isDarkModeEnabledInPrefs,
   setDarkModeEnabledInPrefs,
 } from "./lib/content-script/dark-mode";
-import type { TunnelMessage } from "./shared";
+import type { EmbeddingModelMessage, MessageChannelMessage } from "./shared";
 import { useMessageChannel } from "./lib/content-script/message-channel";
 // biome-ignore lint/suspicious/noGlobalAssign: extension technical requirement to cross-reference
 history = window.history;
@@ -20,6 +20,15 @@ document = window.document;
 
 const fontGeistBold = chrome.runtime.getURL("fonts/Geist-Bold.woff2");
 const fontGeistRegular = chrome.runtime.getURL("fonts/Geist-Regular.woff2");
+
+/**
+ * Could use a message broadcast for LLM message streaming
+ * chrome.runtime.onConnect.addListener(function (port) {
+  port.onMessage.addListener(function (msg) {
+    port.postMessage({ contents: document.body.innerHTML });
+  });
+});
+ */
 
 const mlModels = [
   {
@@ -61,13 +70,10 @@ class FtrElement extends HTMLElement {
   }
 
   async loadMLModels() {
-    const { postMessage, addListener } =
-      await useMessageChannel<TunnelMessage>();
+    const { postMessage } = await useMessageChannel<EmbeddingModelMessage>();
 
-    console.log("Loading ML models...");
     for (const model of mlModels) {
       const modelResponse = await fetch(chrome.runtime.getURL(model.path));
-      console.log("model", model);
       postMessage({
         action: "model",
         payload: {

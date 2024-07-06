@@ -7,7 +7,19 @@ export const PARTIAL_RESPONSE_NAME = "PARTIAL_RESPONSE";
 
 export type SupportedActions = "model";
 
-export interface TunnelMessage {
+export interface MessageChannelMessage {
   action: SupportedActions;
   payload: any;
+}
+
+export interface MLModel {
+  type: string;
+  id: string;
+  fileName: string;
+  path: string;
+  blob: Blob;
+}
+
+export interface EmbeddingModelMessage extends MessageChannelMessage {
+  payload: MLModel;
 }
