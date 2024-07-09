@@ -16,6 +16,7 @@ import {
 } from "./shared";
 import {
   systemPromptStreaming,
+  type PromptOptionsUnion,
   type PromptTokenUsage,
 } from "./lib/worker/llm/prompt";
 import {
@@ -39,6 +40,7 @@ import {
 } from "./lib/content-script/pricemodels";
 import { useMessageChannel } from "./lib/worker/message-channel";
 import { loadEmbeddingModel } from "./lib/worker/embedding/model";
+import type { ChatParams } from "openai-fetch";
 
 // establish fast, MessageChannel-based communication between content script and worker
 const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
@@ -147,17 +149,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log("model", model);
           let apiKey = "";
 
+          const advancedHyperParameters: Partial<Omit<ChatParams, "model">> =
+            {};
+
+          if (typeof prompt.hyperParameters?.autoTuneCreativity === "number") {
+            advancedHyperParameters.temperature =
+              prompt.hyperParameters?.autoTuneCreativity / 100;
+          }
+
           switch (model.provider) {
             case "openai":
               apiKey = await getPref(OPEN_AI_API_KEY_NAME, "no-key");
+
+              if (typeof prompt.hyperParameters?.autoTuneFocus === "number") {
+                advancedHyperParameters.presence_penalty =
+                  (prompt.hyperParameters?.autoTuneGlossary / 100) * 2;
+              }
+
+              if (
+                typeof prompt.hyperParameters?.autoTuneGlossary === "number"
+              ) {
+                advancedHyperParameters.frequency_penalty =
+                  (prompt.hyperParameters?.autoTuneFocus / 100) * 2;
+              }
               break;
 
             case "anthropic":
               apiKey = await getPref(ANTHROPIC_API_KEY_NAME, "no-key");
               console.log("anthropic key", apiKey);
+
               break;
           }
 
+          console.log("advancedHyperParameters", advancedHyperParameters);
           let partialResponseText = "";
 
           systemPromptStreaming(
@@ -227,14 +251,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               // union of parameters passed down, mapped internally
               model: model.ident,
               max_tokens: costModel.maxOutputTokens,
+              ...advancedHyperParameters,
             },
             {
               // union of options passed down, mapped internally
               apiKey,
               // auto-tuning of hyperparameters
-              autoTuneCreativity: prompt.autoTuneCreativity || 0.7,
-              autoTuneFocus: prompt.autoTuneFocus || undefined,
-              autoTuneGlossary: prompt.autoTuneGlossary || undefined,
+              //autoTuneCreativity: prompt.autoTuneCreativity || 0.7,
+              //autoTuneFocus: prompt.autoTuneFocus || undefined,
+              //autoTuneGlossary: prompt.autoTuneGlossary || undefined,
             },
           );
           break;

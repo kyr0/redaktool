@@ -1,3 +1,4 @@
+import type { HyperParameters } from "../../shared";
 import type {
   PromptFinishReason,
   PromptTokenUsage,
@@ -52,11 +53,7 @@ export interface Prompt {
   maxContextTokens?: number;
   estimatedOutputTokens?: number;
   values?: Record<string, string>;
-
-  // hyperparameter auto-tuning
-  autoTuneFocus?: number;
-  autoTuneGlossary?: number;
-  autoTuneCreativity?: number;
+  hyperParameters?: HyperParameters;
 }
 
 export interface PromptPartialResponse {
@@ -98,6 +95,7 @@ export const finalizePrompt = (
   values: Record<string, string>,
   model: string,
   outputTokenScaleFactor: number,
+  hyperParameters: HyperParameters,
 ): Prompt => {
   return {
     id: uuid(),
@@ -106,5 +104,6 @@ export const finalizePrompt = (
     model,
     text: compiledPrompt,
     ...calculatePrompt(compiledPrompt, model, outputTokenScaleFactor),
+    hyperParameters,
   } as Prompt;
 };

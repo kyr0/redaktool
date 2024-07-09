@@ -96,6 +96,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { cn } from "../../lib/content-script/utils";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
+import { Badge } from "../../ui/badge";
+import type { HyperParameters } from "../../shared";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -182,14 +184,18 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     "settings",
   );
 
-  // auto-tune parameters
+  // hyper parameters
   const [autoTuneCreativity, setAutoTuneCreativity] = useState<number>(70);
+  /*
   const [autoTuneFocusActivated, setAutoTuneFocusActivated] =
     useState<boolean>(false);
+    */
   const [autoTuneFocus, setAutoTuneFocus] = useState<number>(0);
+  /*
   const [autoTuneGlossaryActivated, setAutoTuneGlossaryActivated] =
     useState<boolean>(false);
-  const [autoTuneGlossary, setAutoTuneGlossary] = useState<number>(100);
+    */
+  const [autoTuneGlossary, setAutoTuneGlossary] = useState<number>(0);
 
   useEffect(() => {
     setPromptContent(editorContent);
@@ -391,7 +397,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
   );
 
   const generatePrompt = useCallback(
-    ({ prompt, editorContent, customInstruction, modelName }: any) => {
+    ({
+      prompt,
+      editorContent,
+      customInstruction,
+      modelName,
+      hyperParameters,
+    }: any) => {
       return new Promise<Prompt>((resolve, reject) => {
         setRecompilingInProgress(true);
         (async () => {
@@ -422,6 +434,9 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               CONTENT: editorContent,
               MODEL_NAME: modelName,
               CUSTOM_INSTRUCTION: customInstruction || undefined,
+              HYPER_FOCUS: hyperParameters.autoTuneFocus,
+              HYPER_CREATIVITY: hyperParameters.autoTuneCreativity,
+              HYPER_GLOSSARY: hyperParameters.autoTuneGlossary,
             });
 
             console.log("compiledPrompt", compiledPrompt);
@@ -437,6 +452,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                       .OUTPUT_TOKEN_FACTOR,
                   )
                 : outputTokenScaleFactor,
+              hyperParameters,
             );
             console.log("finalPrompt", finalPrompt);
 
@@ -462,7 +478,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
   const debouncedPreparePrompt = useDebouncedCallback(
     useCallback(
-      ({ promptContent, prompt, customInstruction, modelPk }) => {
+      ({
+        promptContent,
+        prompt,
+        customInstruction,
+        modelPk,
+        hyperParameters,
+      }) => {
         requestAnimationFrame(async () => {
           setPromptPrepared(
             await generatePrompt({
@@ -470,6 +492,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               editorContent: promptContent || editorContent,
               customInstruction,
               modelName: modelPk,
+              hyperParameters,
             }),
           );
         });
@@ -493,8 +516,21 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       prompt,
       customInstruction,
       modelPk,
+      hyperParameters: {
+        autoTuneCreativity,
+        autoTuneFocus,
+        autoTuneGlossary,
+      } as HyperParameters,
     });
-  }, [promptContent, prompt, customInstruction, modelPk]);
+  }, [
+    promptContent,
+    prompt,
+    customInstruction,
+    modelPk,
+    autoTuneCreativity,
+    autoTuneFocus,
+    autoTuneGlossary,
+  ]);
 
   // sync
   useEffect(() => {
@@ -522,6 +558,11 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         editorContent: promptContent || editorContent,
         customInstruction,
         modelName: modelPk,
+        hyperParameters: {
+          autoTuneCreativity,
+          autoTuneFocus,
+          autoTuneGlossary,
+        } as HyperParameters,
       });
 
       setStreamingInProgress(true);
@@ -618,6 +659,9 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     editorEl,
     modelPk,
     i18n.language,
+    autoTuneCreativity,
+    autoTuneFocus,
+    autoTuneGlossary,
   ]);
 
   const onStopPromptStreamingClick = useCallback(() => {
@@ -697,73 +741,92 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               >
                 <div key={"autoTuneCreativity"} className="ab-mb-2 ab-w-full">
                   <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
-                    <Label className="ab-mb-2 ab-flex">Kreativität</Label>
-
+                    <Label className="ab-mb-2 ab-flex">
+                      Kreativität: {autoTuneCreativity}%
+                    </Label>
                     <MiniInfoButton>
                       Beeinflusst das Vorkommen neuer Assoziationen, Wörter,
                       Strukturen sowie die Abweichung vom definierten Stil.
                     </MiniInfoButton>
                   </div>
                   <Slider
+                    min={0}
                     max={100}
-                    step={1}
-                    value={[autoTuneCreativity]}
-                    onChange={(value) => setAutoTuneCreativity(value[0])}
+                    step={0.1}
+                    defaultValue={[autoTuneCreativity]}
+                    onValueChange={(value) => setAutoTuneCreativity(value[0])}
                   />
                 </div>
 
-                <div key={"autoTuneFocus"} className="ab-mb-2 ab-w-full">
-                  <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
-                    <div className="ab-flex">
+                {modelPk.indexOf("openai") > -1 && (
+                  <>
+                    <div key={"autoTuneFocus"} className="ab-mb-2 ab-w-full">
+                      <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
+                        <div className="ab-flex">
+                          {/*
                       <Input
                         id="autoTuneFocus"
                         type="checkbox"
                         className="!ab-w-4 ab-h-4 !ab-mr-1"
                       />
-                      <Label htmlFor="autoTuneFocus">Fokus erhöhen</Label>
+                      */}
+                          <Label htmlFor="autoTuneFocus">
+                            Fokus:{" "}
+                            {autoTuneFocus !== 0
+                              ? `${autoTuneFocus}%`
+                              : "Standard"}
+                          </Label>
+                        </div>
+                        <MiniInfoButton>
+                          Ein höherer Fokus limitiert die Anzahl der Themen und
+                          die Diversität der Assoziationen über den gesamten
+                          Text hinweg. Das kann hilfreich sein, wenn von einem
+                          spezifischen Thema und einem Konsens weniger
+                          abgewichen werden soll.
+                        </MiniInfoButton>
+                      </div>
+                      <Slider
+                        min={-100}
+                        max={100}
+                        step={0.1}
+                        defaultValue={[autoTuneFocus]}
+                        onValueChange={(value) => setAutoTuneFocus(value[0])}
+                      />
                     </div>
-                    <MiniInfoButton>
-                      Ein höherer Fokus limitiert die Anzahl der Themen und die
-                      Diversität der Assoziationen über den gesamten Text
-                      hinweg. Das kann hilfreich sein, wenn von einem
-                      spezifischen Thema und einem Konsens weniger abgewichen
-                      werden soll.
-                    </MiniInfoButton>
-                  </div>
-                  <Slider
-                    max={100}
-                    step={1}
-                    value={[autoTuneCreativity]}
-                    onChange={(value) => setAutoTuneCreativity(value[0])}
-                  />
-                </div>
 
-                <div key={"autoTuneGlossary"} className="ab-mb-2 ab-w-full">
-                  <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
-                    <div className="ab-flex ab-mb-1">
+                    <div key={"autoTuneGlossary"} className="ab-mb-2 ab-w-full">
+                      <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
+                        <div className="ab-flex ab-mb-1">
+                          {/*
                       <Input
                         id="autoTuneGlossary"
                         type="checkbox"
                         className="!ab-w-4 ab-h-4 !ab-mr-1"
+                      />*/}
+                          <Label htmlFor="autoTuneGlossary">
+                            Wortvielfalt:{" "}
+                            {autoTuneGlossary !== 0
+                              ? `${autoTuneGlossary}%`
+                              : "Standard"}
+                          </Label>
+                        </div>
+                        <MiniInfoButton>
+                          Limitiert die Anzahl unterschiedlicher Wörter und
+                          verringert somit den lexikalischen Reichtum. Das kann
+                          bei Übersetzungen und Fachtexten hilfreich sein, wenn
+                          es auf eine spezifische Terminologie ankommt.
+                        </MiniInfoButton>
+                      </div>
+                      <Slider
+                        min={-100}
+                        max={100}
+                        step={0.1}
+                        defaultValue={[autoTuneGlossary]}
+                        onValueChange={(value) => setAutoTuneGlossary(value[0])}
                       />
-                      <Label htmlFor="autoTuneGlossary">
-                        Wortvielfalt verringern
-                      </Label>
                     </div>
-                    <MiniInfoButton>
-                      Limitiert die Anzahl unterschiedlicher Wörter und
-                      verringert somit den lexikalischen Reichtum. Das kann bei
-                      Übersetzungen und Fachtexten hilfreich sein, wenn es auf
-                      eine spezifische Terminologie ankommt.
-                    </MiniInfoButton>
-                  </div>
-                  <Slider
-                    max={100}
-                    step={1}
-                    value={[autoTuneCreativity]}
-                    onChange={(value) => setAutoTuneCreativity(value[0])}
-                  />
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </ResizablePanel>

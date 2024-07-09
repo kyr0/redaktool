@@ -26,3 +26,9 @@ export interface MLModel {
 export interface EmbeddingModelMessage extends MessageChannelMessage {
   payload: MLModel;
 }
+
+export interface HyperParameters {
+  autoTuneCreativity: number;
+  autoTuneFocus: number;
+  autoTuneGlossary: number;
+}
