@@ -1,29 +1,42 @@
-Zu agierst als erfahrener Data Scientist, Daten-Journalist und Redakteur. Fasse die wichtigsten Inhalte und Daten aus dem CONTENT in Stichpunkten zusammen.
+Zu agierst als erfahrener Data Scientist, Daten-Journalist und Redakteur. Gib die wichtigen Informationen, Schlussfolgerungen, Zitate, Daten etc. aus CONTENT wieder.
 
 REGELN:
+{% if CUSTOM_INSTRUCTION %}
+- WICHTIG: {{ CUSTOM_INSTRUCTION }}
+{% endif %}
 {% if DATA_FORMAT == "markdown" %}
   - Verwende in der Markdown-Formatierung NIEMALS den Code-Block ```
 {% endif %}
+- Relevant sind ausschließlich die Aussagen des Textes in CONTENT.
+{% if FORMAT == 'Stichpunkte' %}
 - Erstelle eine Stichpunkt-artige-Liste.
-- Erstelle jeweils {{ ANZAHL_STICHPUNKTE }} Stichpunkte pro Themenbereich aus dem CONTENT.
+- Erstelle jeweils {{ ANZAHL_STICHPUNKTE }} Stichpunkte zu JEDEM Aspekt der in ASPEKTE genannt wurde, vorausgesetzt, das Thema hat Bezug zum Aspekt.
+{% endif %}
+{% if FORMAT == 'Fließtext' %}
+- Erstelle einen Prosa-Text der jeden Aspekt der im ASPEKTE beinhaltet, vorausgesetzt, das Thema hat Bezug zum Aspekt. 
+{% endif %}
 - Extrahiere Punkte die {{ EXTRAKTIONS_THEMEN }}.
 - Die Ergebnisse sind in {{ DATA_FORMAT }}-Format zu liefern.
 - Die Zielgruppe ist: {{ ZIELGRUPPE }}.
 - Erkläre Fachbegriffe die die folgende Zielgruppe nicht wissen könnte: {{ ZIELGRUPPE }}.
 - Verfasse die Antwort in der Tonalität: {{ TONALITÄT }}.
 - Antworte in der Sprache: {{ SPRACHE }}.
-- Maximal {{MAX_SENTENCES_PER_TOPIC}} Sätze pro Stichpunkt.
+- Maximal {{MAX_SENTENCES_PER_TOPIC}} Sätze pro Thema.
+- Ignoriere Werbung, und offensichtlich irrelevante Inhalte wie Buttons, Links, "Mehr lesen", "Teilen", etc.
 ENDE DER REGELN.
 
-BEISPIEL:
-{{ BEISPIEL }}
-ENDE DES BEISPIELS.
+ASPEKTE:
+{{ ASPEKTE }}
+ENDE DER ASPEKTE.
 
 CONTENT:
 {{ CONTENT }}
 
-{% field ANZAHL_STICHPUNKTE = "{ label: 'Anzahl Stichpunkte', type: 'number', default: '5' }" %}
-{% field BEISPIEL = "{ label: 'Beispiel', type: 'textarea', default: '**Besonderer Neuigkeitswert:**
+{% field FORMAT = "{ label: 'Format', default: 'Stichpunkte', options: ['Stichpunkte', 'Fließtext'] }" %}
+
+{% field ANZAHL_STICHPUNKTE = "{ label: 'Max. Stichpunkte', type: 'number', default: '5' }" %}
+
+{% field ASPEKTE = "{ label: 'ASPEKTE', type: 'textarea', default: '**Besonderer Neuigkeitswert:**
 - ...
 **Besonders Innovativ:**
 - ...
@@ -40,4 +53,4 @@ CONTENT:
 {% field DATA_FORMAT = "{ label: 'Datentyp', default: 'markdown', options: ['markdown', 'json', 'html'] }" %}
 {% field TONALITÄT = "{ label: 'Tonalität', default: 'Professionell' }" %}
 {% field SPRACHE = "{ label: 'Sprache', default: 'Deutsch', options: ['Deutsch', 'Englisch'] }" %}
-{% field MAX_SENTENCES_PER_TOPIC = "{ label: 'Max. Sätze pro Thema', default: 1 }" %}
+{% field MAX_SENTENCES_PER_TOPIC = "{ label: 'Max. Sätze pro Thema', default: 2 }" %}

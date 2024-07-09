@@ -774,7 +774,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                             Fokus:{" "}
                             {autoTuneFocus !== 0
                               ? `${autoTuneFocus}%`
-                              : "Standard"}
+                              : "Normal"}
                           </Label>
                         </div>
                         <MiniInfoButton>
@@ -807,7 +807,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                             Wortvielfalt:{" "}
                             {autoTuneGlossary !== 0
                               ? `${autoTuneGlossary}%`
-                              : "Standard"}
+                              : "Normal"}
                           </Label>
                         </div>
                         <MiniInfoButton>

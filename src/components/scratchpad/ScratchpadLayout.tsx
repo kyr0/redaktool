@@ -5,6 +5,7 @@ import {
   Languages,
   MessageCircleDashed,
   Newspaper,
+  PartyPopper,
   Scale,
 } from "lucide-react";
 import {
@@ -95,7 +96,7 @@ export const ScratchpadLayout = () => {
                   : "ab-ftr-menu-item"
               }`}
             >
-              <BookCheck className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+              <PartyPopper className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
               Creative Writing
             </TabsTrigger>
             <TabsTrigger
