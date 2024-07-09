@@ -35,7 +35,11 @@ const mlModels = [
     type: "onnx",
     id: "Xenova/multilingual-e5-small",
     fileName: "model_quantized.with_runtime_opt.ort",
+    configPath: "models/Xenova/multilingual-e5-small/config.json",
     path: "models/Xenova/multilingual-e5-small/onnx/model_quantized.with_runtime_opt.ort",
+    tokenizerConfigPath:
+      "models/Xenova/multilingual-e5-small/tokenizer_config.json",
+    tokenizerPath: "models/Xenova/multilingual-e5-small/tokenizer.json",
   },
 ];
 
@@ -74,11 +78,23 @@ class FtrElement extends HTMLElement {
 
     for (const model of mlModels) {
       const modelResponse = await fetch(chrome.runtime.getURL(model.path));
+      const tokenizerConfigResponse = await fetch(
+        chrome.runtime.getURL(model.tokenizerConfigPath),
+      );
+      const tokenizerResponse = await fetch(
+        chrome.runtime.getURL(model.tokenizerPath),
+      );
+      const configResponse = await fetch(
+        chrome.runtime.getURL(model.configPath),
+      );
       postMessage({
         action: "model",
         payload: {
           ...model,
           blob: await modelResponse.blob(),
+          tokenizer: await tokenizerResponse.blob(),
+          tokenizerConfig: await tokenizerConfigResponse.json(),
+          config: await configResponse.json(),
         },
       });
     }

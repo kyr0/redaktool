@@ -18,6 +18,9 @@ export interface MLModel {
   fileName: string;
   path: string;
   blob: Blob;
+  tokenizerConfig: any;
+  tokenizer: Blob;
+  config: any;
 }
 
 export interface EmbeddingModelMessage extends MessageChannelMessage {
