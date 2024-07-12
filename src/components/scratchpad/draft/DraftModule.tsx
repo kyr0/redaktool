@@ -7,6 +7,8 @@ import {
 import { Input } from "../../../ui/input";
 import { NotepadTextDashed, PenIcon } from "lucide-react";
 import { db } from "../../../lib/content-script/db";
+import { calculateWordsForText } from "../../../lib/content-script/langstats";
+import { Separator } from "../../../ui/separator";
 
 const placeholderMarkdown = `# RedakTool
 
@@ -105,8 +107,13 @@ export const DraftModule = () => {
       </div>
       <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-ftr-bg ab-rounded-sm ab-items-center ab-justify-between">
         <span className="!ab-text-xs">Export</span>
-        <span className="!ab-text-xs ab-mr-1">
-          Zeichen: {writerContent.length}
+        <span>
+          <span className="!ab-text-xs ab-mr-1">
+            Wörter: {calculateWordsForText(writerContent)}
+          </span>
+          <span className="!ab-text-xs ab-mr-1">
+            Zeichen: {writerContent.length}
+          </span>
         </span>
       </span>
     </div>
