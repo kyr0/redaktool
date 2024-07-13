@@ -1,9 +1,9 @@
 name: GitHub Actions Nightly Build
 
 on:
-  push:
-    branches:
-      - main
+#  push:
+#    branches:
+#      - main
 jobs:
   build-and-pre-release:
     permissions: write-all
@@ -13,12 +13,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
       - name: Install dependencies
         run: bun install
+      - name: Download emebdding model
+        run: bun run download-model
       - name: Build the project
-        run: bun run dev
-      - name: Prepare a release
-        run: bun run release
-      - name: Publish pre-release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: 'redaktool.zip'
+        run: bun run build

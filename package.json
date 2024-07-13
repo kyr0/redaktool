@@ -3,16 +3,12 @@
   "version": "0.0.0-increment-1.1.8",
   "description": "Browser extension, designed for editors and professionals engaged in text-related research, writing, and evaluation tasks.",
   "scripts": {
+    "download-model": "bun run ./scripts/download-model.ts",
     "build:styles": "mkdir -p ./dist && cp -R ./css/* ./dist/ && bun tailwindcss -i ./css/style-dark.scss -o ./dist/style-dark.css && bun tailwindcss -i ./css/style-light.scss -o ./dist/style-light.css",
-    "predev": "npm run build:styles",
-    "dev": "vite",
     "prebuild": "npm run build:styles",
     "build": "vite build",
     "postbuild": "bun run ./scripts/post-vite-build.ts",
     "scrape": "bun run ./scripts/scrape.ts",
-    "release": "bun run ./scripts/release.ts",
-    "download-model": "bun run ./scripts/download-model.ts",
-    "post-process-worker": "bun run ./scripts/post-process-worker.ts",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
   },
   "author": "Aron Homberg <info@aron-homberg.de>",

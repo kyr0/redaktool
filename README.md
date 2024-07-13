@@ -149,19 +149,27 @@ Please feel free to reach out to me via our Discord channel *(preferred)* or via
 
 You're very welcome to contribute to this project. You may need to install [`bun`](https://bun.sh/) first.
 
-To install dependencies:
+1. Install dependencies:
 
 ```bash
 bun install
 ```
 
-To run:
+2. Download emebdding model
 
 ```bash
-bun dev
+bun run download-model
 ```
 
-This command will compile a new version of this extension  that you can load in Chrome/Chromium (load unpackaged extension from disk).
+3. Build the extension
+
+```bash
+bun build
+```
+
+Find the output in `./dist`.
+
+This command will compile a new version of this extension that you can load in Chrome/Chromium/Microsoft Edge (enable developer mode and load unpackaged extension from disk).
 
 Your contributions are welcome!
 
