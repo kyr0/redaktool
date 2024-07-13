@@ -3,7 +3,7 @@ import { GenericModule } from "../GenericModule";
 import { useTranslation } from "react-i18next";
 
 // @ts-ignore
-import proofreadingPrompt from "../../../data/prompt-templates/proofreading.liquid";
+import proofreadingPrompt from "../../../data/prompt-templates/proofreading.liquid?raw";
 
 const editorAtom = atom<string>("");
 

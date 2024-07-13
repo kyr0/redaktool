@@ -1,5 +1,6 @@
 import { Glob, $ } from "bun";
 
+// DEPRECATED
 const glob = new Glob("**/*");
 
 const whiteList = [

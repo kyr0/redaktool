@@ -16,7 +16,7 @@
     {
       "run_at": "document_start",
       "matches": ["http://*/*", "https://*/*", "file://*/*"],
-      "js": ["dist/events-prehook.js"],
+      "js": ["src/events-prehook.ts"],
       "all_frames": false,
       "match_origin_as_fallback": false,
       "match_about_blank": false,
@@ -27,7 +27,7 @@
       "js": [
         "./node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js",
         "src/browser-polyfill.js",
-        "dist/content-script.js"
+        "src/content-script.tsx"
       ],
       "all_frames": false,
       "match_origin_as_fallback": false,
@@ -39,7 +39,7 @@
   "host_permissions": ["*://*/*"],
   "permissions": ["scripting", "activeTab", "storage", "unlimitedStorage"],
   "background": {
-    "service_worker": "dist/background.worker.js",
+    "service_worker": "src/worker.ts",
     "type": "module"
   },
   "content_security_policy": {

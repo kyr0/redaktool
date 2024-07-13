@@ -13,6 +13,7 @@ await Bun.write("./dist/background.worker.js", text);
 
 // --external=onnxruntime-node --external=onnxruntime-common/dist/ort-common.node.js --target=browser --define=import.meta:{}
 
+// DEPRECATED
 import { Glob, $ } from "bun";
 
 // copy WASM files over to dist folder

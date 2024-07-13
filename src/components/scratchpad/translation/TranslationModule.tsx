@@ -1,7 +1,7 @@
 import { atom } from "nanostores";
 import { GenericModule } from "../GenericModule";
 // @ts-ignore
-import translationPrompt from "../../../data/prompt-templates/translation.liquid";
+import translationPrompt from "../../../data/prompt-templates/translation.liquid?raw";
 
 const editorAtom = atom<string>("");
 

@@ -87,17 +87,13 @@ import {
   TooltipTrigger,
 } from "../../ui/tooltip";
 import { MiniInfoButton } from "../MiniInfoButton";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "../../ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { cn } from "../../lib/content-script/utils";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { Badge } from "../../ui/badge";
 import type { HyperParameters } from "../../shared";
+//import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
+//import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 
 export interface CallbackArgs {
   editorContent: string;
@@ -311,6 +307,9 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
   // sync prompt with editor content
   const onPromptChangeInternal = useCallback(
+    //(value: string) => {
+    //  setPrompt(value);
+
     (evt: any) => {
       setPrompt(evt.target?.value);
     },
@@ -999,6 +998,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                     style={{ resize: "none" }}
                     className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm"
                   />
+                  {/*
+                  <PromptEditor
+                    onChange={onPromptChangeInternal}
+                    value={prompt}
+                    className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm"
+                  />
+                  */}
                 </TabsContent>
               </Tabs>
               {/*

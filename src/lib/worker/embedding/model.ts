@@ -5,9 +5,9 @@ import {
   PreTrainedTokenizer,
   XLMRobertaTokenizer,
 } from "./transformers/tokenizers";
-import { BertModel, PreTrainedModel } from "./transformers/models";
-import { mean_pooling } from "./transformers/utils/tensor";
-import { quantize_embeddings } from "@xenova/transformers/types/utils/tensor";
+//import { BertModel, PreTrainedModel } from "./transformers/models";
+//import { mean_pooling } from "./transformers/utils/tensor";
+//import { quantize_embeddings } from "@xenova/transformers/types/utils/tensor";
 
 // https://huggingface.co/Xenova/multilingual-e5-small
 export const loadEmbeddingModel = async (mlModel: MLModel) => {

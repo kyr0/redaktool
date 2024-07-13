@@ -1,7 +1,7 @@
 import { atom } from "nanostores";
 import { GenericModule, type CallbackArgs } from "../GenericModule";
 // @ts-ignore
-import extractionPrompt from "../../../data/prompt-templates/extraction.liquid";
+import extractionPrompt from "../../../data/prompt-templates/extraction.liquid?raw";
 import { extractedWebsiteDataAtom } from "../../AppModal";
 import { useStore } from "@nanostores/react";
 import { useCallback, useEffect, useState } from "react";

@@ -1,11 +1,5 @@
-import("webextension-polyfill");
-
-/*
-globalThis.URL.createObjectURL = (blob: Blob) => {
-  const objectURL = `data:;base64,${blob}`;
-  return objectURL;
-};
-*/
+// DEPRECATED
+//import("webextension-polyfill");
 
 import {
   ANTHROPIC_API_KEY_NAME,
@@ -59,7 +53,7 @@ addListener((e) => {
 chrome.action.onClicked.addListener((tab) => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id as number },
-    files: ["dist/activate.js"],
+    files: ["assets/activate.js"],
   });
 });
 
@@ -116,7 +110,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const value = await getValue(
               data.key,
               undefined,
-              data.local === false ? false : true,
+              data.local !== false,
             );
 
             console.log("GET", data.key, value);
@@ -129,11 +123,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // persistent value storage: set
         case "set":
           console.log("SET", data.key, data.value);
-          await setValue(
-            data.key,
-            data.value,
-            data.local === false ? false : true,
-          );
+          await setValue(data.key, data.value, data.local !== false);
           sendResponse({ success: true });
           break;
 
@@ -274,7 +264,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           console.log("compileResult", compileResult);
           sendResponse({
-            success: compileResult.error ? false : true,
+            success: !compileResult.error,
             value: JSON.stringify(compileResult),
           });
           break;

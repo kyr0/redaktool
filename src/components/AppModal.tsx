@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import { ErrorBoundary } from "react-error-boundary";
 import { prefChrome, prefPerPage } from "../lib/content-script/prefs";
 import {
@@ -304,6 +303,7 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
       <DialogContent
         ref={dialogRef as any}
         showOverlay={false}
+        aria-describedby="dialog-description"
         wrapperClassName={`${positioningClasses} ab-ftr-bg-contrast ab-z-[2147483640] ab-rounded-sm ab-flex`}
         className="!ab-p-2 !ab-gap-0"
       >
@@ -312,12 +312,10 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
             <div className="ab-flex ab-flex-row ab-items-center ab-ml-0">
               <Logo className="ab-h-6 ab-w-6 ab-mr-1" alt="RedakTool Logo" />
               {t("productName")}
-
               <Separator
                 orientation="vertical"
                 className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2 !ab-ml-2"
               />
-
               <button
                 type="button"
                 onClick={onInspectButtonClick}
@@ -326,12 +324,10 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
                 <MousePointerSquareDashed className="ab-h-4 ab-w-4 ab-shrink-0 ab-mr-1" />
                 <span className="ab-text-sm">Inhalt extrahieren</span>
               </button>
-
               <Separator
                 orientation="vertical"
                 className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
               />
-
               <ZoomFactorDropdown
                 zoomFactor={zoomClasses}
                 onChangeZoomFactor={(factor) => {

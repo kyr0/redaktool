@@ -3,20 +3,15 @@ import { AppModal } from "./components/AppModal";
 import { ModalLayout } from "./components/ModalLayout";
 
 // @ts-ignore
-import styleLight from "../dist/style-light.css" with { type: "text" };
+import styleLight from "../dist/style-light.css?inline";
 // @ts-ignore
-import styleDark from "../dist/style-dark.css" with { type: "text" };
+import styleDark from "../dist/style-dark.css?inline";
 import {
   isDarkModeEnabledInPrefs,
   setDarkModeEnabledInPrefs,
 } from "./lib/content-script/dark-mode";
 import type { EmbeddingModelMessage, MessageChannelMessage } from "./shared";
 import { useMessageChannel } from "./lib/content-script/message-channel";
-// biome-ignore lint/suspicious/noGlobalAssign: extension technical requirement to cross-reference
-history = window.history;
-
-// biome-ignore lint/suspicious/noGlobalAssign: extension technical requirement to cross-reference
-document = window.document;
 
 const fontGeistBold = chrome.runtime.getURL("fonts/Geist-Bold.woff2");
 const fontGeistRegular = chrome.runtime.getURL("fonts/Geist-Regular.woff2");
@@ -35,11 +30,11 @@ const mlModels = [
     type: "onnx",
     id: "Xenova/multilingual-e5-small",
     fileName: "model_quantized.with_runtime_opt.ort",
-    configPath: "models/Xenova/multilingual-e5-small/config.json",
-    path: "models/Xenova/multilingual-e5-small/onnx/model_quantized.with_runtime_opt.ort",
+    configPath: "assets/models/Xenova/multilingual-e5-small/config.json",
+    path: "assets/models/Xenova/multilingual-e5-small/onnx/model_quantized.with_runtime_opt.ort",
     tokenizerConfigPath:
-      "models/Xenova/multilingual-e5-small/tokenizer_config.json",
-    tokenizerPath: "models/Xenova/multilingual-e5-small/tokenizer.json",
+      "assets/models/Xenova/multilingual-e5-small/tokenizer_config.json",
+    tokenizerPath: "assets/models/Xenova/multilingual-e5-small/tokenizer.json",
   },
 ];
 
