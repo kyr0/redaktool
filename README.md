@@ -147,24 +147,24 @@ Please feel free to reach out to me via our Discord channel *(preferred)* or via
 
 ### As a Developer
 
-You're very welcome to contribute to this project. You may need to install [`bun`](https://bun.sh/) first.
+You're very welcome to contribute to this project.
 
 1. Install dependencies:
 
 ```bash
-bun install
+npm install
 ```
 
 2. Download emebdding model
 
 ```bash
-bun run download-model
+npm run download-model
 ```
 
 3. Build the extension
 
 ```bash
-bun build
+npm run build
 ```
 
 Find the output in `./dist`.
