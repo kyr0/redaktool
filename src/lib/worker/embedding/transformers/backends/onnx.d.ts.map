@@ -1,0 +1,1 @@
+{"version":3,"file":"onnx.d.ts","sourceRoot":"","sources":["../../src/backends/onnx.js"],"names":[],"mappings":"AAiDA;;;;GAIG;AACH,oDAHW,OAAO,qBAAqB,EAAE,UAAU,GACtC,OAAO,qBAAqB,EAAE,UAAU,EAAE,CAYtD;AAED;;;;;GAKG;AACH,+CAJW,UAAU,yBAER,QAAQ,OAAO,oBAAoB,EAAE,gBAAgB,CAAC,CAIlE;AAED;;;;GAIG;AACH,gCAHW,GAAG,GACD,OAAO,CAInB;AAkCD;;;GAGG;AACH,+BAFa,OAAO,CAKnB"}

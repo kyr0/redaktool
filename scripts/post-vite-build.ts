@@ -6,7 +6,7 @@ const manifest = await manifestFile.json();
 
 // add the models to the web_accessible_resources
 manifest.web_accessible_resources.push({
-  resources: ["assets/models/Xenova/multilingual-e5-small/*"],
+  resources: ["models/Xenova/multilingual-e5-small/*"],
   matches: ["<all_urls>"],
 });
 
@@ -29,5 +29,9 @@ for (let i = 0; i < manifest.content_scripts.length; i++) {
 Bun.write("dist/manifest.json", JSON.stringify(manifest, null, 2));
 
 // copy the models to the dist folder
-await $`mkdir -p dist/assets/models/Xenova/multilingual-e5-small/`;
-await $`cp -R models/Xenova/multilingual-e5-small/* dist/assets/models/Xenova/multilingual-e5-small/`;
+await $`mkdir -p dist/models/Xenova/multilingual-e5-small/`;
+await $`cp -R models/Xenova/multilingual-e5-small/* dist/models/Xenova/multilingual-e5-small/`;
+
+// copy over ONNX runtime files
+await $`cp -R src/lib/worker/embedding/transformers/ort-wasm-simd-threaded.jsep.mjs dist/assets/`;
+await $`cp -R src/lib/worker/embedding/transformers/ort-wasm-simd-threaded.jsep.wasm dist/assets/`;

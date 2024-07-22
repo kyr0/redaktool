@@ -30,11 +30,11 @@ const mlModels = [
     type: "onnx",
     id: "Xenova/multilingual-e5-small",
     fileName: "model_quantized.with_runtime_opt.ort",
-    configPath: "assets/models/Xenova/multilingual-e5-small/config.json",
-    path: "assets/models/Xenova/multilingual-e5-small/onnx/model_quantized.with_runtime_opt.ort",
+    configPath: "models/Xenova/multilingual-e5-small/config.json",
+    path: "models/Xenova/multilingual-e5-small/onnx/model_quantized.with_runtime_opt.ort",
     tokenizerConfigPath:
-      "assets/models/Xenova/multilingual-e5-small/tokenizer_config.json",
-    tokenizerPath: "assets/models/Xenova/multilingual-e5-small/tokenizer.json",
+      "models/Xenova/multilingual-e5-small/tokenizer_config.json",
+    tokenizerPath: "models/Xenova/multilingual-e5-small/tokenizer.json",
   },
 ];
 
