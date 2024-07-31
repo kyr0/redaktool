@@ -28,10 +28,16 @@ for (let i = 0; i < manifest.content_scripts.length; i++) {
 // write the updated manifest
 Bun.write("dist/manifest.json", JSON.stringify(manifest, null, 2));
 
+console.log("Copying Xenova/multilingual-e5-small model currently DISABLED");
+
+// remove the old model files
+await $`rm -r dist/assets/ort-wasm-simd-*`;
+
 // copy the models to the dist folder
-await $`mkdir -p dist/models/Xenova/multilingual-e5-small/`;
-await $`cp -R models/Xenova/multilingual-e5-small/* dist/models/Xenova/multilingual-e5-small/`;
+//await $`mkdir -p dist/models/Xenova/multilingual-e5-small/`;
+//await $`cp -R models/Xenova/multilingual-e5-small/* dist/models/Xenova/multilingual-e5-small/`;
 
 // copy over ONNX runtime files
-await $`cp -R src/lib/worker/embedding/transformers/ort-wasm-simd-threaded.jsep.mjs dist/assets/`;
-await $`cp -R src/lib/worker/embedding/transformers/ort-wasm-simd-threaded.jsep.wasm dist/assets/`;
+console.log("Copying ONNX runtime files currently DISABLED");
+//await $`cp -R src/lib/worker/embedding/transformers/ort-wasm-simd-threaded.jsep.mjs dist/assets/`;
+//await $`cp -R src/lib/worker/embedding/transformers/ort-wasm-simd-threaded.jsep.wasm dist/assets/`;

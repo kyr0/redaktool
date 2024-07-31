@@ -14,7 +14,7 @@ import {
 } from "./transformers/transformers";
 
 // @ts-ignore
-import getModule from "./transformers/ort-wasm-simd-threaded.jsep";
+//import getModule from "./transformers/ort-wasm-simd-threaded.jsep";
 
 //import { embed } from "easy-embeddings";
 

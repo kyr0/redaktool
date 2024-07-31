@@ -42,7 +42,8 @@ class FtrElement extends HTMLElement {
   constructor() {
     super();
 
-    this.loadMLModels();
+    // temporary disable model loading
+    //this.loadMLModels();
     this.attachShadow({ mode: "open" });
 
     if (this.shadowRoot) {

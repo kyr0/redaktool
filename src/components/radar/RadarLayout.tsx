@@ -55,8 +55,8 @@ import { Link } from "../../ui/link";
 
 export function RadarLayout() {
   return (
-    <div className="ab-flex ab-w-full ab-flex-col ab-bg-muted/40">
-      <div className="ab-flex ab-flex-col sm:ab-gap-1 sm:ab-py-4 sm:ab-pl-4">
+    <div className="ab-flex ab-w-full ab-h-full ab-flex-col ab-bg-muted/40">
+      <div className="ab-flex ab-h-full ab-flex-col sm:ab-gap-1 sm:ab-py-4 sm:ab-pl-4">
         <header className="ab-sticky ab-top-4 ab-z-30 ab-flex ab-h-14 ab-items-center ab-gap-2 ab-border-b bg-background sm:ab-static sm:ab-h-auto sm:ab-border-0 sm:ab-bg-transparent">
           <Breadcrumb className="ab-hidden md:ab-flex">
             <BreadcrumbList>
@@ -82,18 +82,18 @@ export function RadarLayout() {
             <Input
               type="search"
               placeholder="Search..."
-              className="ab-w-full ab-rounded-lg bg-background ab-pl-8 md:ab-w-[200px] lg:ab-w-[336px]"
+              className="ab-w-full ab-rounded-lg ab-pl-8 md:ab-w-[200px] lg:ab-w-[336px]"
             />
           </div>
         </header>
         <main className="ab-grid ab-flex-1 ab-items-start ab-gap-2 ab-p-2 sm:ab-py-0 md:ab-gap-2">
-          <Tabs defaultValue="all">
+          <Tabs defaultValue="all" className="ab-h-full">
             <div className="ab-flex ab-items-center">
               <TabsList>
-                <TabsTrigger className="ab-ftr-active-menu-item" value="all">
+                <TabsTrigger className="ab-ftr-menu-item" value="all">
                   Latest
                 </TabsTrigger>
-                <TabsTrigger className="ab-ftr-menu-item" value="active">
+                <TabsTrigger className="ab-ftr-active-menu-item" value="active">
                   Trending
                 </TabsTrigger>
                 <TabsTrigger className="ab-ftr-menu-item" value="draft">
@@ -117,7 +117,10 @@ export function RadarLayout() {
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent
+                    align="end"
+                    className="ab-z-[2147483646]"
+                  >
                     <DropdownMenuLabel>Filter by</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem checked>
@@ -129,36 +132,38 @@ export function RadarLayout() {
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                {/*
                 <Button size="sm" variant="outline" className="ab-h-8 ab-gap-1">
                   <File className="ab-h-3.5 ab-w-3.5" />
                   <span className="ab-sr-only sm:ab-not-sr-only sm:ab-whitespace-nowrap">
                     Export
                   </span>
                 </Button>
+                */}
                 <Button size="sm" className="ab-h-8 ab-gap-1">
                   <PlusCircle className="ab-h-3.5 ab-w-3.5" />
                   <span className="ab-sr-only sm:ab-not-sr-only sm:ab-whitespace-nowrap">
-                    Add Source
+                    Add News Source
                   </span>
                 </Button>
               </div>
             </div>
-            <TabsContent value="all">
-              <Card x-chunk="dashboard-06-chunk-0">
-                <CardContent>
-                  <Table>
+            <TabsContent value="all" className="ab-h-full">
+              <Card x-chunk="dashboard-06-chunk-0" className="ab-h-full">
+                <CardContent className="ab-h-full">
+                  <Table className="ab-h-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="ab-hidden md:ab-table-cell">
-                          Price
+                          Source
                         </TableHead>
                         <TableHead className="ab-hidden md:ab-table-cell">
-                          Total Sales
+                          Frequency
                         </TableHead>
                         <TableHead className="ab-hidden md:ab-table-cell">
-                          Created at
+                          Published at
                         </TableHead>
                         <TableHead>
                           <span className="ab-sr-only">Actions</span>
@@ -171,16 +176,16 @@ export function RadarLayout() {
                           Laser Lemonade Machine
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">Draft</Badge>
+                          <Badge variant="outline">Trending</Badge>
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          $499.99
+                          n-tv
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
                           25
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          2023-07-12 10:42 AM
+                          2024-07-12 10:42 AM
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -194,7 +199,10 @@ export function RadarLayout() {
                                 <span className="ab-sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                              align="end"
+                              className="ab-z-[2147483646]"
+                            >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>Edit</DropdownMenuItem>
                               <DropdownMenuItem>Delete</DropdownMenuItem>
@@ -207,16 +215,16 @@ export function RadarLayout() {
                           Hypernova Headphones
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">Active</Badge>
+                          <Badge variant="outline">Trending</Badge>
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          $129.99
+                          TechCrunch
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
                           100
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          2023-10-18 03:21 PM
+                          2024-10-18 03:21 PM
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -230,7 +238,10 @@ export function RadarLayout() {
                                 <span className="ab-sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                              align="end"
+                              className="ab-z-[2147483646]"
+                            >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>Edit</DropdownMenuItem>
                               <DropdownMenuItem>Delete</DropdownMenuItem>
@@ -243,16 +254,19 @@ export function RadarLayout() {
                           AeroGlow Desk Lamp
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">Active</Badge>
+                          <Badge variant="outline" className="ab-mr-1">
+                            Trending
+                          </Badge>
+                          <Badge variant="outline">Trend-Follow-Up</Badge>
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          $39.99
+                          The Verge
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
                           50
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          2023-11-29 08:15 AM
+                          2024-11-29 08:15 AM
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -266,7 +280,10 @@ export function RadarLayout() {
                                 <span className="ab-sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                              align="end"
+                              className="ab-z-[2147483646]"
+                            >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>Edit</DropdownMenuItem>
                               <DropdownMenuItem>Delete</DropdownMenuItem>
@@ -279,16 +296,19 @@ export function RadarLayout() {
                           TechTonic Energy Drink
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">Draft</Badge>
+                          <Badge variant="outline" className="ab-mr-1">
+                            Trending
+                          </Badge>
+                          <Badge variant="outline">Trend-Follow-Up</Badge>
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          $2.99
+                          Wired
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
                           0
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          2023-12-25 11:59 PM
+                          2024-12-25 11:59 PM
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -302,7 +322,10 @@ export function RadarLayout() {
                                 <span className="ab-sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                              align="end"
+                              className="ab-z-[2147483646]"
+                            >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>Edit</DropdownMenuItem>
                               <DropdownMenuItem>Delete</DropdownMenuItem>
@@ -315,10 +338,10 @@ export function RadarLayout() {
                           Gamer Gear Pro Controller
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">Active</Badge>
+                          <Badge variant="outline">Trending</Badge>
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          $59.99
+                          Polygon
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
                           75
@@ -338,7 +361,10 @@ export function RadarLayout() {
                                 <span className="ab-sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                              align="end"
+                              className="ab-z-[2147483646]"
+                            >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>Edit</DropdownMenuItem>
                               <DropdownMenuItem>Delete</DropdownMenuItem>
@@ -351,10 +377,10 @@ export function RadarLayout() {
                           Luminous VR Headset
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">Active</Badge>
+                          <Badge variant="outline">Trending</Badge>
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
-                          $199.99
+                          The Guardian
                         </TableCell>
                         <TableCell className="ab-hidden md:ab-table-cell">
                           30
@@ -374,7 +400,10 @@ export function RadarLayout() {
                                 <span className="ab-sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                              align="end"
+                              className="ab-z-[2147483646]"
+                            >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>Edit</DropdownMenuItem>
                               <DropdownMenuItem>Delete</DropdownMenuItem>
@@ -387,8 +416,7 @@ export function RadarLayout() {
                 </CardContent>
                 <CardFooter>
                   <div className="ab-text-xs ab-text-muted-foreground">
-                    Showing <strong>1-10</strong> of <strong>32</strong>{" "}
-                    products
+                    Showing <strong>1-10</strong> of <strong>32</strong> news
                   </div>
                 </CardFooter>
               </Card>
