@@ -62,7 +62,7 @@ The following repositories are closely related to RedakTool. They have been deve
 - [fast-dotproduct](https://github.com/kyr0/fast-dotproduct) - Aims to be the fastest dot product calculation library for in-browser use. Backbone of RedakTool's vectorstore.
 - [vectorstore](https://github.com/kyr0/vectorstore/) - In-browser, vector store featuring very fast vector indexing, storage, serialization, product quantization and search (exact, kMeans, HNSW) balancing search quality and memory/computational constraints. Backbone of RedakTool's archive and NewsRadar topic following algorithm. Also used in `liquiprompt` for few-shot optimized exemplars.
 - [langdetect-ts](https://github.com/kyr0/langdetect-ts) - Port of Google LangDetect, the state-of-the-art language ngram-based language detection (identification) library to TypeScript. Used in `liquiprompt` and RedakTool.
-
+- [quality-prompts-js](https://github.com/kyr0/quality-prompts-js) - Write Quality Prompts using auto-optimization. Use and evaluate prompting techniques quickly. Learnings used in `liquiprompt` for automatic prompt optimizations.
 
 ## 📚 Usage
 
