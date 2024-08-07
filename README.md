@@ -22,8 +22,6 @@
 
 > 🛠️ RedakTool offers a powerful browser extension specifically designed for editors and professionals engaged in text-related research, writing, and evaluation tasks. This tool serves as a comprehensive "AI toolbox" enabling direct interaction with content on any website for extraction, translation, summarization, composition, and proofreading. It includes additional functionalities like a News Radar, transcription services, and robust fact-checking features. Aimed at boosting productivity, the extension streamlines workflows by eliminating the need for multiple tools, thereby reducing the mental burden and decreasing costs through the direct integration of both commercial and open-source AI models. 
 
-> 🔬 Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage (through my open source [`vectorstore`](https://github.com/kyr0/vectorstore/) project), marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
-
 ## 🌟 Features
 <span align="center">
 
@@ -52,6 +50,19 @@ This extension also allows to configure and use locally deployed models, as long
 Additional features planned:
 -  ✅ **AI Fact-Checking**: Offers fact-checking with minimized errors and simulates human touch and style.
 -  ✅ **AI News Radar**: Ingests all news sources, added to the radar via RSS/Atom feeds, applies AI vector similarity algorithms to link similar news.
+
+## 🔬 Reasearch
+
+> Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage (through my open source [`vectorstore`](https://github.com/kyr0/vectorstore/) project), marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
+
+The following repositories are closely related to RedakTool. They have been developed by me in regards to technical demands:
+- [cross-llm](https://github.com/kyr0/cross-llm) - Abstract LLM/vector embedding implementation. A universal library to integrate with LLMs and Vector Embedding endpoints. Supports Node.js, Deno, Bun, Service Workers, Web Extensions. 
+- [liquiprompt](https://github.com/kyr0/liquiprompt) - The prompt language used in RedakTool. Simple but powerful prompt and RAG workflow templating language (DSL) featuring D(A/C)G parse/test/run orchestration.
+- [easy-embeddings](https://github.com/kyr0/easy-embeddings) - In-browser vector embeddings made easy using WebGPU and WebAssembly acceleration. 
+- [fast-dotproduct](https://github.com/kyr0/fast-dotproduct) - Aims to be the fastest dot product calculation library for in-browser use. Backbone of RedakTool's vectorstore.
+- [vectorstore](https://github.com/kyr0/vectorstore/) - In-browser, vector store featuring very fast vector indexing, storage, serialization, product quantization and search (exact, kMeans, HNSW) balancing search quality and memory/computational constraints. Backbone of RedakTool's archive and NewsRadar topic following algorithm. Also used in `liquiprompt` for few-shot optimized exemplars.
+- [langdetect-ts](https://github.com/kyr0/langdetect-ts) - Port of Google LangDetect, the state-of-the-art language ngram-based language detection (identification) library to TypeScript. Used in `liquiprompt` and RedakTool.
+
 
 ## 📚 Usage
 
