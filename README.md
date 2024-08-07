@@ -51,7 +51,7 @@ Additional features planned:
 -  ✅ **AI Fact-Checking**: Offers fact-checking with minimized errors and simulates human touch and style.
 -  ✅ **AI News Radar**: Ingests all news sources, added to the radar via RSS/Atom feeds, applies AI vector similarity algorithms to link similar news.
 
-## 🔬 Reasearch
+## 🔬 Research
 
 > Additionally, this project showcases the practical application of cutting-edge AI technologies such as nomic-embed-text-v1 for client-side, in-browser usage (through my open source [`vectorstore`](https://github.com/kyr0/vectorstore/) project), marking a significant step forward in the accessibility and application of advanced AI <strong>without the need for</strong> server-side deployments.
 
