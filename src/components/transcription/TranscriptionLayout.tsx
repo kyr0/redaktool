@@ -37,17 +37,21 @@ import { Badge } from "../../ui/badge";
 import { filterForVisibleElements } from "../../lib/content-script/element";
 import { prefPerPage } from "../../lib/content-script/prefs";
 import { formatDuration } from "../../lib/content-script/format";
+import { Mic2Icon, PauseCircleIcon, PauseIcon, PlayIcon } from "lucide-react";
 interface HTMLMediaElementWithCaptureStream extends HTMLMediaElement {
   captureStream(): MediaStream;
 }
 
-async function transcribeInWorker(blob: Blob) {
+async function transcribeInWorker(blob: Blob, prevTranscription: string) {
   return new Promise((resolve, reject) => {
     (async () => {
       chrome.runtime.sendMessage(
         {
           action: "transcribe",
-          text: JSON.stringify({ blobDataUrl: await blobToDataUrl(blob) }),
+          text: JSON.stringify({
+            blobDataUrl: await blobToDataUrl(blob),
+            prevTranscription,
+          }),
         },
         (response) => {
           console.log("transcribeInWorker response", response);
@@ -100,6 +104,13 @@ async function downloadMediaAsBlob(videoElement: HTMLVideoElement) {
   }
 }
 
+const printDouble = (value: string) => {
+  if (value.length === 1) {
+    return `0${value}`;
+  }
+  return value;
+};
+
 export const TranscriptionLayout = () => {
   const audioPlayerContainerRef = useRef<any>();
   const mediaElContainerRef = useRef<any>();
@@ -121,6 +132,14 @@ export const TranscriptionLayout = () => {
     [],
   );
   const [audioBlob, setAudioBlob] = useState<Blob>();
+  const [isLiveTranscriptionRunning, setIsLiveTranscriptionRunning] =
+    useState<boolean>(false);
+  const [elapsedTime, setElapsedTime] = useState<
+    Array<{ mins: number; secs: number }>
+  >([]);
+  const [indexesTranscribing, setIndexesTranscribing] = useState<Array<number>>(
+    [],
+  );
 
   const onFindVisibleMediaElements = useCallback(() => {
     const mediaElementsPref = prefPerPage<Array<string>>("mediaElements", []);
@@ -226,21 +245,60 @@ export const TranscriptionLayout = () => {
 
   const onTranscribeSliceClick = useCallback(
     (blob: Blob, index: number, elapsedMins: number, elapsedSecs: number) => {
+      let prevTranscription = "";
       return async () => {
+        setIndexesTranscribing((indexesTranscribing) => {
+          return [...indexesTranscribing, index - 1];
+        });
         console.log("transcribe slice", blob);
-        const transcription = (await transcribeInWorker(blob)) as {
+        const transcription = (await transcribeInWorker(
+          blob,
+          prevTranscription,
+        )) as {
           text: string;
         };
         console.log("done transcribe slice", transcription);
 
+        // buffer
+        prevTranscription = transcription.text;
+
+        setElapsedTime([
+          ...elapsedTime,
+          { mins: elapsedMins, secs: elapsedSecs },
+        ]);
+
+        /*
+        TODO: Fix this, should index time from the start of the audio
+        let prevAllInSecs = 0;
+
+        if (elapsedTime[index - 1]) {
+          prevAllInSecs =
+            elapsedTime[index - 1].mins * 60 + elapsedTime[index - 1].secs;
+
+          // replace for displaying the start time
+          elapsedMins = Math.floor(prevAllInSecs / 60);
+          elapsedSecs = prevAllInSecs % 60;
+        } else {
+          elapsedMins = 0;
+          elapsedSecs = 0;
+        }
+          */
+        const prevElapedTime: { mins: number; secs: number } | undefined =
+          elapsedTime[index - 1];
+
+        setIndexesTranscribing((indexesTranscribing) =>
+          indexesTranscribing.filter((i) => i !== index - 1),
+        );
+
         setEditorValue(
-          `${editorValue}\n\n${index}. ${elapsedMins.toFixed(
-            0,
-          )}:${elapsedSecs.toFixed(0)}\n${transcription.text}`,
+          (editorValue) =>
+            `${editorValue}\n\n${index}. ${prevElapedTime ? `${printDouble(prevElapedTime.mins.toFixed(0))}:${printDouble(prevElapedTime.secs.toFixed(0))} - ` : ""} ${printDouble(
+              elapsedMins.toFixed(0),
+            )}:${printDouble(elapsedSecs.toFixed(0))} - ${transcription.text}`,
         );
       };
     },
-    [editorValue],
+    [elapsedTime],
   );
 
   const onSelectMediaElement = useCallback(
@@ -277,9 +335,31 @@ export const TranscriptionLayout = () => {
     }, 1000);
   }, []);
 
-  const onTranscribeMediaElement = useCallback(() => {
+  const onPauseLiveTranscription = useCallback(() => {
+    if (selectedMediaElement) {
+      setIsLiveTranscriptionRunning(false);
+      selectedMediaElement.pause();
+    }
+  }, [selectedMediaElement]);
+
+  const onStartLiveTranscription = useCallback(() => {
     if (selectedMediaElement) {
       console.log("transcribe media element", selectedMediaElement);
+
+      let isPlaying =
+        !selectedMediaElement.paused && selectedMediaElement.currentTime > 0;
+
+      if (isPlaying) {
+        selectedMediaElement.pause();
+        isPlaying = false;
+      }
+
+      if (!isPlaying) {
+        selectedMediaElement.currentTime = 0;
+        selectedMediaElement.play();
+      }
+
+      setIsLiveTranscriptionRunning(true);
 
       console.log("trying to download media as blob");
       (async () => {
@@ -395,9 +475,11 @@ export const TranscriptionLayout = () => {
                   <CardHeader>
                     <CardTitle>Video oder Audio vom Computer</CardTitle>
                     <CardDescription>
-                      In diesem Modus wird Dein Browser das Transkodieren in
-                      Echtzeit starten. Es werden keine Daten vorab auf Server,
-                      nur an die KI gesendet hochgeladen.
+                      Wählen Sie eine Audio oder Video-Datei von Ihrem Computer
+                      aus und klicken Sie anschließend auf "Datei
+                      transkribieren". Es werden keine Daten vorab auf Server
+                      hochgeladen, die Audio-Abschnitte werden lediglich an
+                      OpenAI zur Transkription gesendet.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -420,7 +502,12 @@ export const TranscriptionLayout = () => {
                 <div>
                   <CardFooter className="ab-flex ab-justify-between">
                     {/*<Button variant="outline">Cancel</Button>*/}
-                    <Button>Verarbeiten</Button>
+                    {/*
+                    <Button>
+                      Audio-Verarbeitung starten
+                      <PlayIcon className="ab-ml-2 ab-h-4 ab-w-4" />
+                    </Button>
+                    */}
                   </CardFooter>
                 </div>
               </Card>
@@ -434,9 +521,12 @@ export const TranscriptionLayout = () => {
                   <CardHeader>
                     <CardTitle>Video oder Audio von der Website</CardTitle>
                     <CardDescription>
-                      Wähle ein Video oder Audio-Element aus, das auf dieser
-                      Website erkannt wurde, um es in Echtzeit zu
-                      transkribieren.
+                      Wählen Sie ein Video oder Audio-Element aus, das auf
+                      dieser Website erkannt wurde, um es in Echtzeit zu
+                      transkribieren. Sobald Sie einen Ton hören, beginnt die
+                      Aufnahme. Am Ende der Aufnahme wird in kleine Abschnitte
+                      geschnitten. Dies ist eine technische Notwendigkeit. Am
+                      Ende können Sie jeden Abschnitt einzeln transkribieren.
                     </CardDescription>
                   </CardHeader>
 
@@ -444,7 +534,7 @@ export const TranscriptionLayout = () => {
                     <div className="ab-grid ab-w-full ab-items-center ab-gap-2">
                       <div className="ab-flex ab-flex-col ab-space-y-1.5 ab-justify-center ab-items-center ab-w-[100%]">
                         {/*<Button onClick={onFindVisibleMediaElements}>Elemente finden</Button>*/}
-                        <Label>MediaElement auswählen:</Label>
+                        <Label>Media-Element auswählen:</Label>
                         <br />
                         {mediaElements.length > 0 && (
                           <select onSelect={onSelectMediaElement}>
@@ -473,9 +563,20 @@ export const TranscriptionLayout = () => {
                 <div>
                   <CardFooter className="ab-flex ab-justify-between">
                     {/*<Button variant="outline">Test</Button>*/}
-                    <Button onClick={onTranscribeMediaElement}>
-                      Stream aktivieren
+                    <Button onClick={onStartLiveTranscription}>
+                      Live-Audio-Aufnahme starten
+                      <Mic2Icon className="ab-ml-2 ab-h-4 ab-w-4" />
                     </Button>
+
+                    {isLiveTranscriptionRunning && (
+                      <Button
+                        variant="outline"
+                        onClick={onPauseLiveTranscription}
+                      >
+                        <PauseCircleIcon className="ab-mr-2 ab-h-4 ab-w-4" />
+                        Aufnahme pausieren
+                      </Button>
+                    )}
                   </CardFooter>
                 </div>
               </Card>
@@ -489,24 +590,27 @@ export const TranscriptionLayout = () => {
       <ResizablePanel
         defaultSize={50}
         minSize={40}
-        className="!ab-overflow-y-scroll ab-h-full ab-flex ab-flex-col ab-w-full"
+        className="ab-h-full ab-flex ab-flex-col ab-w-full"
       >
         <div className="ab-h-full ab-w-full">
           <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={25} minSize={20}>
-              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-sticky ab-top-0 ab-z-30  ab-justify-between">
+            <ResizablePanel
+              defaultSize={25}
+              minSize={20}
+              className="ab-h-full  ab-flex ab-flex-col ab-w-full !ab-overflow-y-auto"
+            >
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-justify-between">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
-                  Gesamt-Audio:
+                  Gesamte Aufnahme (nur Audio):
                 </h5>
               </div>
-              <div className="ab-flex ab-flex-row ab-ml-1 ab-sticky ab-top-0 ab-z-30  ab-justify-between">
-                <div
-                  ref={audioPlayerContainerRef}
-                  className="ab-h-[100px] ab-rounded-md ab-overflow-scroll ab-w-[100%]"
-                >
-                  {(audioBuffer || audioBlob) && (
-                    <>
-                      Player:
+              <div className="ab-flex ab-flex-row ab-ml-1 ab-justify-between ab-w-full">
+                {(audioBuffer || audioBlob) && (
+                  <>
+                    <div
+                      ref={audioPlayerContainerRef}
+                      className="ab-w-full ab-m-2"
+                    >
                       <AudioPlayer
                         className="w-[100%]"
                         audioBlob={
@@ -517,29 +621,30 @@ export const TranscriptionLayout = () => {
                               : null
                         }
                       />
-                    </>
-                  )}
-                  <div
-                    ref={audioPlayerStatusRef}
-                    className="ab-flex ab-justify-center ab-items-center ab-h-full"
-                  />
-                </div>
+
+                      <div
+                        ref={audioPlayerStatusRef}
+                        className="ab-flex ab-justify-center ab-items-center"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {!(audioBuffer || audioBlob) && (
                   <p className="ab-p-2">
-                    Der Player wird angezeigt, sobald die Transkription
-                    gestartet wurde.
+                    Der Player für die Gesamtaufnahme wird angezeigt, sobald die
+                    Transkription gestartet wurde.
                   </p>
                 )}
 
                 <AudioPlayer className="w-[100%]" audioBlob={audioBlob!} />
               </div>
-              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-sticky ab-top-0 ab-z-30  ab-justify-between">
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
                   Audio-Abschnitte
                 </h5>
               </div>
-              <div className="ab-flex ab-h-[100%] ab-w-[100%] ab-overflow-auto ab-flex-col">
+              <div className="ab-flex ab-flex-col ab-w-full">
                 {audioBufferBlobs.map((blob, index) => {
                   // Calculate the total duration of all audio clips
                   const elapsedTime = audioBufferBlobs.reduce(
@@ -557,19 +662,23 @@ export const TranscriptionLayout = () => {
                   return (
                     <div
                       key={`entry-${index + Math.random()}`}
-                      className="ab-flex ab-flex-col ab-m-2 ab-mb-4"
+                      className="ab-flex ab-flex-col ab-m-2 ab-mb-4 "
                     >
-                      <div className="ab-flex ab-flex-row">
-                        <Badge variant="outline">{index + 1}</Badge>
+                      <div className="ab-flex ab-flex-row ab-jusitfy-between ab-items-center ab-mb-2">
+                        <Badge variant="outline" className="ab-mr-2">
+                          {index + 1}
+                        </Badge>
                         <span className="ab-font-mono">
                           {elapsedMins.toFixed(0)}:{elapsedSecs.toFixed(0)}:{" "}
                           {blob.duration.toFixed(2)} Sek.,{" "}
                           {sizeInMiB.toFixed(2)} MiB
                         </span>
                       </div>
-                      <AudioPlayer audioBlob={blob.blob} />
+                      <AudioPlayer audioBlob={blob.blob} className="ab-mb-2" />
                       <button
                         type="button"
+                        disabled={indexesTranscribing.includes(index)}
+                        className="ab-ftr-bg ab-rounded-md ab-my-2 ab-p-1"
                         onClick={onTranscribeSliceClick(
                           blob.blob,
                           index + 1,
@@ -577,7 +686,9 @@ export const TranscriptionLayout = () => {
                           elapsedSecs,
                         )}
                       >
-                        Transcribe
+                        {indexesTranscribing.includes(index)
+                          ? "Transkribiere..."
+                          : "Transkribieren"}
                       </button>
                     </div>
                   );
@@ -595,20 +706,21 @@ export const TranscriptionLayout = () => {
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle className="ml-1 mr-1" />
-            <ResizablePanel defaultSize={75} minSize={20}>
+            <ResizablePanel defaultSize={75} minSize={5}>
               <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-sticky ab-top-0 ab-z-30  ab-justify-between">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
-                  Ergebnis:
+                  Transkiptions-Ergebnis:
                 </h5>
               </div>
               <div className="ab-flex ab-h-full ab-items-stretch ab-w-full ab-justify-stretch">
                 <MarkdownEditor
+                  value={editorValue}
                   defaultValue={editorValue}
                   placeholder={
                     "Das Ergebnis wird durch jeden Klick auf 'Transkribieren' pro Audio-Chunk erweitert."
                   }
                   name="transcriptionEditor"
-                  showToolbar={true}
+                  showToolbar={false}
                   onChange={(editorValue) => {
                     setEditorValue(editorValue);
                   }}

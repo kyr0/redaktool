@@ -50,6 +50,16 @@
   .ab-ftr-bg-halfcontrast {
     @apply ab-bg-slate-900;
   }
+
+  .ab-ftr-active-menu-item-main {
+    @apply ab-underline;
+    @apply ab-decoration-red-500;
+    @apply ab-text-white !important;
+    @apply ab-pt-1;
+    @apply ab-pb-1;
+    @apply ab-rounded-sm;
+  }
+
   .ab-ftr-active-menu-item {
     @apply ab-bg-slate-700  !important;
     @apply ab-text-white !important;

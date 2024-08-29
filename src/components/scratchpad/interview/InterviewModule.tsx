@@ -5,6 +5,7 @@ import interviewPrompt from "../../../data/prompt-templates/interview.liquid?raw
 import { useTranslation } from "react-i18next";
 
 const editorAtom = atom<string>("");
+const inputEditorAtom = atom<string>("");
 
 export const InterviewModule = () => {
   const { t, i18n } = useTranslation();
@@ -15,6 +16,7 @@ export const InterviewModule = () => {
       defaultPromptTemplate={interviewPrompt}
       name="interview"
       editorAtom={editorAtom}
+      inputEditorAtom={inputEditorAtom}
       outputTokenScaleFactor={3}
     />
   );

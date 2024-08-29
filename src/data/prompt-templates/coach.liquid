@@ -25,8 +25,9 @@ CONTENT:
 
 {% # Feldbeschreibungen: %}
 
-{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'news readers, adults, general public' }" %}
+{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'Erwachsene, Allgemeinheit', global: true, info: 'Die KI erstellt den Text 
+möglichst passend zur Zielgruppe. Wählen Sie am besten klar definierte Begriffe.' }" %}
 
-{% field TONE = "{ label: 'Tonalität', default: 'news article, neutral' }" %}
+{% field TONE = "{ label: 'Tonalität', default: 'Nachrichten', global: true }" %}
 
 {% field FORMAT = "{ label: 'Format', default: 'Blog post' }" %}

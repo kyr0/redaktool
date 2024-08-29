@@ -102,7 +102,7 @@ export const ModalLayout = () => {
                     }}
                     className={"ab-ftr-active-menu-item ab-items-end ab-w-7"}
                   >
-                    <span className="ab-mt-1">Navigation</span>
+                    <span className="ab-mt-1">Menü</span>
                     <CommandShortcut className="ab-mt-1 !ab-mr-0 !ab-mb-0.5 !ab-ml-1 ab-flex ab-flex-col ab-justify-center ab-items-center">
                       <ArrowLeft className="ab-mr-1 ab-h-4 ab-w-4 ab-text-primary ab-shrink-0 ab-border-primary ab-border-spacing-4 ab-rounded-full ab-border-[1px]" />
                     </CommandShortcut>
@@ -120,12 +120,13 @@ export const ModalLayout = () => {
                     onSelect={onToggleMenu}
                     className={"ab-ftr-active-menu-item"}
                   >
-                    <span>Navigation</span>
+                    <span>Menü</span>
                     <CommandShortcut className="ab-flex ab-flex-col ab-justify-end ab-items-center">
                       <ArrowLeft className="ab-ml-2 ab-h-4 ab-w-4 ab-text-primary ab-shrink-0 ab-border-primary ab-border-spacing-4 ab-rounded-full ab-border-[1px]" />
                     </CommandShortcut>
                   </CommandItem>
                   <CommandSeparator className="ab-mb-1" />
+                  {/*
                   <CommandItem
                     value="radar"
                     onSelect={onCommandSelect}
@@ -139,6 +140,7 @@ export const ModalLayout = () => {
                     <span>{t("module_radar")}</span>
                     <CommandShortcut>⌃R</CommandShortcut>
                   </CommandItem>
+                  */}
                   <CommandItem
                     value="scratchpad"
                     onSelect={onCommandSelect}
@@ -150,8 +152,9 @@ export const ModalLayout = () => {
                   >
                     <EditIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
                     <span>{t("module_scratchpad")}</span>
-                    <CommandShortcut>⌃S</CommandShortcut>
+                    {/*<CommandShortcut>⌃S</CommandShortcut>*/}
                   </CommandItem>
+                  {/*
                   <CommandItem
                     value="archive"
                     onSelect={onCommandSelect}
@@ -165,6 +168,7 @@ export const ModalLayout = () => {
                     <span>{t("module_archive")}</span>
                     <CommandShortcut>⌃A</CommandShortcut>
                   </CommandItem>
+                  */}
                 </CommandGroup>
 
                 <CommandGroup className="!ab-pl-0">
@@ -180,10 +184,11 @@ export const ModalLayout = () => {
                   >
                     <MicIcon className="ab-mr-2 ab-h-4 ab-w-4 ab-shrink-0" />
                     <span>{t("module_transcription")}</span>
-                    <CommandShortcut>⌃T</CommandShortcut>
+                    {/*<CommandShortcut>⌃T</CommandShortcut>*/}
                   </CommandItem>
                   <CommandSeparator className="ab-mt-1" />
                 </CommandGroup>
+
                 <CommandGroup className="!ab-pl-0">
                   <CommandItem
                     value="settings"

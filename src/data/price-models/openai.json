@@ -8,6 +8,15 @@
     "maxOutputTokens": 4096,
     "tikTokenModelName": "gpt-4o"
   },
+  "openai-gpt-4o-mini": {
+    "provider": "openai",
+    "input": 0.000005,
+    "output": 0.000015,
+    "maxContextTokens": 128000,
+    "maxInputTokens": 123904,
+    "maxOutputTokens": 4096,
+    "tikTokenModelName": "gpt-4o"
+  },
   "openai-gpt-4-turbo": {
     "provider": "openai",
     "input": 0.00001,

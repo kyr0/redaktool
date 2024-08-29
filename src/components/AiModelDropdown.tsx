@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -8,6 +8,7 @@ import {
 } from "../ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { ArrowDown } from "lucide-react";
+import { useEditor } from "@milkdown/react";
 
 export interface AiModelEntry {
   value: string;
@@ -30,6 +31,10 @@ export function AiModelDropdown({
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
   );
+
+  useEffect(() => {
+    setSelectedValue(value);
+  }, [value]);
 
   return (
     <DropdownMenu>

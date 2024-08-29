@@ -275,12 +275,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log("prompt", data.blobDataUrl);
 
           const base64Data = data.blobDataUrl.split(",")[1];
+          const prevTranscription = data.prevTranscription;
           const response = await fetch(`data:text/plain;base64,${base64Data}`);
           const blob: Blob = await response.blob();
 
           console.log("blob", blob);
 
-          const whisperResponse = await whisper(blob);
+          const whisperResponse = await whisper(blob, prevTranscription);
           sendResponse({
             success: true,
             value: JSON.stringify(whisperResponse),

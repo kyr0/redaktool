@@ -15,6 +15,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { prefChrome } from "../../lib/content-script/prefs";
 import { Button } from "../../ui/button";
 import { ANTHROPIC_API_KEY_NAME } from "../../shared";
+import { CheckCheck } from "lucide-react";
+import { toast } from "sonner";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 const AnthropicFormSchema = z.object({
   apiKey: z.string().min(2),
@@ -58,8 +61,30 @@ export const AnthropicSettings = () => {
       prefChrome(ANTHROPIC_API_KEY_NAME).set(
         anthropicSettingsForm.getValues().apiKey,
       );
+
+      toast.info("API-Key erfolgreich gespeichert!", {
+        duration: 5000,
+        icon: (
+          <CheckCheck className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+        ),
+        style: {
+          fontWeight: "normal",
+        },
+      });
     } catch (error) {
       console.log("Form error", error);
+      toast.info(
+        "Fehler beim Speichern des API-Key. Bitte versuchen Sie es später noch einmal.",
+        {
+          duration: 5000,
+          icon: (
+            <ExclamationTriangleIcon className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+          ),
+          style: {
+            fontWeight: "normal",
+          },
+        },
+      );
     }
   }, [anthropicSettingsForm]);
 
@@ -89,10 +114,10 @@ export const AnthropicSettings = () => {
                       />
                     </FormControl>
                     <FormDescription>
-                      Dieser Schlüssel wird benötigt, um die OpenAI-API zu
+                      Dieser Schlüssel wird benötigt, um die Anthropic-API zu
                       verwenden. Sie erhalten ihn über{" "}
                       <a
-                        href="https://platform.openai.com/signup"
+                        href="https://console.anthropic.com/settings/keys"
                         target="_blank"
                         rel="noreferrer"
                       >

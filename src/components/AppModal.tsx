@@ -326,7 +326,7 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
               </button>
               <Separator
                 orientation="vertical"
-                className="!ab-w-[2px] !ab-h-4 !ab-mx-1"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-ml-2"
               />
               <ZoomFactorDropdown
                 zoomFactor={zoomClasses}
@@ -335,6 +335,12 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
                   zoomFactor.set(factor);
                 }}
               />
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2"
+              />
+              <FeedbackButton containerEl={dialogRef.current} />
             </div>
 
             <div className="ab-flex ab-flex-row ab-items-center">
@@ -389,7 +395,6 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
             }
           >
             <TooltipProvider>{children}</TooltipProvider>
-            <FeedbackButton containerEl={dialogRef.current} />
             <Toaster closeButton />
           </ErrorBoundary>
         </Resizable>

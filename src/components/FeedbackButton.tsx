@@ -60,7 +60,7 @@ export const FeedbackButton = ({
       name: "",
       message: "",
       url: "",
-      usageStatistics: "transcribe: 15\ntranslate: 20\nsummarize:10", // TODO: load dynamically
+      usageStatistics: "-", // TODO
       smartlookSessionId: "",
     },
   });
@@ -118,15 +118,7 @@ export const FeedbackButton = ({
     <>
       <Dialog>
         <DialogTrigger className={"ab-flex"}>
-          <div
-            style={{
-              position: "fixed",
-              right: -35,
-              top: containerHeightCalc / 2 - 50,
-              width: 100,
-            }}
-            className="ab-ftr-bg ab-my-auto ab-p-0 ab-m-0 ab-pb-1 ab-origin-center -ab-rotate-90 ab-border-1 md:ab-scale-105 lg:ab-scale-110 xl:ab-scale-125 ab-flex ab-transform ab-transition-opacity ab-duration-150 ab-rounded-md ab-rounded-es-none ab-rounded-br-none"
-          >
+          <div className="ab-ftr-bg ab-my-auto ab-p-0 ab-m-0 ab-px-1 ab-origin-centerab-border-1 ab-flex ab-transform ab-transition-opacity ab-duration-150 ab-rounded">
             <span className="ab-mx-auto !ab-text-sm">
               {t("feedback.buttonTitle")}
             </span>

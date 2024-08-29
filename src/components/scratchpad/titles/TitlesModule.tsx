@@ -5,6 +5,7 @@ import titlesPrompt from "../../../data/prompt-templates/titles.liquid?raw";
 import { useTranslation } from "react-i18next";
 
 const editorAtom = atom<string>("");
+const inputEditorAtom = atom<string>("");
 
 export const TitlesModule = () => {
   const { t, i18n } = useTranslation();
@@ -15,6 +16,7 @@ export const TitlesModule = () => {
       defaultPromptTemplate={titlesPrompt}
       name="titles"
       editorAtom={editorAtom}
+      inputEditorAtom={inputEditorAtom}
       outputTokenScaleFactor={0.1}
     />
   );

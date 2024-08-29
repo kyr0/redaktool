@@ -4,6 +4,7 @@ import { GenericModule } from "../GenericModule";
 import translationPrompt from "../../../data/prompt-templates/translation.liquid?raw";
 
 const editorAtom = atom<string>("");
+const inputEditorAtom = atom<string>("");
 
 export const TranslationModule = () => {
   return (
@@ -12,6 +13,7 @@ export const TranslationModule = () => {
       defaultPromptTemplate={translationPrompt}
       name="translation"
       editorAtom={editorAtom}
+      inputEditorAtom={inputEditorAtom}
       outputTokenScaleFactor={1.2}
     />
   );

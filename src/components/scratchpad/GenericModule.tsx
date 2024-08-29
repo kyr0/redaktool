@@ -1,8 +1,10 @@
 import {
   ArrowDown,
+  ArrowLeftCircle,
   BombIcon,
   BookIcon,
   CogIcon,
+  GlobeIcon,
   InfoIcon,
   MessageCircleWarning,
   SendIcon,
@@ -74,6 +76,7 @@ import { uuid } from "../../lib/content-script/uuid";
 import {
   QuestionMarkCircledIcon,
   QuestionMarkIcon,
+  ReloadIcon,
   StopIcon,
 } from "@radix-ui/react-icons";
 import type { PromptTokenUsage } from "../../lib/worker/llm/prompt";
@@ -92,8 +95,23 @@ import { cn } from "../../lib/content-script/utils";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { Badge } from "../../ui/badge";
 import type { HyperParameters } from "../../shared";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../../ui/accordion";
+import { AutosizeTextarea } from "../AutoresizeTextarea";
+import { db } from "../../lib/content-script/db";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
+
+const settingsFieldsStateDb = db<Record<string, string>>("settingsFields");
+const modelPkStateDb = db<Record<string, string>>("modelPk", {});
+
+export interface DynamicFieldsSerialization {
+  [key: string]: string;
+}
 
 export interface CallbackArgs {
   editorContent: string;
@@ -107,10 +125,13 @@ export interface CallbackArgs {
 
 export interface GenericModuleProps extends PropsWithChildren {
   value?: string;
+  inputValue?: string;
   name: string;
   placeholder?: string;
+  inputPlaceholder?: string;
   promptSettingsWrapperClassName?: string;
   editorAtom: WritableAtom<string>;
+  inputEditorAtom: WritableAtom<string>;
   defaultPromptTemplate: string;
   outputTokenScaleFactor: number;
   defaultModelName: string;
@@ -119,23 +140,42 @@ export interface GenericModuleProps extends PropsWithChildren {
   onEditorCreated?: (
     args: CallbackArgs & { args: MilkdownEditorCreatedArgs },
   ) => void;
+  onInputEditorCreated?: (
+    args: CallbackArgs & { args: MilkdownEditorCreatedArgs },
+  ) => void;
   onEditorContentChange?: (markdown: string) => void;
+  onInputEditorContentChange?: (markdown: string) => void;
   onPromptChange?: (args: CallbackArgs) => void;
   onPromptShare?: (args: CallbackArgs) => void;
 }
 
+const defaultHyperParameters: HyperParameters = {
+  autoTuneCreativity: 70,
+  autoTuneFocus: 0,
+  autoTuneGlossary: 0,
+};
+const hyperParametersStateDb = db<HyperParameters>(
+  "hyperparameters",
+  defaultHyperParameters,
+);
+
 export const GenericModule: React.FC<GenericModuleProps> = ({
   value,
+  inputValue,
   name,
   promptSettingsWrapperClassName,
   placeholder,
+  inputPlaceholder,
   editorAtom,
+  inputEditorAtom,
   defaultPromptTemplate,
   outputTokenScaleFactor,
   defaultModelName,
   onEditorCreated,
+  onInputEditorCreated,
   onCustomInstructionChange,
   onEditorContentChange,
+  onInputEditorContentChange,
   onPromptChange,
   onPromptShare,
   getPromptValues,
@@ -143,12 +183,17 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
+  const [inputEditorContent, setInputEditorContent] = useState<string>(
+    inputEditorAtom.get(),
+  );
   const [prompt, setPrompt] = useState<string>(defaultPromptTemplate);
   const [stopStreamCallback, setStopStreamCallback] = useState<{
     stopStream: Function;
   }>();
   const [modelPk, setModelPk] = useState<string>(defaultModelName);
   const [internalEditorArgs, setInternalEditorArgs] =
+    useState<MilkdownEditorCreatedArgs>();
+  const [internalInputEditorArgs, setInternalInputEditorArgs] =
     useState<MilkdownEditorCreatedArgs>();
   const [promptPrepared, setPromptPrepared] = useState<Prompt>({
     id: uuid(),
@@ -162,10 +207,12 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   });
   const textSelection$ = useStore(guardedSelectionGuaranteedAtom);
   const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
+  const [inputEditorEl, setInputEditorEl] = useState<HTMLElement | null>(null);
   const [dynamicFields, setDynamicFields] = useState<Array<ParseResult>>([]);
   const [dynamicFieldValues, setDynamicFieldValues] = useState<
     Record<string, string>
   >({});
+
   const [recompilingInProgress, setRecompilingInProgress] =
     useState<boolean>(false);
 
@@ -176,25 +223,162 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [promptContent, setPromptContent] = useState<string>("");
   const [lastActualUsage, setLastActualUsage] = useState<PromptTokenUsage>();
   const [lastTotalPrice, setLastTotalPrice] = useState<number>();
-  const [activeTab, setActiveTab] = useState<"settings" | "promptEditor">(
-    "settings",
+  const [activeTab, setActiveTab] = useState<"context" | "promptEditor">(
+    "context",
   );
 
+  useEffect(() => {
+    (async () => {
+      const storedFields = await settingsFieldsStateDb.get();
+      const fieldNames = Object.keys(storedFields)
+        .filter((key) => key.indexOf(":") !== -1)
+        // sort by name, LOCAL first, then GLOBAL
+        .sort((a, b) => {
+          const aNamespaces = a.split(":");
+          const bNamespaces = b.split(":");
+          if (aNamespaces[0] === "LOCAL" && bNamespaces[0] === "GLOBAL") {
+            return -1;
+          }
+          if (aNamespaces[0] === "GLOBAL" && bNamespaces[0] === "LOCAL") {
+            return 1;
+          }
+          return 0;
+        });
+
+      const deserialization: Record<string, string> = {};
+
+      for (const fieldName of fieldNames) {
+        const namespaces = fieldName.split(":");
+
+        if (namespaces[0] === "LOCAL" && namespaces[1] === name) {
+          deserialization[namespaces[2]] = storedFields[fieldName];
+        } else if (namespaces[0] === "GLOBAL") {
+          deserialization[namespaces[1]] = storedFields[fieldName];
+        }
+      }
+
+      // store in db
+      setDynamicFieldValues((fieldValues) => ({
+        ...fieldValues,
+        ...deserialization,
+      }));
+    })();
+  }, [name]);
+
+  useEffect(() => {
+    (async () => {
+      const storedFields = await settingsFieldsStateDb.get();
+      const fieldNames = Object.keys(dynamicFieldValues);
+      const newSerialization: DynamicFieldsSerialization = {};
+
+      for (const fieldName of fieldNames) {
+        let serializationKey = "";
+        const dynamicField = dynamicFields.find((f) => f.key === fieldName);
+        if (dynamicField?.global === true) {
+          serializationKey = `GLOBAL:${fieldName}`;
+        } else {
+          serializationKey = `LOCAL:${name}:${fieldName}`;
+        }
+        newSerialization[serializationKey] = dynamicFieldValues[fieldName];
+      }
+
+      // store in db, don't override, merge
+      settingsFieldsStateDb.set({
+        ...storedFields,
+        ...newSerialization,
+      });
+    })();
+  }, [dynamicFieldValues, dynamicFields, name]);
+
   // hyper parameters
-  const [autoTuneCreativity, setAutoTuneCreativity] = useState<number>(70);
+  const [autoTuneCreativity, setAutoTuneCreativity] = useState<number>(
+    defaultHyperParameters.autoTuneCreativity,
+  );
   /*
   const [autoTuneFocusActivated, setAutoTuneFocusActivated] =
     useState<boolean>(false);
     */
-  const [autoTuneFocus, setAutoTuneFocus] = useState<number>(0);
+
+  const [autoTuneFocus, setAutoTuneFocus] = useState<number>(
+    defaultHyperParameters.autoTuneFocus,
+  );
   /*
   const [autoTuneGlossaryActivated, setAutoTuneGlossaryActivated] =
     useState<boolean>(false);
     */
-  const [autoTuneGlossary, setAutoTuneGlossary] = useState<number>(0);
+  const [autoTuneGlossary, setAutoTuneGlossary] = useState<number>(
+    defaultHyperParameters.autoTuneGlossary,
+  );
+
+  const onInternalSetAutoTuneCreativity = useCallback(
+    (value: Array<number>) => {
+      setAutoTuneCreativity(value[0]);
+
+      (async () => {
+        const hyperParameters = await hyperParametersStateDb.get();
+        hyperParameters.autoTuneCreativity = value[0];
+        hyperParametersStateDb.set(hyperParameters);
+      })();
+    },
+    [setAutoTuneCreativity, hyperParametersStateDb],
+  );
+
+  const onInternalSetAutoTuneFocus = useCallback(
+    (value: Array<number>) => {
+      setAutoTuneFocus(value[0]);
+
+      (async () => {
+        const hyperParameters = await hyperParametersStateDb.get();
+        hyperParameters.autoTuneFocus = value[0];
+        hyperParametersStateDb.set(hyperParameters);
+      })();
+    },
+    [setAutoTuneFocus, hyperParametersStateDb],
+  );
+
+  const onInternalSetAutoTuneGlossary = useCallback(
+    (value: Array<number>) => {
+      setAutoTuneGlossary(value[0]);
+
+      (async () => {
+        const hyperParameters = await hyperParametersStateDb.get();
+        hyperParameters.autoTuneGlossary = value[0];
+        hyperParametersStateDb.set(hyperParameters);
+      })();
+    },
+    [setAutoTuneGlossary, hyperParametersStateDb],
+  );
 
   useEffect(() => {
-    setPromptContent(editorContent);
+    (async () => {
+      const hyperParameters = await hyperParametersStateDb.get();
+      setAutoTuneCreativity(
+        hyperParameters.autoTuneCreativity ||
+          defaultHyperParameters.autoTuneCreativity,
+      );
+
+      setAutoTuneFocus(
+        hyperParameters.autoTuneFocus || defaultHyperParameters.autoTuneFocus,
+      );
+
+      setAutoTuneGlossary(
+        hyperParameters.autoTuneGlossary ||
+          defaultHyperParameters.autoTuneGlossary,
+      );
+    })();
+  }, [hyperParametersStateDb]);
+
+  const onResetHyperParametersClick = useCallback(() => {
+    // db
+    hyperParametersStateDb.set(defaultHyperParameters);
+
+    setAutoTuneCreativity(defaultHyperParameters.autoTuneCreativity);
+    setAutoTuneFocus(defaultHyperParameters.autoTuneFocus);
+    setAutoTuneGlossary(defaultHyperParameters.autoTuneGlossary);
+  }, []);
+
+  useEffect(() => {
+    setPromptContent(inputEditorContent);
     if (textSelection$?.element) {
       const selectedMd = turndown(textSelection$.element.innerHTML);
 
@@ -249,7 +433,21 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         args: internalEditorArgs,
       });
     }
-  }, [internalEditorArgs, onEditorCreated]);
+  }, [internalEditorArgs, onEditorCreated, prompt]);
+
+  useEffect(() => {
+    if (typeof onInputEditorCreated === "function" && internalInputEditorArgs) {
+      onInputEditorCreated({
+        editorContent,
+        prompt,
+        setEditorContent,
+        setPrompt,
+        promptPrepared,
+        setPromptPrepared,
+        args: internalInputEditorArgs,
+      });
+    }
+  }, [internalInputEditorArgs, onInputEditorCreated, prompt]);
 
   // sync editor content with extraction
   const onEditorChangeInternal = useCallback(
@@ -259,12 +457,50 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     [setEditorContent],
   );
 
+  // sync input editor content with extraction
+  const onInputEditorChangeInternal = useCallback(
+    (markdown: string) => {
+      console.log("onInputEditorChangeInternal", markdown);
+      setInputEditorContent(markdown);
+    },
+    [setInputEditorContent],
+  );
+
   const onEditorCreatedInternal = useCallback(
     (args: MilkdownEditorCreatedArgs) => {
       setEditorEl(args.el);
       setInternalEditorArgs(args);
     },
     [setEditorEl, setInternalEditorArgs],
+  );
+
+  const onInputEditorCreatedInternal = useCallback(
+    (args: MilkdownEditorCreatedArgs) => {
+      console.log("onInputEditorCreatedInternal", args);
+      setInputEditorEl(args.el);
+      setInternalInputEditorArgs(args);
+    },
+    [setInputEditorEl, setInternalInputEditorArgs],
+  );
+
+  useEffect(() => {
+    (async () => {
+      const storedModelPk = await modelPkStateDb.get();
+      setModelPk(storedModelPk[name] || defaultModelName);
+    })();
+  }, [modelPkStateDb, name, defaultModelName]);
+
+  const setInternalModelPk = useCallback(
+    (value: string) => {
+      (async () => {
+        setModelPk(value);
+        modelPkStateDb.set({
+          ...(await modelPkStateDb.get()),
+          [name]: value,
+        });
+      })();
+    },
+    [setModelPk, name, modelPkStateDb],
   );
 
   const onSharePromptClick = useCallback(() => {
@@ -311,6 +547,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     //  setPrompt(value);
 
     (evt: any) => {
+      console.log("onPromptChangeInternal", evt.target?.value);
       setPrompt(evt.target?.value);
     },
     [setPrompt],
@@ -392,6 +629,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       setDynamicFieldValues,
       getValidatedDynamicFieldValues,
       compilePrompt,
+      prompt,
     ],
   );
 
@@ -472,6 +710,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       i18n,
       outputTokenScaleFactor,
       textSelection$,
+      prompt,
     ],
   );
 
@@ -488,7 +727,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
           setPromptPrepared(
             await generatePrompt({
               prompt,
-              editorContent: promptContent || editorContent,
+              editorContent: promptContent || inputEditorContent,
               customInstruction,
               modelName: modelPk,
               hyperParameters,
@@ -502,7 +741,9 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         setDynamicFieldValues,
         customInstruction,
         generatePrompt,
-        editorContent,
+        inputEditorContent,
+        prompt,
+        modelPk,
       ],
     ),
     250,
@@ -541,10 +782,23 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     }
   }, [editorContent]);
 
+  useEffect(() => {
+    // cache the input editor content
+    inputEditorAtom.set(inputEditorContent);
+
+    if (typeof onInputEditorContentChange === "function") {
+      onInputEditorContentChange(inputEditorContent);
+    }
+  }, [inputEditorContent]);
+
   // back-sync
   useEffect(() => {
     setEditorContent(value || "");
   }, [value]);
+
+  useEffect(() => {
+    setInputEditorContent(inputValue || "");
+  }, [inputValue]);
 
   const onPromptSendClick = useCallback(() => {
     (async () => {
@@ -552,9 +806,11 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       let originalText = "";
       let partialText = "";
 
+      console.log("onPromptSendClick input", inputEditorContent);
+
       const finalPrompt = await generatePrompt({
         prompt,
-        editorContent: promptContent || editorContent,
+        editorContent: promptContent || inputEditorContent,
         customInstruction,
         modelName: modelPk,
         hyperParameters: {
@@ -569,8 +825,11 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       const reflush = () => {
         setTimeout(() => {
           requestAnimationFrame(() => {
-            setEditorContent(`${originalText}\n---\n${partialText || ""}`);
-
+            if (originalText.trim() !== "") {
+              setEditorContent(`${originalText}\n---\n${partialText || ""}`);
+            } else {
+              setEditorContent(`${partialText || ""}`);
+            }
             scrollDownMax(editorEl);
 
             setStreamingInProgress(false);
@@ -590,7 +849,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
 
               partialText += text || "";
 
-              return `${prev || ""}${isBeginning ? "\n---\n" : ""}${
+              return `${prev || ""}${isBeginning && originalText.trim() !== "" ? "\n---\n" : ""}${
                 text || ""
               }`;
             });
@@ -653,7 +912,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     setStreamingInProgress,
     customInstruction,
     promptContent,
-    editorContent,
+    inputEditorContent,
     outputTokenScaleFactor,
     editorEl,
     modelPk,
@@ -674,158 +933,151 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     window.open("https://github.com/kyr0/redaktool/wiki", "_blank");
   }, []);
 
+  const onResetPromptClick = useCallback(() => {
+    setPrompt(defaultPromptTemplate);
+  }, []);
+
   return (
     <ResizablePanelGroup direction="vertical">
-      <ResizablePanel defaultSize={65} minSize={20}>
-        <div className="ab-w-full ab-h-full ab-overflow-y-auto">
-          <MarkdownEditor
-            defaultValue={editorContent}
-            placeholder={placeholder}
-            name={`${name}Editor`}
-            showToolbar={true}
-            onChange={onEditorChangeInternal}
-            onCreated={onEditorCreatedInternal}
-          />
-        </div>
-      </ResizablePanel>
-      <VerticalResizeHandle withHandle />
-      <ResizablePanel defaultSize={35} minSize={20}>
+      <ResizablePanel defaultSize={50} minSize={20}>
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel
             defaultSize={30}
             minSize={10}
             className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pr-2 ab-overflow-y-auto"
           >
-            <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center ab-mb-2">
-              <span className="ab-flex ab-flex-row ab-items-center">
-                <span className="ab-p-1 ab-px-2 ab-text-sm">Modell:</span>
-              </span>
-
-              <span className="ab-mr-1">
-                <AiModelDropdown
-                  value={modelPk}
-                  onChange={(value) => {
-                    setModelPk(value);
-                  }}
-                  options={llmModels.map((m) => ({
-                    label: m.label
-                      .replace(new RegExp(m.provider, "gi"), "")
-                      .trim(),
-                    value: m.pk,
-                  }))}
-                />
-              </span>
-            </div>
-
             <div className="ab-flex ab-flex-col ab-w-full ab-h-full ab-overflow-auto">
-              <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-7 ab-items-center ab-mb-2">
-                <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-sm">
-                  Parameter
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-6 ab-items-center ab-mb-2">
+                <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-md">
+                  Einstellungen:
                 </span>
                 <span className="ab-mr-1">
-                  <Button
-                    size={"sm"}
-                    className="ab-scale-75 ab-ftr-button !ab-h-6 hover:!ab-bg-primary-foreground ab-origin-right"
-                    onClick={onHelpClick}
-                  >
-                    <QuestionMarkCircledIcon className="ab-w-4 ab-h-4 ab-mr-1" />
-                    <span>Hilfe</span>
-                  </Button>
+                  <MiniInfoButton>
+                    Diese Einstellungen werden automatisch mit den Texteingaben
+                    an die KI gesendet.
+                  </MiniInfoButton>
                 </span>
               </div>
               <div
-                className={`ab-flex ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-2 ab-overflow-y-auto ${
+                className={`ab-flex ab-w-full ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-0 ab-overflow-y-auto ${
                   promptSettingsWrapperClassName || ""
                 }`}
               >
-                <div key={"autoTuneCreativity"} className="ab-mb-2 ab-w-full">
-                  <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
-                    <Label className="ab-mb-2 ab-flex">
-                      Kreativität: {autoTuneCreativity}%
-                    </Label>
-                    <MiniInfoButton>
-                      Beeinflusst das Vorkommen neuer Assoziationen, Wörter,
-                      Strukturen sowie die Abweichung vom definierten Stil.
-                    </MiniInfoButton>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    defaultValue={[autoTuneCreativity]}
-                    onValueChange={(value) => setAutoTuneCreativity(value[0])}
-                  />
+                <div className="ab-w-full ab-grid ab-items-start ab-grid-cols-2 ab-gap-2 ab-gap-y-2 ab-overflow-y-auto">
+                  {!recompilingInProgress &&
+                    dynamicFields.length === 0 &&
+                    promptPrepared.text === "" && (
+                      <Label className="ab-mb-2 ab-flex ab-text-sm">
+                        <CogIcon className="ab-w-4 ab-h-4 ab-mr-2" />
+                        Smart-Prompt wird kompiliert...
+                      </Label>
+                    )}
+
+                  {!recompilingInProgress &&
+                    dynamicFields.length === 0 &&
+                    promptPrepared.text !== "" && (
+                      <Label className="ab-mb-2 ab-flex">
+                        Keine dynamischen Einstellungen verfügbar
+                      </Label>
+                    )}
+
+                  {dynamicFields.map((field) => (
+                    <div
+                      key={field.key}
+                      className={`ab-w-full ${
+                        field.type === "textarea" ? "ab-col-span-2" : ""
+                      }`}
+                    >
+                      <Label className="ab-mb-1 ab-flex ab-justify-between ab-items-center">
+                        <span className="ab-flex ab-flex-row ab-items-center !ab-text-sm">
+                          {field.label}{" "}
+                          {field.global && (
+                            <>
+                              <GlobeIcon className="ab-ml-1 ab-h-4 ab-w-4" />
+                            </>
+                          )}
+                        </span>
+                        {field.info && (
+                          <MiniInfoButton>{field.info}</MiniInfoButton>
+                        )}
+                      </Label>
+
+                      {(field.type === "text" || field.type === "number") && (
+                        <Input
+                          type={field.type || "text"}
+                          name={`${name}${field.key}Input`}
+                          placeholder={field.label}
+                          value={dynamicFieldValues[field.key] || field.default}
+                          className="!ab-block !ab-text-sm ab-h-8"
+                          onChange={(evt) => {
+                            console.log(
+                              "field change",
+                              field.key,
+                              evt.target.value,
+                            );
+                            setDynamicFieldValues((prev) => ({
+                              ...prev,
+                              [field.key]: evt.target.value,
+                            }));
+                          }}
+                        />
+                      )}
+
+                      {field.type === "textarea" && (
+                        <Textarea
+                          name={`${name}${field.key}Input`}
+                          placeholder={field.label}
+                          value={dynamicFieldValues[field.key] || field.default}
+                          className="!ab-block !ab-text-sm"
+                          onChange={(evt) => {
+                            console.log(
+                              "field change",
+                              field.key,
+                              evt.target.value,
+                            );
+                            setDynamicFieldValues((prev) => ({
+                              ...prev,
+                              [field.key]: evt.target.value,
+                            }));
+                          }}
+                        />
+                      )}
+
+                      {field.type === "select" && (
+                        <Select
+                          onValueChange={(value) => {
+                            console.log("onValueChange", value);
+                            setDynamicFieldValues((prev) => ({
+                              ...prev,
+                              [field.key]: value,
+                            }));
+                          }}
+                          defaultValue={
+                            dynamicFieldValues[field.key] || field.default
+                          }
+                        >
+                          <SelectTrigger className="ab-h-8">
+                            <SelectValue
+                              placeholder={field.label}
+                              className="!ab-text-sm"
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="ab-z-[2147483646]">
+                            {(field.options || []).map((option) => (
+                              <SelectItem
+                                className="!ab-text-sm"
+                                key={option + Math.random()}
+                                value={option}
+                              >
+                                {upperCaseFirst(option)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  ))}
                 </div>
-
-                {modelPk.indexOf("openai") > -1 && (
-                  <>
-                    <div key={"autoTuneFocus"} className="ab-mb-2 ab-w-full">
-                      <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
-                        <div className="ab-flex">
-                          {/*
-                      <Input
-                        id="autoTuneFocus"
-                        type="checkbox"
-                        className="!ab-w-4 ab-h-4 !ab-mr-1"
-                      />
-                      */}
-                          <Label htmlFor="autoTuneFocus">
-                            Fokus:{" "}
-                            {autoTuneFocus !== 0
-                              ? `${autoTuneFocus}%`
-                              : "Normal"}
-                          </Label>
-                        </div>
-                        <MiniInfoButton>
-                          Ein höherer Fokus limitiert die Anzahl der Themen und
-                          die Diversität der Assoziationen über den gesamten
-                          Text hinweg. Das kann hilfreich sein, wenn von einem
-                          spezifischen Thema und einem Konsens weniger
-                          abgewichen werden soll.
-                        </MiniInfoButton>
-                      </div>
-                      <Slider
-                        min={-100}
-                        max={100}
-                        step={0.1}
-                        defaultValue={[autoTuneFocus]}
-                        onValueChange={(value) => setAutoTuneFocus(value[0])}
-                      />
-                    </div>
-
-                    <div key={"autoTuneGlossary"} className="ab-mb-2 ab-w-full">
-                      <div className="ab-flex ab-mb-1 ab-justify-between ab-items-center">
-                        <div className="ab-flex ab-mb-1">
-                          {/*
-                      <Input
-                        id="autoTuneGlossary"
-                        type="checkbox"
-                        className="!ab-w-4 ab-h-4 !ab-mr-1"
-                      />*/}
-                          <Label htmlFor="autoTuneGlossary">
-                            Wortvielfalt:{" "}
-                            {autoTuneGlossary !== 0
-                              ? `${autoTuneGlossary}%`
-                              : "Normal"}
-                          </Label>
-                        </div>
-                        <MiniInfoButton>
-                          Limitiert die Anzahl unterschiedlicher Wörter und
-                          verringert somit den lexikalischen Reichtum. Das kann
-                          bei Übersetzungen und Fachtexten hilfreich sein, wenn
-                          es auf eine spezifische Terminologie ankommt.
-                        </MiniInfoButton>
-                      </div>
-                      <Slider
-                        min={-100}
-                        max={100}
-                        step={0.1}
-                        defaultValue={[autoTuneGlossary]}
-                        onValueChange={(value) => setAutoTuneGlossary(value[0])}
-                      />
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           </ResizablePanel>
@@ -837,24 +1089,28 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
             minSize={60}
             className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pl-2"
           >
-            <div className="ab-flex ab-w-full ab-h-full  ab-overflow-auto">
+            <div className="ab-flex ab-w-full ab-h-full ab-overflow-auto">
               <Tabs
                 defaultValue={activeTab}
                 className="ab-w-full ab-flex ab-flex-col ab-h-full ab-overflow-auto"
               >
                 <div className="ab-flex ab-justify-between">
-                  <TabsList className="!ab-p-0 !ab-m-0  !ab-min-h-8 !ab-h-8">
+                  <TabsList className="!ab-p-0 !ab-m-0  !ab-min-h-8 !ab-h-8 ab-justify-between">
                     <TabsTrigger
                       className={cn(
                         "ab-text-sm",
-                        activeTab === "settings"
+                        activeTab === "context"
                           ? "ab-ftr-active-menu-item"
                           : "ab-ftr-menu-item ab-bg-secondary",
                       )}
-                      value="settings"
-                      onClick={() => setActiveTab("settings")}
+                      value="context"
+                      onClick={() => setActiveTab("context")}
                     >
-                      Einstellungen
+                      Text-Eingabe&nbsp;
+                      <MiniInfoButton>
+                        Der Text, der hier eingegben wird, wird von der KI
+                        verarbeitet. Also z.B. für die Übersetzung.
+                      </MiniInfoButton>
                     </TabsTrigger>
                     <TabsTrigger
                       className={cn(
@@ -866,127 +1122,60 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                       value="promptEditor"
                       onClick={() => setActiveTab("promptEditor")}
                     >
-                      Smart-Prompt
+                      Prompt-Editor (für Experten)&nbsp;
+                      <MiniInfoButton>
+                        Im Prompt-Editor können die genauen Instruktionen, die
+                        an die KI gesendet werden, angepasst werden. Außerdem
+                        werden RAG-Worlflow-Abläufe und Einstellungen hier
+                        dynamisch geskripted. Dieser Bereich ist für Experten
+                        mit Prompt Engineering-Erfahrung gedacht.
+                      </MiniInfoButton>
                     </TabsTrigger>
                   </TabsList>
                   {activeTab === "promptEditor" && (
-                    <Button
-                      size={"sm"}
-                      className=" ab-ftr-button  ab-bg-secondary  !ab-h-6 hover:ab-ftr-bg-halfcontrast ab-origin-right"
-                      onClick={onSharePromptClick}
-                    >
-                      <ShareIcon className="ab-w-4 ab-h-4 ab-mr-1" />
-                      <span>Teilen</span>
-                    </Button>
+                    <span>
+                      <Button
+                        size={"sm"}
+                        className="ab-ftr-button  ab-bg-secondary !ab-ml-2 !ab-h-6 hover:ab-ftr-bg-halfcontrast ab-origin-right"
+                        onClick={onResetPromptClick}
+                      >
+                        <ArrowLeftCircle className="ab-w-4 ab-h-4 ab-mr-1" />
+                        <span>Zurücksetzen</span>
+                      </Button>
+
+                      <Button
+                        size={"sm"}
+                        className=" ab-ftr-button  ab-bg-secondary !ab-ml-2 !ab-h-6 hover:ab-ftr-bg-halfcontrast ab-origin-right"
+                        onClick={onSharePromptClick}
+                      >
+                        <ShareIcon className="ab-w-4 ab-h-4 ab-mr-1" />
+                        <span>Teilen</span>
+                      </Button>
+
+                      <Button
+                        size={"sm"}
+                        className="ab-ftr-button  ab-bg-secondary !ab-ml-2 !ab-h-6 hover:ab-ftr-bg-halfcontrast ab-origin-right"
+                        onClick={onHelpClick}
+                      >
+                        <QuestionMarkCircledIcon className="ab-w-4 ab-h-4 ab-mr-1" />
+                        <span>Hilfe</span>
+                      </Button>
+                    </span>
                   )}
                 </div>
                 <TabsContent
-                  value="settings"
+                  value="context"
                   className="ab-flex-1 ab-h-full ab-overflow-y-scroll"
                 >
-                  <div className="ab-grid ab-grid-cols-2 ab-gap-2 ab-pr-1">
-                    {!recompilingInProgress &&
-                      dynamicFields.length === 0 &&
-                      promptPrepared.text === "" && (
-                        <Label className="ab-mb-2 ab-flex ab-text-sm">
-                          <CogIcon className="ab-w-4 ab-h-4 ab-mr-2" />
-                          Smart-Prompt wird kompiliert...
-                        </Label>
-                      )}
-
-                    {!recompilingInProgress &&
-                      dynamicFields.length === 0 &&
-                      promptPrepared.text !== "" && (
-                        <Label className="ab-mb-2 ab-flex">
-                          Keine dynamischen Einstellungen verfügbar
-                        </Label>
-                      )}
-
-                    {dynamicFields.map((field) => (
-                      <div
-                        key={field.key}
-                        className={`ab-w-full ${
-                          field.type === "textarea" ? "ab-col-span-2" : ""
-                        }`}
-                      >
-                        <Label className="ab-mb-1 ab-flex">{field.label}</Label>
-
-                        {(field.type === "text" || field.type === "number") && (
-                          <Input
-                            type={field.type || "text"}
-                            name={`${name}${field.key}Input`}
-                            placeholder={field.label}
-                            value={
-                              dynamicFieldValues[field.key] || field.default
-                            }
-                            className="!ab-block !ab-text-sm ab-h-8"
-                            onChange={(evt) => {
-                              console.log(
-                                "field change",
-                                field.key,
-                                evt.target.value,
-                              );
-                              setDynamicFieldValues((prev) => ({
-                                ...prev,
-                                [field.key]: evt.target.value,
-                              }));
-                            }}
-                          />
-                        )}
-
-                        {field.type === "textarea" && (
-                          <Textarea
-                            name={`${name}${field.key}Input`}
-                            placeholder={field.label}
-                            value={
-                              dynamicFieldValues[field.key] || field.default
-                            }
-                            className="!ab-block !ab-text-sm"
-                            onChange={(evt) => {
-                              console.log(
-                                "field change",
-                                field.key,
-                                evt.target.value,
-                              );
-                              setDynamicFieldValues((prev) => ({
-                                ...prev,
-                                [field.key]: evt.target.value,
-                              }));
-                            }}
-                          />
-                        )}
-
-                        {field.type === "select" && (
-                          <Select
-                            onValueChange={(value) => {
-                              console.log("onValueChange", value);
-                              setDynamicFieldValues((prev) => ({
-                                ...prev,
-                                [field.key]: value,
-                              }));
-                            }}
-                            defaultValue={
-                              dynamicFieldValues[field.key] || field.default
-                            }
-                          >
-                            <SelectTrigger className="ab-h-8">
-                              <SelectValue placeholder={field.label} />
-                            </SelectTrigger>
-                            <SelectContent className="ab-z-[2147483646]">
-                              {(field.options || []).map((option) => (
-                                <SelectItem
-                                  key={option + Math.random()}
-                                  value={option}
-                                >
-                                  {upperCaseFirst(option)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <MarkdownEditor
+                    name={`${name}InputEditor`}
+                    defaultValue={inputEditorContent}
+                    placeholder={inputPlaceholder}
+                    value={inputEditorContent}
+                    showToolbar={false}
+                    onChange={onInputEditorChangeInternal}
+                    onCreated={onInputEditorCreatedInternal}
+                  />
                 </TabsContent>
 
                 <TabsContent value="promptEditor" className="ab-flex-1">
@@ -996,7 +1185,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                     placeholder="Change the extracted content to re-generate the prompt"
                     value={prompt}
                     style={{ resize: "none" }}
-                    className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm"
+                    className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm !ab-font-mono"
                   />
                   {/*
                   <PromptEditor
@@ -1020,12 +1209,109 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
             </div>
 
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between">
+              <span className="ab-flex ab-flex-row ab-justify-start ab-items-center">
+                <span className="ab-text-sm">KI-Modell:&nbsp;</span>
+                <AiModelDropdown
+                  value={modelPk}
+                  onChange={(value) => {
+                    setInternalModelPk(value);
+                  }}
+                  options={llmModels.map((m) => ({
+                    label: m.label
+                      .replace(new RegExp(m.provider, "gi"), "")
+                      .trim(),
+                    value: m.pk,
+                  }))}
+                />
+                <span className="ab-text-sm">&nbsp; | Kreativ:&nbsp;</span>
+
+                <span className="ab-w-20">
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    defaultValue={[autoTuneCreativity]}
+                    onValueChange={onInternalSetAutoTuneCreativity}
+                  />
+                </span>
+                <span className="ab-text-sm">
+                  &nbsp;{autoTuneCreativity}%&nbsp;
+                </span>
+
+                <MiniInfoButton>
+                  Beeinflusst das Vorkommen neuer Assoziationen, Wörter,
+                  Strukturen sowie die Abweichung vom definierten Stil.
+                </MiniInfoButton>
+
+                {modelPk.indexOf("openai") > -1 && (
+                  <>
+                    <span className="ab-text-sm">&nbsp;Fokus:&nbsp;</span>
+
+                    <span className="ab-w-20">
+                      <Slider
+                        min={-100}
+                        max={100}
+                        step={0.1}
+                        defaultValue={[autoTuneFocus]}
+                        onValueChange={onInternalSetAutoTuneFocus}
+                      />
+                    </span>
+                    <span className="ab-text-sm">
+                      &nbsp;
+                      {autoTuneFocus !== 0 ? `${autoTuneFocus}%` : "⌀"} &nbsp;
+                    </span>
+
+                    <MiniInfoButton>
+                      Ein höherer Fokus limitiert die Anzahl der Themen und die
+                      Diversität der Assoziationen über den gesamten Text
+                      hinweg. Das kann hilfreich sein, wenn von einem
+                      spezifischen Thema und einem Konsens weniger abgewichen
+                      werden soll.
+                    </MiniInfoButton>
+
+                    <span className="ab-text-sm">
+                      &nbsp;Wortvielfalt:&nbsp;
+                    </span>
+
+                    <span className="ab-w-20">
+                      <Slider
+                        min={-100}
+                        max={100}
+                        step={0.1}
+                        defaultValue={[autoTuneGlossary]}
+                        onValueChange={onInternalSetAutoTuneGlossary}
+                      />
+                    </span>
+                    <span className="ab-text-sm">
+                      &nbsp;
+                      {autoTuneGlossary !== 0 ? `${autoTuneGlossary}%` : "⌀"}{" "}
+                      &nbsp;
+                    </span>
+
+                    <MiniInfoButton>
+                      Limitiert die Anzahl unterschiedlicher Wörter und
+                      verringert somit den lexikalischen Reichtum. Das kann bei
+                      Übersetzungen und Fachtexten hilfreich sein, wenn es auf
+                      eine spezifische Terminologie ankommt.
+                    </MiniInfoButton>
+                  </>
+                )}
+
+                <Button
+                  size={"sm"}
+                  className="ab-ftr-button ab-bg-secondary !ab-ml-2 hover:ab-ftr-bg-halfcontrast !ab-h-5 "
+                  onClick={onResetHyperParametersClick}
+                >
+                  <ReloadIcon className="ab-w-3 ab-h-3 ab-mr-1" />
+                </Button>
+              </span>
               <span className="ab-flex ab-flex-row ab-justify-between ab-items-end">
-                <Input
+                <AutosizeTextarea
+                  maxHeight={100}
                   value={customInstruction}
                   name={`${name}PromptInstructionEditor`}
-                  placeholder="Weitere Wünsche..."
-                  className="!ab-block ab-mb-2 !ab-text-sm ab-h-12 ab-max-h-12"
+                  placeholder="Stelle links die Einstellungen ein. Sende hier weitere Anforderungen..."
+                  className="!ab-block ab-mb-2 !ab-text-sm ab-h-12"
                   onChange={(evt) => setCustomInstruction(evt.target.value)}
                 />
                 {!streamingInProgress && (
@@ -1055,7 +1341,21 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                   </Button>
                 )}
               </span>
-              <span className="ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm ab-justify-between ab-flex ab-flex-row">
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </ResizablePanel>
+      <VerticalResizeHandle withHandle />
+      <ResizablePanel
+        defaultSize={50}
+        minSize={20}
+        className="ab-h-full ab-flex ab-justify-strech ab-flex-col"
+      >
+        <span className=" ab-p-1 ab-px-2 !ab-text-xs ab-ftr-bg ab-rounded-sm ab-justify-between ab-flex ab-flex-row">
+          <span className="ab-justify-start ab-items-center ab-flex ab-flex-row">
+            <span className="ab-font-bold">🤖 KI-Ergebnisse:&nbsp;</span>
+          </span>
+          {/*
                 <span style={{ fontSize: "0.7rem" }}>
                   Geschätzt: ~{promptPrepared.estimatedInputTokens} I/O ~
                   {promptPrepared.estimatedOutputTokens} ≈{" "}
@@ -1073,22 +1373,38 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                         : ""
                     }`}
                 </span>
-                {/*
+                */}
+          {/*
                 €; verbleibende Tokens:{" "}
                 {formatCurrencyForDisplay(
                   calculateTokensFromBudget(20 ),
                 )}
                 */}
+          {(recompilingInProgress || streamingInProgress) && (
+            <span className="ab-flex ab-flex-row ab-items-center ab-justify-end">
+              {recompilingInProgress && (
+                <Label className="ab-flex">Wird verarbeitet...</Label>
+              )}
+              {streamingInProgress && (
+                <Label className="ab-flex">Wird generiert...</Label>
+              )}
+              <Label className="ab-flex">
+                <LoadingSpinner className="ab-w-4 ab-h-4 ab-ml-1" />
+              </Label>
+            </span>
+          )}
+        </span>
 
-                {(recompilingInProgress || streamingInProgress) && (
-                  <Label style={{ fontSize: "0.7rem" }} className="ab-flex">
-                    <LoadingSpinner className="ab-w-3 ab-h-3 ab-ml-1" />
-                  </Label>
-                )}
-              </span>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <div className="ab-w-full ab-overflow-y-auto">
+          <MarkdownEditor
+            defaultValue={editorContent}
+            placeholder={placeholder}
+            name={`${name}Editor`}
+            showToolbar={false}
+            onChange={onEditorChangeInternal}
+            onCreated={onEditorCreatedInternal}
+          />
+        </div>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

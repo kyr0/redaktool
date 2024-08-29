@@ -1,22 +1,29 @@
 [
   {
+    "pk": "openai-gpt-4o-mini",
+    "provider": "openai",
+    "ident": "gpt-4o-mini-2024-07-18",
+    "label": "OpenAI GPT-4o-mini",
+    "cutoff": "October 2023"
+  },
+  {
     "pk": "openai-gpt-4o",
     "provider": "openai",
-    "ident": "gpt-4o",
+    "ident": "gpt-4o-2024-08-06",
     "label": "OpenAI GPT-4o",
     "cutoff": "October 2023"
   },
   {
     "pk": "openai-gpt-4-turbo",
     "provider": "openai",
-    "ident": "gpt-4-turbo",
+    "ident": "gpt-4-turbo-2024-04-09",
     "label": "OpenAI GPT-4 Turbo",
     "cutoff": "December 2023"
   },
   {
     "pk": "openai-gpt-3.5-turbo",
     "provider": "openai",
-    "ident": "gpt-3.5-turbo",
+    "ident": "gpt-3.5-turbo-0125",
     "label": "OpenAI GPT-3.5 Turbo",
     "cutoff": "September 2023"
   }

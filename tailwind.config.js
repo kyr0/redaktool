@@ -151,6 +151,7 @@ export default {
       fontFamily: {
         heading: ['sans-serif'],
         body: ['sans-serif'],
+        mono: ['Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
       },
       backgroundImage: {
         'gradient-b': "linear-gradient(0deg, #eee, #fefefe 21%, #fff 25%, #fff)",

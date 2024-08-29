@@ -5,6 +5,7 @@ import summaryPrompt from "../../../data/prompt-templates/summary.liquid?raw";
 import { useTranslation } from "react-i18next";
 
 const editorAtom = atom<string>("");
+const inputEditorAtom = atom<string>("");
 
 export const SummaryModule = () => {
   const { t, i18n } = useTranslation();
@@ -15,6 +16,7 @@ export const SummaryModule = () => {
       defaultPromptTemplate={summaryPrompt}
       name="summary"
       editorAtom={editorAtom}
+      inputEditorAtom={inputEditorAtom}
       outputTokenScaleFactor={0.2}
     />
   );

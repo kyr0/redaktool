@@ -7,7 +7,7 @@ export const MiniInfoButton: FC<PropsWithChildren> = ({ children }) => {
   return (
     <Button
       variant={"ghost"}
-      className="!ab-p-0 !ab-m-0 ab-rounded-full !ab-h-fit-content !ab-h-5"
+      className="!ab-p-0 !ab-m-0 ab-rounded-full !ab-h-fit-content !ab-h-5 !ab-w-5"
       onClick={() =>
         toast.info(children, {
           duration: 5000,

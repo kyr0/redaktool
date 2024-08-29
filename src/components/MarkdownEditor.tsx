@@ -217,7 +217,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           ctx.update(editorViewOptionsCtx, (prev) => ({
             ...prev,
             attributes: {
-              class: "ab-outline-none ab-h-full !ab-overflow-scroll",
+              class: "ab-outline-none ab-h-full !ab-overflow-scroll !ab-p-0",
             },
           }));
 

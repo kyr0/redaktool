@@ -19,6 +19,8 @@ export type ParseResult = {
   label: string;
   order: number;
   type?: HTMLInputTypeAttribute;
+  global?: boolean;
+  info?: string;
 };
 
 export type ParseSmartPromptResult = {
@@ -146,6 +148,10 @@ export const compileSmartPrompt = (
             meta[key].type = value.type ?? autoDetectType(value);
 
             meta[key].order = fieldIndex;
+
+            meta[key].global = value.global ?? false;
+
+            meta[key].info = value.info ?? "";
 
             if (value.options && Array.isArray(value.options)) {
               if (meta[key].default) {

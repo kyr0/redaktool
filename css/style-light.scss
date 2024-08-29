@@ -52,6 +52,16 @@
   .ab-ftr-bg-halfcontrast {
     @apply ab-bg-slate-300;
   }
+
+  .ab-ftr-active-menu-item-main {
+    @apply ab-text-black !important;
+    @apply ab-underline;
+    @apply ab-decoration-red-500;
+    @apply ab-pt-1;
+    @apply ab-pb-1;
+    @apply ab-rounded-sm;
+  }
+
   .ab-ftr-active-menu-item {
     @apply ab-bg-slate-300 !important;
     @apply ab-text-black !important;

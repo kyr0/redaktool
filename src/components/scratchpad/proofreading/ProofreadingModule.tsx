@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import proofreadingPrompt from "../../../data/prompt-templates/proofreading.liquid?raw";
 
 const editorAtom = atom<string>("");
+const inputEditorAtom = atom<string>("");
 
 export const ProofreadingModule = () => {
   const { t, i18n } = useTranslation();
@@ -15,6 +16,7 @@ export const ProofreadingModule = () => {
       defaultPromptTemplate={proofreadingPrompt}
       name="proofreading"
       editorAtom={editorAtom}
+      inputEditorAtom={inputEditorAtom}
       outputTokenScaleFactor={4}
     />
   );
