@@ -19,14 +19,7 @@ const editorAtom = atom<string>("");
 const inputEditorAtom = atom<string>("");
 const autoExtractAtom = atom<string>("");
 const moduleName = "extraction";
-const placeholder =
-  "Die Zusammenfassung des Textes wird hier angezeigt, sobald Sie auf den Senden-Button geklickt haben.";
-const inputPlaceholder = `Der Text, den Sie hier einfügen, wird auf relevante Aspekte hin untersucht. Sie können die "Aspekte" links bestimmen. Anschließend wird eine Zusammenfassung erstellt, die im Format Ihrer Wahl ausgegeben wird. Mit den Einstellungen Max. Themen und Max. Sätze können Sie die Textlänge steuern.
 
-Die Einstellungen Zielgruppe, Tonalität und Ausgabesprache sind global. 
-
-Wählen Sie gerne das gewünschte Modell aus der Dropdown-Liste aus. 
-Die Hyperparameter, wie z.B. "Kreativ" haben einen Einfluss auf Kreativität, Fokus und Vokabular.`;
 const outputDbState = db(`${moduleName}-output`);
 const inputDbState = db(`${moduleName}-input`);
 
@@ -194,8 +187,8 @@ export const ExtractionModule = () => {
     <GenericModule
       value={editorContent}
       inputValue={inputEditorContent}
-      placeholder={placeholder}
-      inputPlaceholder={inputPlaceholder}
+      placeholder="Die KI-Analyse und Zusammenfasstung finden Sie hier, sobald Sie Ihren Text eingegeben und die KI-Verarbeitung mit dem Senden-Button gestartet haben."
+      inputPlaceholder="Geben Sie hier den Text ein, den Sie analysieren und zusammenfassen möchten. Sie können auch eine von der KI erstellte Analyse/Zusammenfassung hier einfügen, die Sie mit den Instruktionen weiter nachbearbeiten können."
       defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={extractionPrompt}
       name={moduleName}

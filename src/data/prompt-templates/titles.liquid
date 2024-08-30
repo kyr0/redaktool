@@ -17,6 +17,7 @@ RULES:
 - MUST adapt metaphors, common sayings and idioms, matching meaning.
 - Always translate pronouns and gender AS IS.
 - Make sure the spelling and grammar are correct.
+- The tonality/style of the titles MUST be "{{TONE}}".
 - Response MUST NOT be wrapped in Markdown code formatting block ```.
 {% if EXAMPLE %}
 - The response MUST be influenced by the EXAMPLE provided.
@@ -40,6 +41,8 @@ CONTENT:
 {% field TONE = "{ label: 'Tonalität', default: 'Nachrichten', global: true }" %}
 
 {% field COUNT = "{ label: 'Anzahl Titel (max)', default: 5 }" %}
+
+{% field TONE = "{ label: 'Tonalität', global: true, default: 'Professionell' }" %}
 
 {% field EXAMPLE = "{ type: 'textarea', label: 'Beispiel', default: '#### WOW! Baby bears found in Steglitz!
 #### Look at these cute baby bears found in Steglitz.
