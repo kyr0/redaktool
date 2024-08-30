@@ -108,6 +108,7 @@ import { db } from "../../lib/content-script/db";
 
 const settingsFieldsStateDb = db<Record<string, string>>("settingsFields");
 const modelPkStateDb = db<Record<string, string>>("modelPk", {});
+const expertModeStateDb = db<number>("expertMode", 0);
 
 export interface DynamicFieldsSerialization {
   [key: string]: string;
@@ -208,6 +209,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const textSelection$ = useStore(guardedSelectionGuaranteedAtom);
   const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
   const [inputEditorEl, setInputEditorEl] = useState<HTMLElement | null>(null);
+  const [expertMode, setExpertMode] = useState<boolean>(false); // sync expert mode with db
   const [dynamicFields, setDynamicFields] = useState<Array<ParseResult>>([]);
   const [dynamicFieldValues, setDynamicFieldValues] = useState<
     Record<string, string>
@@ -225,6 +227,27 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [lastTotalPrice, setLastTotalPrice] = useState<number>();
   const [activeTab, setActiveTab] = useState<"context" | "promptEditor">(
     "context",
+  );
+
+  useEffect(() => {
+    (async () => {
+      const storedExpertMode = await expertModeStateDb.get();
+      setExpertMode(storedExpertMode === 1);
+    })();
+  }, [expertModeStateDb]);
+
+  const onInternalSetExpertMode = useCallback(
+    (evt: any) => {
+      // toggle
+      setExpertMode(evt.target.checked);
+      expertModeStateDb.set(evt.target.checked ? 1 : 0);
+
+      // if expert mode is disabled, switch to context tab
+      if (!evt.target.checked && activeTab === "promptEditor") {
+        setActiveTab("context");
+      }
+    },
+    [setExpertMode, activeTab],
   );
 
   useEffect(() => {
@@ -1091,6 +1114,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
           >
             <div className="ab-flex ab-w-full ab-h-full ab-overflow-auto">
               <Tabs
+                value={activeTab}
                 defaultValue={activeTab}
                 className="ab-w-full ab-flex ab-flex-col ab-h-full ab-overflow-auto"
               >
@@ -1112,25 +1136,36 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                         verarbeitet. Also z.B. für die Übersetzung.
                       </MiniInfoButton>
                     </TabsTrigger>
-                    <TabsTrigger
-                      className={cn(
-                        "ab-text-sm !ab-ml-2",
-                        activeTab === "promptEditor"
-                          ? "ab-ftr-active-menu-item"
-                          : "ab-ftr-menu-item ab-bg-secondary",
-                      )}
-                      value="promptEditor"
-                      onClick={() => setActiveTab("promptEditor")}
-                    >
-                      Prompt-Editor (für Experten)&nbsp;
-                      <MiniInfoButton>
-                        Im Prompt-Editor können die genauen Instruktionen, die
-                        an die KI gesendet werden, angepasst werden. Außerdem
-                        werden RAG-Worlflow-Abläufe und Einstellungen hier
-                        dynamisch geskripted. Dieser Bereich ist für Experten
-                        mit Prompt Engineering-Erfahrung gedacht.
-                      </MiniInfoButton>
-                    </TabsTrigger>
+                    {expertMode && (
+                      <TabsTrigger
+                        className={cn(
+                          "ab-text-sm !ab-ml-2",
+                          activeTab === "promptEditor"
+                            ? "ab-ftr-active-menu-item"
+                            : "ab-ftr-menu-item ab-bg-secondary",
+                        )}
+                        value="promptEditor"
+                        onClick={() => setActiveTab("promptEditor")}
+                      >
+                        Prompt-Editor&nbsp;
+                        <MiniInfoButton>
+                          Im Prompt-Editor können die genauen Instruktionen, die
+                          an die KI gesendet werden, angepasst werden. Außerdem
+                          werden RAG-Worlflow-Abläufe und Einstellungen hier
+                          dynamisch geskripted. Dieser Bereich ist für Experten
+                          mit Prompt Engineering-Erfahrung gedacht.
+                        </MiniInfoButton>
+                      </TabsTrigger>
+                    )}
+                    <div className="ab-flex ab-items-center ab-h-6 ab-ml-2">
+                      <span className="ab-text-sm ab-mr-2">Expertenmodus</span>
+                      <input
+                        type="checkbox"
+                        checked={expertMode}
+                        onChange={onInternalSetExpertMode}
+                        className="ab-h-4 ab-w-4"
+                      />
+                    </div>
                   </TabsList>
                   {activeTab === "promptEditor" && (
                     <span>
@@ -1223,87 +1258,94 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                     value: m.pk,
                   }))}
                 />
-                <span className="ab-text-sm">&nbsp; | Kreativ:&nbsp;</span>
-
-                <span className="ab-w-20">
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    defaultValue={[autoTuneCreativity]}
-                    onValueChange={onInternalSetAutoTuneCreativity}
-                  />
-                </span>
-                <span className="ab-text-sm">
-                  &nbsp;{autoTuneCreativity}%&nbsp;
-                </span>
-
-                <MiniInfoButton>
-                  Beeinflusst das Vorkommen neuer Assoziationen, Wörter,
-                  Strukturen sowie die Abweichung vom definierten Stil.
-                </MiniInfoButton>
-
-                {modelPk.indexOf("openai") > -1 && (
+                {expertMode && (
                   <>
-                    <span className="ab-text-sm">&nbsp;Fokus:&nbsp;</span>
+                    <span className="ab-text-sm">&nbsp; | Kreativ:&nbsp;</span>
 
                     <span className="ab-w-20">
                       <Slider
-                        min={-100}
+                        min={0}
                         max={100}
                         step={0.1}
-                        defaultValue={[autoTuneFocus]}
-                        onValueChange={onInternalSetAutoTuneFocus}
+                        defaultValue={[autoTuneCreativity]}
+                        onValueChange={onInternalSetAutoTuneCreativity}
                       />
                     </span>
                     <span className="ab-text-sm">
-                      &nbsp;
-                      {autoTuneFocus !== 0 ? `${autoTuneFocus}%` : "⌀"} &nbsp;
+                      &nbsp;{autoTuneCreativity}%&nbsp;
                     </span>
 
                     <MiniInfoButton>
-                      Ein höherer Fokus limitiert die Anzahl der Themen und die
-                      Diversität der Assoziationen über den gesamten Text
-                      hinweg. Das kann hilfreich sein, wenn von einem
-                      spezifischen Thema und einem Konsens weniger abgewichen
-                      werden soll.
+                      Beeinflusst das Vorkommen neuer Assoziationen, Wörter,
+                      Strukturen sowie die Abweichung vom definierten Stil.
                     </MiniInfoButton>
 
-                    <span className="ab-text-sm">
-                      &nbsp;Wortvielfalt:&nbsp;
-                    </span>
+                    {modelPk.indexOf("openai") > -1 && (
+                      <>
+                        <span className="ab-text-sm">&nbsp;Fokus:&nbsp;</span>
 
-                    <span className="ab-w-20">
-                      <Slider
-                        min={-100}
-                        max={100}
-                        step={0.1}
-                        defaultValue={[autoTuneGlossary]}
-                        onValueChange={onInternalSetAutoTuneGlossary}
-                      />
-                    </span>
-                    <span className="ab-text-sm">
-                      &nbsp;
-                      {autoTuneGlossary !== 0 ? `${autoTuneGlossary}%` : "⌀"}{" "}
-                      &nbsp;
-                    </span>
+                        <span className="ab-w-20">
+                          <Slider
+                            min={-100}
+                            max={100}
+                            step={0.1}
+                            defaultValue={[autoTuneFocus]}
+                            onValueChange={onInternalSetAutoTuneFocus}
+                          />
+                        </span>
+                        <span className="ab-text-sm">
+                          &nbsp;
+                          {autoTuneFocus !== 0 ? `${autoTuneFocus}%` : "⌀"}{" "}
+                          &nbsp;
+                        </span>
 
-                    <MiniInfoButton>
-                      Limitiert die Anzahl unterschiedlicher Wörter und
-                      verringert somit den lexikalischen Reichtum. Das kann bei
-                      Übersetzungen und Fachtexten hilfreich sein, wenn es auf
-                      eine spezifische Terminologie ankommt.
-                    </MiniInfoButton>
+                        <MiniInfoButton>
+                          Ein höherer Fokus limitiert die Anzahl der Themen und
+                          die Diversität der Assoziationen über den gesamten
+                          Text hinweg. Das kann hilfreich sein, wenn von einem
+                          spezifischen Thema und einem Konsens weniger
+                          abgewichen werden soll.
+                        </MiniInfoButton>
+
+                        <span className="ab-text-sm">
+                          &nbsp;Vokabular:&nbsp;
+                        </span>
+
+                        <span className="ab-w-20">
+                          <Slider
+                            min={-100}
+                            max={100}
+                            step={0.1}
+                            defaultValue={[autoTuneGlossary]}
+                            onValueChange={onInternalSetAutoTuneGlossary}
+                          />
+                        </span>
+                        <span className="ab-text-sm">
+                          &nbsp;
+                          {autoTuneGlossary !== 0
+                            ? `${autoTuneGlossary}%`
+                            : "⌀"}{" "}
+                          &nbsp;
+                        </span>
+
+                        <MiniInfoButton>
+                          Limitiert die Anzahl unterschiedlicher Wörter und
+                          verringert somit den lexikalischen Reichtum. Das kann
+                          bei Übersetzungen und Fachtexten hilfreich sein, wenn
+                          es auf eine spezifische Terminologie ankommt.
+                        </MiniInfoButton>
+                      </>
+                    )}
+
+                    <Button
+                      size={"sm"}
+                      className="ab-ftr-button ab-bg-secondary !ab-ml-2 hover:ab-ftr-bg-halfcontrast !ab-h-5 "
+                      onClick={onResetHyperParametersClick}
+                    >
+                      <ReloadIcon className="ab-w-3 ab-h-3 ab-mr-1" />
+                    </Button>
                   </>
                 )}
-
-                <Button
-                  size={"sm"}
-                  className="ab-ftr-button ab-bg-secondary !ab-ml-2 hover:ab-ftr-bg-halfcontrast !ab-h-5 "
-                  onClick={onResetHyperParametersClick}
-                >
-                  <ReloadIcon className="ab-w-3 ab-h-3 ab-mr-1" />
-                </Button>
               </span>
               <span className="ab-flex ab-flex-row ab-justify-between ab-items-end">
                 <AutosizeTextarea
@@ -1395,7 +1437,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
           )}
         </span>
 
-        <div className="ab-w-full ab-overflow-y-auto">
+        <div className="ab-w-full ab-h-full ab-overflow-y-auto">
           <MarkdownEditor
             defaultValue={editorContent}
             placeholder={placeholder}

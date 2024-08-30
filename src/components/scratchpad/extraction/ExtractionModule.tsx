@@ -20,13 +20,13 @@ const inputEditorAtom = atom<string>("");
 const autoExtractAtom = atom<string>("");
 const moduleName = "extraction";
 const placeholder =
-  "Der analysierte Text wird nach der KI-Verarbeitung hier angezeigt. Fügen Sie dazu eine Text-Eingabe ein und klicken Sie auf den Senden-Button.";
-const inputPlaceholder = `
-  Bei der **KI-Analyse** wird der Text, den Sie hier einfügen auf relevante Aspekte hin untersucht und aufgegliedert. 
-  Dabei wird der Text für die Zielgruppe verständlicher und prägnanter formuliert. 
-  Dieses Werkzeug spart Ihnen Zeit, weil es mühsames Querlesen auf ein Minimum reduziert. 
-  Auf der linken Seite finden Sie alle Einstellungen, um die Arbeitsweise der Analyse zu steuern.
-`;
+  "Die Zusammenfassung des Textes wird hier angezeigt, sobald Sie auf den Senden-Button geklickt haben.";
+const inputPlaceholder = `Der Text, den Sie hier einfügen, wird auf relevante Aspekte hin untersucht. Sie können die "Aspekte" links bestimmen. Anschließend wird eine Zusammenfassung erstellt, die im Format Ihrer Wahl ausgegeben wird. Mit den Einstellungen Max. Themen und Max. Sätze können Sie die Textlänge steuern.
+
+Die Einstellungen Zielgruppe, Tonalität und Ausgabesprache sind global. 
+
+Wählen Sie gerne das gewünschte Modell aus der Dropdown-Liste aus. 
+Die Hyperparameter, wie z.B. "Kreativ" haben einen Einfluss auf Kreativität, Fokus und Vokabular.`;
 const outputDbState = db(`${moduleName}-output`);
 const inputDbState = db(`${moduleName}-input`);
 
@@ -41,7 +41,10 @@ export const ExtractionModule = () => {
   const [editorArgs, setEditorArgs] = useState<MilkdownEditorCreatedArgs>();
   const [inputEditorArgs, setInputEditorArgs] =
     useState<MilkdownEditorCreatedArgs>();
+  const [hasLoadedContent, setHasLoadedContent] = useState(false);
+  const [hasLoadedInputContent, setHasLoadedInputContent] = useState(false);
 
+  console.log("rerender ExtractionModule");
   // auto-extract content
   /*
   useEffect(() => {
@@ -78,29 +81,12 @@ export const ExtractionModule = () => {
   const debouncedAppendToEditor = useDebouncedCallback(
     useCallback(
       ({ content }) => {
-        console.log(
-          "debouncedAppendToEditor",
-          content,
-          "editorContent",
-          editorContent,
-          "placeholder",
-          placeholder,
+        setEditorContent((editorContent) =>
+          editorContent.trim() ? `${editorContent}\n---\n${content}` : content,
         );
-        // if the editor has only placeholder content or is empty, replace it
-
-        if (editorContent === placeholder || editorContent === "") {
-          console.log("Add WITHOUT ---");
-          setEditorContent(content);
-        } else {
-          const newState = editorContent.trim()
-            ? `${editorContent}\n---\n${content}`
-            : content;
-
-          setEditorContent(newState);
-        }
         scrollDownMax(editorEl);
       },
-      [editorContent, setEditorContent, editorEl],
+      [editorEl],
     ),
     100,
     { maxWait: 200 },
@@ -110,17 +96,18 @@ export const ExtractionModule = () => {
     useCallback(
       ({ content }) => {
         console.log("debouncedAppendToInputEditor", content);
-        const newState = inputEditorContent.trim()
-          ? `${inputEditorContent}\n\n${content}`
-          : content;
 
-        setInputEditorContent(newState);
+        setInputEditorContent((inputEditorContent) =>
+          inputEditorContent.trim()
+            ? `${inputEditorContent}\n\n${content}`
+            : content,
+        );
 
         console.log("debouncedAppendToInputEditor", content);
 
         scrollDownMax(inputEditorEl);
       },
-      [inputEditorContent, setInputEditorContent, inputEditorEl],
+      [inputEditorEl],
     ),
     100,
     { maxWait: 200 },
@@ -128,70 +115,80 @@ export const ExtractionModule = () => {
 
   // sync extraction with editor content
   useEffect(() => {
-    if (extractedWebsiteData$) {
+    if (extractedWebsiteData$ && !hasLoadedContent) {
       console.log("setting extracted input", extractedWebsiteData$);
       debouncedAppendToInputEditor({ content: extractedWebsiteData$ });
       extractedWebsiteDataAtom.set(""); // reset buffer
-    } else if (editorArgs && editorArgs.getValue!().length === 0) {
+      setHasLoadedContent(true);
+    } else if (
+      editorArgs &&
+      editorArgs.getValue!().length === 0 &&
+      !hasLoadedContent
+    ) {
       (async () => {
         const content = await outputDbState.get();
         if (content) {
           debouncedAppendToEditor({ content });
         } else {
-          debouncedAppendToEditor({ content: placeholder });
+          // set placeholder content
+          setEditorContent("");
         }
+        setHasLoadedContent(true);
       })();
     }
-  }, [extractedWebsiteData$, editorArgs]);
+  }, [extractedWebsiteData$, editorArgs, hasLoadedContent]);
 
   useEffect(() => {
-    if (inputEditorArgs && inputEditorArgs.getValue!().length === 0) {
+    if (
+      inputEditorArgs &&
+      inputEditorArgs.getValue!().length === 0 &&
+      !hasLoadedInputContent
+    ) {
       (async () => {
+        console.log("inputEditorArgs change");
         const content = await inputDbState.get();
         if (content) {
           debouncedAppendToInputEditor({ content });
         } else {
-          debouncedAppendToInputEditor({ content: inputPlaceholder });
+          // set placeholder content
+          setEditorContent("");
         }
+        setHasLoadedInputContent(true);
       })();
     }
-  }, [inputEditorArgs]);
+  }, [inputEditorArgs, hasLoadedInputContent]);
 
   const onEditorContentChange = useCallback(
     (markdown: string) => {
+      console.log("onEditorContentChange", markdown);
       setEditorContent(markdown);
       if (editorArgs) {
         outputDbState.set(markdown);
       }
     },
-    [setEditorContent, editorArgs],
+    [editorArgs],
   );
 
   const onInputEditorContentChange = useCallback(
     (markdown: string) => {
+      console.log("onInputEditorContentChange", markdown);
       setInputEditorContent(markdown);
       if (inputEditorArgs) {
         inputDbState.set(markdown);
       }
     },
-    [setInputEditorContent, inputEditorArgs],
+    [inputEditorArgs],
   );
 
-  const onEditorCreated = useCallback(
-    ({ args }: CallbackArgs) => {
-      setEditorEl(args.el);
-      setEditorArgs(args);
-    },
-    [setEditorEl],
-  );
+  const onEditorCreated = useCallback(({ args }: CallbackArgs) => {
+    setEditorEl(args.el);
+    setEditorArgs(args);
+  }, []);
 
-  const onInputEditorCreated = useCallback(
-    ({ args }: CallbackArgs) => {
-      setInputEditorEl(args.el);
-      setInputEditorArgs(args);
-    },
-    [setInputEditorEl],
-  );
+  const onInputEditorCreated = useCallback(({ args }: CallbackArgs) => {
+    setInputEditorEl(args.el);
+    setInputEditorArgs(args);
+  }, []);
 
   return (
     <GenericModule
@@ -199,7 +196,7 @@ export const ExtractionModule = () => {
       inputValue={inputEditorContent}
       placeholder={placeholder}
       inputPlaceholder={inputPlaceholder}
-      defaultModelName="openai-gpt-4o-mini"
+      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={extractionPrompt}
       name={moduleName}
       editorAtom={editorAtom}

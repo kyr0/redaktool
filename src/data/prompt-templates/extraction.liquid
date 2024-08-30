@@ -5,25 +5,40 @@ WICHTIGSTE INSTRUKTIONEN: {{ CUSTOM_INSTRUCTION }}
 {% endif %}
 
 REGELN:
+- Schreibe zuerst eine kurze Zusammenfassung der Text-Eingabe.
 {% if DATA_FORMAT == "markdown" %}
   - Verwende in der Markdown-Formatierung NIEMALS den Code-Block ```
 {% endif %}
 - Relevant sind ausschließlich die Aussagen des Textes in CONTENT.
 {% if FORMAT == 'in Stichpunkten' %}
 - Erstelle eine Stichpunkt-artige-Liste.
-- Erstelle jeweils {{ ANZAHL_STICHPUNKTE }} Stichpunkte zu JEDEM Aspekt der in ASPEKTE genannt wurde, vorausgesetzt, das der Aspekt überhaupt in der Text-Eingabe vorkommt.
+- Erstelle jeweils {{ ANZAHL_THEMEN }} Stichpunkte zu den ASPEKTE, wenn der Aspekt in der Text-Eingabe vorkommt.
 {% endif %}
 {% if FORMAT == 'als Fließtext' %}
-- Schreibe keine Stichpunkte, sondern kurze Absätze mit jeweils einer Überschrift, Markdown #### für jenden Aspekt, der in ASPEKTE vorkommt, vorausgesetzt, das der Aspekt überhaupt in der Text-Eingabe vorkommt.
+- Schreibe zu den ASPEKTE keine Stichpunkte, sondern kurze Absätze mit einer Überschrift die nur den Namen des Aspekts enthält.
+- Schreibe im Absatz über maximal {{ ANZAHL_THEMEN }} Themen. 
+- Überschriften sind als Markdown #### auszuweisen.
 {% endif %}
-- Extrahiere Punkte die {{ EXTRAKTIONS_THEMEN }}.
+{% if REMOVE_ADS == 'Ja' %}
+- Ignoriere Werbung, und offensichtlich irrelevante Inhalte wie Buttons, Links, "Mehr lesen", "Teilen", etc.
+{% endif %}
+- WICHTIG:Kommt ein Aspekt in ASPEKTE nicht vor, nenne ihn nicht.
 - Die Ergebnisse sind im Markdown-Format zu liefern.
 - Die Zielgruppe ist: {{ AUDIENCE }}.
 - Erkläre Fachbegriffe die die folgende Zielgruppe nicht wissen könnte: {{ ZIELGRUPPE }}.
-- Verfasse die Antwort in der Tonalität: {{ TONE }}.
 - Antworte in der Sprache: {{ TARGET_LANGUAGE }}.
 - Maximal {{MAX_SENTENCES_PER_TOPIC}} Sätze pro Thema.
 - Ignoriere Werbung, und offensichtlich irrelevante Inhalte wie Buttons, Links, "Mehr lesen", "Teilen", etc.
+- Das BEISPIEL zeigt, wie die Ausgabe aussehen soll.
+{% if STRUCTURE == 'chronologisch' %}
+- Die Reihenfolge der Themen muss chronologisch sein.
+{% endif %}
+{% if STRUCTURE == 'thematisch' %}
+- Die Reihenfolge der Themen muss thematisch sein.
+{% endif %}
+{% if STRUCTURE == 'thematisch, nachfolgend chronologisch' %}
+- Die Reihenfolge der Themen muss thematisch sein, und danach chronologisch.
+{% endif %}
 ENDE DER REGELN.
 
 ASPEKTE:
@@ -33,24 +48,27 @@ ENDE DER ASPEKTE.
 Text-Eingabe:
 {{ CONTENT }}
 
-{% field FORMAT = "{ label: 'Format', default: 'in Stichpunkten', options: ['in Stichpunkten', 'als Fließtext'] }" %}
+BEISPIEL:
+**Kurze Zusammenfassung**
+In dem Text geht es um die neue Studie von der Firma XYZ. Die Studie zeigt, dass die Firma XYZ in den letzten 10 Jahren um 20% ihrer Umsätze gesteigert hat.
 
-{% field ANZAHL_STICHPUNKTE = "{ label: 'Max. Stichpunkte', type: 'number', default: '5' }" %}
+** Besonderer Neuigkeitswert **
+- 20% Umsatzsteigerung in den letzten 10 Jahren
+ENDE DES BEISPIEL.
 
-{% field ASPEKTE = "{ label: 'Aspekte', type: 'textarea', default: '**Besonderer Neuigkeitswert:**
-- ...
-**Wichtige Aspekte:**
-- ...
-**Besonders überraschend:**
-- ...
-**Spannende Zahlen und Fakten:**
-- ...
-**Wissenschaftliche Aspekte:**
-- ...
-**Relevante Zitate:**
-- ...
+{% field ASPEKTE = "{ label: 'Aspekte', type: 'textarea', default: '- Besonderer Neuigkeitswert
+- Besonders überraschend
+- Spannende Zahlen und Fakten
+- Wissenschaftliche Aspekte
+- Relevante Zitate
+- Andere wichtige Aspekte
+- Trivia
 '}" %}
-{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'Erwachsene, Allgemeinheit', global: true }" %}
-{% field TONE = "{ label: 'Tonalität', default: 'Professionell', global: true }" %}
-{% field TARGET_LANGUAGE = "{ label: 'Sprache', default: 'Deutsch', options: ['Deutsch', 'Englisch'], global: true }" %}
+
+{% field FORMAT = "{ label: 'Formatierung', default: 'in Stichpunkten', options: ['in Stichpunkten', 'als Fließtext'] }" %}
+{% field STRUCTURE = "{ label: 'Struktur', default: 'thematisch', options: ['thematisch', 'chronologisch', 'thematisch, nachfolgend chronologisch'] }" %}
+{% field ANZAHL_THEMEN = "{ label: 'Max. Themen', type: 'number', default: '5' }" %}
 {% field MAX_SENTENCES_PER_TOPIC = "{ label: 'Max. Sätze pro Thema', default: 2 }" %}
+{% field AUDIENCE = "{ label: 'Zielgruppe', default: 'Erwachsene, Allgemeinheit', global: true }" %}
+{% field TARGET_LANGUAGE = "{ label: 'Ausgabesprache', default: 'Deutsch', options: ['Deutsch', 'Englisch', 'Chinesisch (Mandarin)', 'Spanisch', 'Französisch', 'Italienisch', 'Portugiesisch', 'Niederländisch', 'Russisch', 'Japanisch'], global: true }" %}
+{% field REMOVE_ADS = "{ label: 'Werbung entfernen', default: 'Ja', options: ['Ja', 'Nein'] }" %}

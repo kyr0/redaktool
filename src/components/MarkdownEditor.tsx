@@ -9,11 +9,6 @@ import {
   serializerCtx,
   SchemaReady,
 } from "@milkdown/core";
-import {
-  createSlice,
-  type MilkdownPlugin,
-  type Telemetry,
-} from "@milkdown/ctx";
 import { replaceAll, getMarkdown } from "@milkdown/utils";
 import { blockquoteSchema, headingSchema } from "@milkdown/preset-commonmark";
 import { $command, callCommand } from "@milkdown/utils";
@@ -166,6 +161,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
                 ".ProseMirror",
               ) as HTMLElement;
               editorEl?.setAttribute("spellcheck", "false");
+              //editorEl?.setAttribute("placeholder", placeholder || "");
 
               const args: MilkdownEditorCreatedArgs = {
                 editor,
@@ -235,6 +231,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
 
           listener.markdownUpdated((_ctx, markdown, prevMarkdown) => {
             if (markdown !== prevMarkdown) {
+              console.log("markdown updated onChange", markdown);
               onChange(markdown);
             }
 
@@ -253,6 +250,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             milkdownEditorAtom.set({
               ...prevArgs,
             });
+            console.log("nano store updated");
           });
 
           //const telemetry: Telemetry[] = editor.inspect();
