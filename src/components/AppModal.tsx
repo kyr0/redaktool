@@ -28,6 +28,8 @@ import {
   InfoIcon,
   LanguagesIcon,
   Loader2Icon,
+  Maximize2,
+  Minimize2,
   MousePointerSquareDashed,
   PointerIcon,
   X,
@@ -55,8 +57,11 @@ import { TooltipProvider } from "../ui/tooltip";
 import { useStore } from "@nanostores/react";
 import { milkdownEditorAtom } from "./MarkdownEditor";
 import { usePluginViewContext } from "@prosemirror-adapter/react";
+import { db } from "../lib/content-script/db";
 
 export const extractedWebsiteDataAtom = atom<string>("");
+
+const expertModeStateDb = db<number>("expertMode", 0);
 
 export interface AppModalProps {
   root: ShadowRoot | Window;
@@ -100,6 +105,7 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
   );
 
   const [zoomClasses, setZoomClasses] = useState<ZoomOptions>(zoomFactor.get());
+  const [isMaximized, setIsMaximized] = useState<boolean>(false);
 
   useEffect(() => {
     // restore zoom factor and language
@@ -174,6 +180,66 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
     activateElementSelection();
     setShowDialog(false);
   };
+
+  const onMaxMinToggleClick = useCallback(() => {
+    // Add any specific code you want to run on maximize/minimize toggle here
+    console.log("Maximize/Minimize toggled", zoomFactor.get());
+
+    const zoomFactorNumeric = Number.parseInt(
+      zoomFactor.get().split("-")[2],
+      10,
+    );
+    const zoomFactorScale = 1 + (100 - zoomFactorNumeric) / 100;
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    setIsMaximized((prev) => {
+      if (prev) {
+        // Minimize
+        const resizeEvent = new CustomEvent("redaktool_window_resize", {
+          detail: {
+            w:
+              (window.innerWidth / 2 > 1024 ? 1024 : window.innerWidth / 2) *
+              zoomFactorScale,
+            h:
+              (window.innerHeight / 2 > 768 ? 768 : window.innerHeight / 2) *
+              zoomFactorScale,
+          },
+        });
+        window.dispatchEvent(resizeEvent);
+
+        storedDialogPositionPref.set({
+          x: 0,
+          y: 0,
+        });
+      } else {
+        // Maximize
+        const resizeEvent = new CustomEvent("redaktool_window_resize", {
+          detail: {
+            w:
+              (window.visualViewport?.width || window.innerWidth) *
+                zoomFactorScale -
+              18 * zoomFactorScale,
+            h:
+              (window.visualViewport?.height ||
+                window.innerHeight * zoomFactorScale) -
+              50 * zoomFactorScale,
+          },
+        });
+        window.dispatchEvent(resizeEvent);
+
+        storedDialogPositionPref.set({
+          x: 0,
+          y: 0,
+        });
+      }
+
+      const newState = !prev;
+
+      expertModeStateDb.set(newState ? 0 : 1);
+      return newState;
+    });
+  }, [zoomFactor]);
 
   useEffect(() => {
     //setShowOpenButton(false);
@@ -335,6 +401,24 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
                   zoomFactor.set(factor);
                 }}
               />
+
+              <Separator
+                orientation="vertical"
+                className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2"
+              />
+              <button
+                type="button"
+                onClick={onMaxMinToggleClick}
+                className={`${HeaderButtonStyle} !ab-w-auto !ab-mr-1`}
+              >
+                <span className="ab-text-sm">
+                  {isMaximized ? (
+                    <Minimize2 className="ab-h-4 ab-w-4 ab-shrink-0" />
+                  ) : (
+                    <Maximize2 className="ab-h-4 ab-w-4 ab-shrink-0" />
+                  )}
+                </span>
+              </button>
 
               <Separator
                 orientation="vertical"

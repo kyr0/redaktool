@@ -164,6 +164,10 @@ export const TranscriptionLayout = () => {
         audioPlayerStatusRef.current.innerHTML = "Loading audio file...";
         audioPlayerStatusRef.current.classList.remove("ab-hidden");
       }
+      setAudioBufferBlobs([]);
+      setElapsedTimes([]);
+      setIndexesTranscribing([]);
+
       const audioContext = new AudioContext();
       setAudioFile(file);
       setAudioContext(audioContext);
@@ -353,6 +357,10 @@ export const TranscriptionLayout = () => {
   const onStartLiveTranscription = useCallback(() => {
     if (selectedMediaElement) {
       console.log("transcribe media element", selectedMediaElement);
+
+      setAudioBufferBlobs([]);
+      setElapsedTimes([]);
+      setIndexesTranscribing([]);
 
       let isPlaying =
         !selectedMediaElement.paused && selectedMediaElement.currentTime > 0;

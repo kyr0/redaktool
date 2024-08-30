@@ -52,6 +52,28 @@ export const Resizable: React.FC<any> = ({
     onUpdateSize(newSize.w, newSize.h);
   };
 
+  useEffect(() => {
+    const handleResize = (event: CustomEvent) => {
+      if (resizableContainerRef.current) {
+        const { w, h } = event.detail;
+        applyNewSize(resizableContainerRef.current, w, h);
+        onUpdateSize(w, h);
+      }
+    };
+
+    window.addEventListener(
+      "redaktool_window_resize",
+      handleResize as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "redaktool_window_resize",
+        handleResize as EventListener,
+      );
+    };
+  }, [resizableContainerRef.current, initialized]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsResizing(true);
     lastMousePosition.current = { x: e.clientX, y: e.clientY };
