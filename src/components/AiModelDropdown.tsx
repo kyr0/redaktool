@@ -53,18 +53,6 @@ export function AiModelDropdown({
     }
   }, [selectedModel, selectedInferenceProvider]);
 
-  const onModelDropdownButtonClick = useCallback(() => {
-    if (!selectedModel && selectedInferenceProvider?.models.length === 0) {
-      alert("No AI models configured for provider");
-    }
-  }, [selectedModel, selectedInferenceProvider])
-
-  const onInferenceProviderDropdownButtonClick = useCallback(() => {
-    if (options.length === 0) {
-      alert("No AI providers configured");
-    }
-  }, [options])
-
   useEffect(() => {
 
     let foundModel = false;
@@ -103,7 +91,6 @@ export function AiModelDropdown({
           <Button
             size={"sm"}
             className="!ab-text-xs !ab-h-5 !ab-px-1 hover:!ab-bg-primary-foreground"
-            onClick={onInferenceProviderDropdownButtonClick}
           >
             {options.length === 0 ? "KI-Anbieter konfigurieren" : selectedInferenceProvider ? `${selectedInferenceProvider.name}` : "KI-Anbieter wählen..."}
             <ArrowDown className="ab-w-3 ab-h-3 ab-ml-1" />
@@ -126,6 +113,16 @@ export function AiModelDropdown({
               {option.name}
             </DropdownMenuItem>
           ))}
+
+          {options.length === 0 && (
+            <DropdownMenuItem>
+              <span>
+                Klicken Sie im Menü links auf Einstellungen <br />
+                und konfigurieren Sie mit "+ Neu" <br />
+                mindestens einen KI-Anbieter.
+              </span>
+            </DropdownMenuItem>
+          )}
 
           {/*
           <DropdownMenuGroup>
@@ -168,7 +165,6 @@ export function AiModelDropdown({
             <Button
               size={"sm"}
               className="!ab-text-xs !ab-h-5 !ab-px-1 hover:!ab-bg-primary-foreground !ab-ml-1"
-              onClick={onModelDropdownButtonClick}
             >
               {(selectedModel && selectedModelName) ? selectedModelName : "KI-Modell wählen..."}
               <ArrowDown className="ab-w-3 ab-h-3 ab-ml-1" />
@@ -189,6 +185,18 @@ export function AiModelDropdown({
                 {option.name.replace(selectedInferenceProvider.name, "").trim()}
               </DropdownMenuItem>
             ))}
+
+            {!selectedModel && selectedInferenceProvider?.models.length === 0 && (
+              <DropdownMenuItem>
+                <span>
+                  Klicken Sie im Menü links auf Einstellungen <br />
+                  und konfigurieren Sie für den KI-Anbieter: <br />
+                  - {selectedInferenceProvider.name}<br />
+                  mit "+ Neu" mindestens ein KI-Modell.
+                </span>
+              </DropdownMenuItem>
+            )}
+
           </DropdownMenuContent>
       </DropdownMenu>
       )}

@@ -1,6 +1,6 @@
 import type { ModelPreference } from "../../components/AiModelDropdown";
 import type { InferenceProvider } from "../../components/settings/types";
-import { useMessageChannelContext } from "../../message-channel";
+import { useMessageChannelContext, messageChannelApi } from '../../message-channel';
 import type { HyperParameters } from "../../shared";
 import type { InferenceProviderType, PromptApiOptions, PromptCallSettings, PromptTokenUsage } from "../worker/llm/interfaces";
 import type { ParseSmartPromptResult } from "../worker/prompt";
@@ -76,7 +76,7 @@ export interface PromptPartialResponse {
   totalPrice?: number;
 }
 
-export const compilePrompt = (
+export const compilePrompt = async(
   promptTemplate: string,
   inputValues: Record<string, string>,
 ): Promise<ParseSmartPromptResult> => {
@@ -97,7 +97,15 @@ export const compilePrompt = (
       },
     );
   });
+  /*messageChannelApi.sendCommand<ParseSmartPromptResult>(
+  "compile-prompt", { 
+    promptTemplate,
+    inputValues
+  }
+)*/
 };
+
+
 
 export const finalizePrompt = (
   prompt: string,

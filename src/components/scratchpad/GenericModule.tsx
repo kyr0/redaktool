@@ -23,6 +23,7 @@ import {
 } from "../MarkdownEditor";
 import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
+import { format } from "date-fns"
 import {
   compilePrompt,
   finalizePrompt,
@@ -97,21 +98,15 @@ import { cn } from "../../lib/content-script/utils";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { Badge } from "../../ui/badge";
 import { getNextId, type HyperParameters } from "../../shared";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "../../ui/accordion";
 import { AutosizeTextarea } from "../AutoresizeTextarea";
 import { db } from "../../lib/content-script/db";
 import { inferenceProvidersDbState } from "../settings/db";
 import type { InferenceProvider } from "../settings/types";
-import { useMessageChannelContext } from "../../message-channel";
+import { messageChannelApi, useMessageChannelContext } from "../../message-channel";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 
-const settingsFieldsStateDb = db<Record<string, string>>("settingsFields");
+const settingsFieldsStateDb = db<Record<string, string>>("settingsFields", {});
 const modelPkStateDb = db<Record<string, ModelPreference>>("modelPk");
 const expertModeStateDb = db<number>("expertMode", 0);
 
@@ -235,7 +230,65 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     "context",
   );
   const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
-  const { sendCommand } = useMemo(() => useMessageChannelContext(), []);
+  const [llmPort, setLlmPort] = useState<chrome.runtime.Port>();
+  const [currentPromptId, setCurrentPromptId] = useState<string>();
+  const [isDoneStreaming, setIsDoneStreaming] = useState<boolean>(false);
+
+  useEffect(() => {
+    const port = chrome.runtime.connect({ name: `${name}-llm-stream`});
+    setLlmPort(port);
+  }, [name])
+
+  useEffect(() => {
+    scrollDownMax(editorEl);
+  }, [editorEl]);
+
+  const onPortMessageReceived = useCallback((message: any) => {
+    switch (message.action) {
+      case "prompt-response": {
+        const chunk = message.payload;
+
+        if (chunk.id === currentPromptId) {
+          console.log("chunk matching current prompt", chunk);
+
+          if (!chunk.finished && !chunk.error) {
+            setEditorContent((prev) => prev + chunk.text);
+            scrollDownMax(editorEl);
+          }
+
+          if (chunk.finished) {
+            setStreamingInProgress(false);
+            setIsDoneStreaming(true);
+          }
+
+          if (chunk.error) {
+            setStreamingInProgress(false);
+            toast.error("Fehler beim Ausführen des Prompts", {
+              icon: (
+                <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
+              ),
+              description: chunk.error
+            });
+          }
+        }
+        break;
+      }
+    }
+  }, [currentPromptId, editorEl]);
+
+  useEffect(() => {
+
+    if (llmPort && onPortMessageReceived) {
+      llmPort.onMessage.addListener(onPortMessageReceived);
+    }
+
+    return () => {
+      if (onPortMessageReceived && llmPort) {
+        console.log("removing onPortMessageReceived listener", onPortMessageReceived);
+        llmPort.onMessage.removeListener(onPortMessageReceived);
+      }
+    };
+  }, [llmPort, onPortMessageReceived]);
 
   useEffect(() => {
     (async() => {
@@ -254,7 +307,6 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         setModelPk(storedModelPk[name]);
       }
     })();
-
   }, [inferenceProviders, modelPkStateDb, name])
 
   useEffect(() => {
@@ -281,7 +333,14 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   useEffect(() => {
     (async () => {
       const storedFields = await settingsFieldsStateDb.get();
-      const fieldNames = Object.keys(storedFields)
+
+      const keys = Object.keys(storedFields);
+
+      if (keys.length === 0) {
+        return;
+      }
+
+      const fieldNames = keys
         .filter((key) => key.indexOf(":") !== -1)
         // sort by name, LOCAL first, then GLOBAL
         .sort((a, b) => {
@@ -500,14 +559,21 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     }
   }, [internalInputEditorArgs, onInputEditorCreated, prompt]);
 
+
   // sync editor content with extraction
   const onEditorChangeInternal = useCallback(
     (markdown: string) => {
-      setEditorContent(markdown);
-    },
-    [setEditorContent],
-  );
+      if (!streamingInProgress || isDoneStreaming) {
+        setEditorContent(markdown);
+      }
 
+      if (isDoneStreaming) {
+        setIsDoneStreaming(false);
+      }
+    },
+    [streamingInProgress, isDoneStreaming],
+  );
+  
   // sync input editor content with extraction
   const onInputEditorChangeInternal = useCallback(
     (markdown: string) => {
@@ -621,31 +687,17 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       new Promise<{
         resolvedValues: Record<string, string>;
         parsedPrompt: ParseSmartPromptResult;
-        dynamicFields: ParseResult[];
+        dynamicFields: Array<ParseResult>;
       }>((resolve, reject) => {
         (async () => {
           try {
-            
 
             // first pass compiler for dynamic fields
-            let parsedPrompt = await sendCommand<ParseSmartPromptResult>(
-                "compile-prompt", { 
-                  promptTemplate: prompt, 
-                  inputValues: getValidatedDynamicFieldValues() 
-                }
-            );
-
-            console.log("parsedPrompt111", parsedPrompt)
-            
-
-
-            console.log("new smartprompt parser", parsedPrompt);
+            let parsedPrompt = await compilePrompt(prompt, getValidatedDynamicFieldValues());
 
             const dynamicFields = Object.keys(parsedPrompt.meta)
               .map((key) => parsedPrompt.meta[key])
               .sort((a, b) => a.order - b.order);
-
-            console.log("dynamicFields", dynamicFields);
 
             // trigger dynamic field re-rendering
             setDynamicFields(dynamicFields);
@@ -660,12 +712,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
             };
 
             // second pass compiler for dynamic fields
-            parsedPrompt = await sendCommand<ParseSmartPromptResult>(
-              "compile-prompt", { 
-                promptTemplate: prompt, 
-                inputValues: finalizedValues
-              }
-            );
+            parsedPrompt = await compilePrompt(prompt, finalizedValues);
             
             resolve({
               resolvedValues: finalizedValues,
@@ -689,7 +736,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       setDynamicFieldValues,
       getValidatedDynamicFieldValues,
       compilePrompt,
-      sendCommand,
       prompt,
     ],
   );
@@ -764,9 +810,9 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
             resolve(finalPrompt);
           } catch (e) {
             reject(e);
+          } finally {
+            setRecompilingInProgress(false);
           }
-
-          setRecompilingInProgress(false);
         })();
       });
     },
@@ -856,10 +902,10 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     // cache the editor content
     editorAtom.set(editorContent);
 
-    if (typeof onEditorContentChange === "function") {
+    if (typeof onEditorContentChange === "function" && !streamingInProgress) {
       onEditorContentChange(editorContent);
     }
-  }, [editorContent]);
+  }, [editorContent, streamingInProgress]);
 
   useEffect(() => {
     // cache the input editor content
@@ -881,9 +927,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
   const onPromptSendClick = useCallback(() => {
     (async () => {
-      let isBeginning = true;
-      let originalText = "";
-      let partialText = "";
 
       console.log("onPromptSendClick input", inputEditorContent);
 
@@ -900,6 +943,24 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       });
 
       setStreamingInProgress(true);
+
+      if (llmPort) {
+        setCurrentPromptId(finalPrompt.id);
+
+        setEditorContent((prev) =>  `${prev}
+---
+##### ${format(new Date(), 'dd.MM.yyyy')} ${format(new Date(), 'HH:mm')} Uhr  - ${modelPk?.providerName} - ${modelPk?.model} 
+---
+`);
+
+        llmPort.postMessage({ action: "prompt", payload: finalPrompt });
+      }
+
+      /*
+      let isBeginning = true;
+      let originalText = "";
+      let partialText = "";
+      
 
       const reflush = () => {
         setTimeout(() => {
@@ -985,6 +1046,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
           description: (e as Error).message,
         });
       }
+      */
     })();
   }, [
     generatePrompt,
@@ -999,6 +1061,8 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     autoTuneCreativity,
     autoTuneFocus,
     autoTuneGlossary,
+    expertMode,
+    llmPort,
   ]);
 
   const onStopPromptStreamingClick = useCallback(() => {
@@ -1045,11 +1109,18 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                 }`}
               >
                 <div className="ab-w-full ab-grid ab-items-start ab-grid-cols-2 ab-gap-2 ab-gap-y-2 ab-overflow-y-auto">
-                  {!recompilingInProgress &&
-                    dynamicFields.length === 0 &&
-                    promptPrepared.text === "" && (
-                      <Label className="ab-mb-2 ab-flex ab-text-sm">
-                        <CogIcon className="ab-w-4 ab-h-4 ab-mr-2" />
+                  
+                  {!modelPk && (
+                    <Label className="ab-mb-2 ab-flex ab-text-sm ab-col-span-2">
+                      <CogIcon className="ab-w-4 ab-h-4 ab-mr-1 ab-ml-1" />
+                      Bitte wählen Sie ein KI-Modell aus.
+                    </Label>
+                  )}
+
+                  {recompilingInProgress &&
+                    promptPrepared.text !== "" && (
+                      <Label className="ab-mb-2 ab-flex ab-text-sm ab-col-span-2">
+                        <CogIcon className="ab-w-4 ab-h-4 ab-mr-1 ab-ml-1" />
                         Smart-Prompt wird kompiliert...
                       </Label>
                     )}
@@ -1057,7 +1128,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                   {!recompilingInProgress &&
                     dynamicFields.length === 0 &&
                     promptPrepared.text !== "" && (
-                      <Label className="ab-mb-2 ab-flex">
+                      <Label className="ab-mb-2 ab-flex ab-col-span-2 ab-ml-1">
                         Keine dynamischen Einstellungen verfügbar
                       </Label>
                     )}

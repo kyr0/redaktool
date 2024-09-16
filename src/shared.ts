@@ -8,10 +8,12 @@ export const PARTIAL_RESPONSE_TEXT_NAME = "PARTIAL_RESPONSE_TEXT";
 
 export const PARTIAL_RESPONSE_NAME = "PARTIAL_RESPONSE";
 
-export type SupportedActions = "model" | "compile-prompt" | "compile-prompt-result" | "prompt";
+export type SupportedActions = "model" | "compile-prompt" | "compile-prompt-result" | "prompt" | "db-get" | "db-get-result" | "db-set" | "db-set-result";
 
 export interface MessageChannelPackage<T> {
   id: string;
+  success?: boolean;
+  error?: unknown;
   action: SupportedActions;
   payload: T;
 }
@@ -25,6 +27,11 @@ export interface MLModel {
   tokenizerConfig: any;
   tokenizer: Blob;
   config: any;
+}
+
+export interface DbKeyValue {
+  key: string;
+  value?: any;
 }
 
 export interface EmbeddingModelMessage extends MessageChannelPackage<MLModel> {
@@ -43,8 +50,12 @@ export interface CompilePromptResultMessage extends MessageChannelPackage<ParseS
   payload: ParseSmartPromptResult;
 }
 
-export type MessageChannelMessage = EmbeddingModelMessage | PromptMessage | CompilePromptMessage | CompilePromptResultMessage;
-export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult;
+export interface DbMessage extends MessageChannelPackage<DbKeyValue> {
+  payload: DbKeyValue;
+}
+
+export type MessageChannelMessage = EmbeddingModelMessage | PromptMessage | CompilePromptMessage | CompilePromptResultMessage | DbMessage;
+export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue;
 
 export interface HyperParameters {
   autoTuneCreativity: number;
@@ -52,10 +63,8 @@ export interface HyperParameters {
   autoTuneGlossary: number;
 }
 
-export const getNextId = () => {
-  let id = 0;
-  return (() => {
-    id += 1;
-    return id.toString();
-  })();
+let sequence = 0;
+export const getNextId = (namespace: string) => {
+  ++sequence;
+  return `${namespace}-${Math.random()*100000}-${Date.now()}-${sequence}`
 }

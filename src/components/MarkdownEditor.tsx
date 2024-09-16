@@ -37,7 +37,7 @@ import { history as proseHistory } from "@milkdown/plugin-history";
 import { clipboard } from "@milkdown/plugin-clipboard";
 import { cursor } from "@milkdown/plugin-cursor";
 import { emoji } from "@milkdown/plugin-emoji";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import {
   BoldIcon,
   CodeIcon,
@@ -136,7 +136,7 @@ export const milkdownEditorAtom = atom<Record<
 > | null>({});
 export const getMilkdownEditorStore = () => useStore(milkdownEditorAtom);
 
-const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
+const MilkdownEditor: React.FC<MarkdownEditorProps> = memo(({
   name,
   defaultValue = "",
   showToolbar,
@@ -151,8 +151,6 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
   const { get, loading } = useEditor(
     (root) => {
       const editor = Editor.make()
-
-        .enableInspector()
         .onStatusChange((status) => {
           if (status === "Created") {
             if (root) {
@@ -228,6 +226,7 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
           console.log("ctx", ctx);
           console.log("rootCtx", rootCtx);
           console.log("editorViewOptionsCtx", editorViewOptionsCtx);
+          console.log("editorViewCtx", editorViewCtx);
 
           listener.markdownUpdated((_ctx, markdown, prevMarkdown) => {
             if (markdown !== prevMarkdown) {
@@ -236,15 +235,17 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
 
             // update nano store with updates view reference
-            const view = _ctx.get(editorViewCtx);
-            const serializer = _ctx.get(serializerCtx);
+              // TODO: breaks
+            //const view = _ctx.get(editorViewCtx);
+            //const serializer = _ctx.get(serializerCtx);
             const prevArgs = milkdownEditorAtom.get();
             const editorNames = Object.keys(prevArgs || {});
 
             editorNames.forEach((currentName) => {
               if (currentName === name) {
-                prevArgs![currentName].view = view;
-                prevArgs![currentName].serializer = serializer;
+                // TODO: breaks
+                //prevArgs![currentName].view = view;
+                //prevArgs![currentName].serializer = serializer;
               }
             });
             milkdownEditorAtom.set({
@@ -428,9 +429,9 @@ const MilkdownEditor: React.FC<MarkdownEditorProps> = ({
       </div>
     </div>
   );
-};
+});
 
-export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
+export const MarkdownEditor: React.FC<MarkdownEditorProps> = memo(({
   name,
   showToolbar,
   defaultValue = "",
@@ -481,4 +482,4 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       </ProsemirrorAdapterProvider>
     </MilkdownProvider>
   );
-};
+});

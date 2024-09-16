@@ -7,6 +7,7 @@ import {
   type MLModel,
   type MessageChannelPackage,
   type MessageChannelMessage,
+  type DbKeyValue,
 } from "./shared";
 import {
   promptStreaming,
@@ -17,7 +18,7 @@ import {
   getLastPartialPromptResponse,
   setLastPartialPromptResponse,
 } from "./lib/worker/prompt";
-import { dbGetValue, dbSetValue } from "./lib/worker/db";
+import { db, dbGetValue, dbSetValue } from "./lib/worker/db";
 import { fetchRssFeed } from "./lib/worker/rss";
 import { cron } from "./lib/worker/scheduler";
 import { getPref, getValue, setValue } from "./lib/worker/prefs";
@@ -41,7 +42,8 @@ import { loadEmbeddingModel } from "./lib/worker/embedding/model";
 const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
 
 // instant memory/heap reference pub/sub messaging
-addListener((e) => {
+addListener(async(e) => {
+  console.log("worker message", e.data);
   switch (e.data.action) {
     case "model": {
       const model = e.data.payload as MLModel;
@@ -50,23 +52,105 @@ addListener((e) => {
     }
 
     // TODO: 
+    /*
     case "compile-prompt": {
+
       const compilePrompt = e.data.payload as CompilePrompt;
       console.log("compile-prompt2", e.data.payload);
 
-      const compileResult = compileSmartPrompt(
-        compilePrompt.promptTemplate,
-        compilePrompt.inputValues,
-      );
+      try {
+        const compileResult = compileSmartPrompt(
+          compilePrompt.promptTemplate,
+          compilePrompt.inputValues,
+        );
 
-      console.log("compileResult2", compileResult);
-      postMessage({
-        id: e.data.id,
-        action: "compile-prompt-result",
-        payload: compileResult
-      })
+        console.log("compileResult2", compileResult);
+
+        if (compileResult.error) {
+          postMessage({
+            id: e.data.id,
+            success: false,
+            error: compileResult.error,
+            action: "compile-prompt-result",
+            payload: compileResult
+          })
+        } else {
+          postMessage({
+            id: e.data.id,
+            success: true,
+            action: "compile-prompt-result",
+            payload: compileResult
+          })
+        }
+      } catch (error) {
+        console.log("compile prompt error", e.data.payload, error);
+        postMessage({
+          id: e.data.id,
+          success: false,
+          error,
+          action: "compile-prompt-result",
+          payload: compilePrompt 
+        })
+      }
       break;
     }
+    */
+
+    /*
+    case "db-get": {
+      console.log("db-get2", e.data.payload);
+      const dbKeyValue = e.data.payload as DbKeyValue;
+      console.log("dbKeyValue2", dbKeyValue);
+      try {
+        const data = await dbGetValue(dbKeyValue.key);
+        console.log("data2", dbKeyValue, data);
+        postMessage({
+          id: e.data.id,
+          success: true,
+          action: "db-get-result",
+          payload: { key: dbKeyValue.key, value: data ? JSON.parse(data) : undefined }
+        })
+      } catch (error) {
+        console.log("db-get error", dbKeyValue, error);
+        postMessage({
+          id: e.data.id,
+          success: false,
+          error,
+          action: "db-get-result",
+          payload: { key: dbKeyValue.key, value: undefined }
+        })
+      }
+      break;
+    }
+
+    case "db-set": {
+      console.log("db-set2", e.data.payload);
+      const dbKeyValue = e.data.payload as DbKeyValue;
+      console.log("dbKeyValue2", dbKeyValue);
+      try {
+
+        const pk = await dbSetValue(dbKeyValue.key, JSON.stringify(dbKeyValue.value));
+        console.log("db-set", e.data.payload);
+        console.log("data2", dbKeyValue);
+        postMessage({
+          id: e.data.id,
+          success: true,
+          action: "db-set-result",
+          payload: { key: dbKeyValue.key, value: pk }
+        })
+      } catch (error) {
+        console.log("db-set error", dbKeyValue, error);
+        postMessage({
+          id: e.data.id,
+          success: false,
+          error,
+          action: "db-set-result",
+          payload: { key: dbKeyValue.key, value: undefined }
+        })
+      }
+      break;
+    }
+    */
 
     case "prompt": {
       console.log("prompt", e.data.payload);
@@ -90,18 +174,128 @@ job.runNow();
 
 // TODO: Archive with IndexedDB and Vector Embeddings
 
-/**
- * Could use this for LLM message streaming
-chrome.runtime.onConnect.addListener(function (port) {
-  console.assert(port.name === "web_llm_service_worker");
-  if (handler === undefined) {
-    handler = new ExtensionServiceWorkerMLCEngineHandler(port);
-  } else {
-    handler.setPort(port);
-  }
-  port.onMessage.addListener(handler.onmessage.bind(handler));
+// dead port tracking
+const portsDisconnected = new WeakSet();
+
+chrome.runtime.onConnect.addListener((port) => {
+  port.onMessage.addListener((message) => {
+    switch (message.action) {
+      case "prompt": {
+        const prompt = message.payload as Prompt;
+        console.log("prompt", prompt);
+
+        console.log("prompt data", prompt);
+        console.log("prompt", prompt.text);
+
+        const advancedHyperParameters: Partial<Omit<PromptCallSettings, "model">> =
+          {};
+
+        if (typeof prompt.hyperParameters?.autoTuneCreativity === "number") {
+          advancedHyperParameters.temperature =
+            (prompt.hyperParameters?.autoTuneCreativity / 100)
+        }
+
+        switch (prompt.inferenceProvider) {
+          case "openai":
+            
+            if (typeof prompt.hyperParameters?.autoTuneFocus === "number") {
+              advancedHyperParameters.presencePenalty =
+                (prompt.hyperParameters?.autoTuneGlossary / 100) * 2;
+            }
+
+            if (
+              typeof prompt.hyperParameters?.autoTuneGlossary === "number"
+            ) {
+              advancedHyperParameters.frequencyPenalty =
+                (prompt.hyperParameters?.autoTuneFocus / 100) * 2;
+            }
+            break;
+
+          case "anthropic":
+            console.log("anthropic key", prompt.apiOptionsOverrides?.apiKey);
+            break;
+        }
+
+        console.log("advancedHyperParameters", advancedHyperParameters);
+
+        promptStreaming(
+          prompt.model,
+          prompt.text,
+          prompt.inferenceProvider as InferenceProviderType,
+          async (text: string, elapsed: number) => {
+            console.log("onChunk STREAM (internal) elapsed", elapsed);
+
+            if (portsDisconnected.has(port)) {
+              return;
+            }
+            port.postMessage({
+              action: "prompt-response",
+              payload: {
+                id: prompt.id,
+                text,
+                elapsed,
+                finished: false,
+              },
+            })
+          },
+          async (text: string, elapsed: number, usage: PromptTokenUsage) => {
+            console.log("onDone STREAM (internal) elapsed", elapsed);
+
+            if (portsDisconnected.has(port)) {
+              return;
+            }
+
+            port.postMessage({
+              action: "prompt-response",
+              payload: {
+                id: prompt.id,
+                text,
+                elapsed,
+                actualUsage: usage,
+                finished: true,
+              },
+            })
+          },
+          async (error: unknown, elapsed: number) => {
+            console.log("onError STREAM (internal) elapsed", elapsed);
+
+            if (portsDisconnected.has(port)) {
+              return;
+            }
+
+            port.postMessage({
+              action: "prompt-response",
+              payload: {
+                id: prompt.id,
+                error,
+                elapsed,
+                finished: true,
+              },
+            })
+          },
+          {
+            // union of parameters passed down, mapped internally
+            ...advancedHyperParameters,
+            ...(prompt.settingsOverrides || {}),
+          },
+          {
+            // union of options passed down, mapped internally
+            ...(prompt.apiOptionsOverrides || {}),
+            // auto-tuning of hyperparameters
+            //autoTuneCreativity: prompt.autoTuneCreativity || 0.7,
+            //autoTuneFocus: prompt.autoTuneFocus || undefined,
+            //autoTuneGlossary: prompt.autoTuneGlossary || undefined,
+          },
+        );
+        break;
+      }
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    portsDisconnected.add(port);
+  });
 });
- */
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
@@ -117,6 +311,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log("Data (parsed):", data);
 
       switch (request.action) {
+        
         case "db-get": {
           const result = await dbGetValue(data.key);
           sendResponse({ success: true, value: JSON.stringify(result) });

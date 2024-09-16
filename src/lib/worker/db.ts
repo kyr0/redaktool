@@ -26,7 +26,6 @@ export const dbGetValue = async (key: string): Promise<string | undefined> => {
       if (records.length === 0) {
         resolve(undefined);
       } else {
-        console.log("dbGetValue", records[0].value);
         resolve(records[0].value);
       }
     }).catch((e) => {

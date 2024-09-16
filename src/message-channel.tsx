@@ -1,40 +1,60 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useContext, useEffect } from "react";
 import { type MessageChannelFeatures, useMessageChannel } from "./lib/content-script/message-channel";
 import { getNextId, type MessageChannelMessage, type MessageChannelPayload, type SupportedActions } from "./shared";
 
-
 export type MessageChannelContextType = MessageChannelFeatures<MessageChannelMessage> & {
   sendCommand: <T>(action: SupportedActions, payload: MessageChannelPayload) => Promise<T>;
-} | null;
+};
 
-export const MessageChannelContext = createContext<MessageChannelContextType>(null);
+export const MessageChannelContext = createContext<MessageChannelContextType|null>(null);
+
+export let messageChannelApi: MessageChannelContextType;
 
 export const MessageChannelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [features, setFeatures] = useState<MessageChannelContextType>(messageChannelApi);
 
-  const [features, setFeatures] = useState<MessageChannelContextType>(null);
+  useEffect(() => {
+    if (!messageChannelApi) {
+      (async () => {
+        const { postMessage, addListener, removeListener } = await useMessageChannel<MessageChannelMessage>();
 
-  (async() => {
-    const { postMessage, addListener, removeListener } = await useMessageChannel<MessageChannelMessage>();
+        async function sendCommand<T>(action: SupportedActions, payload: MessageChannelPayload): Promise<T> {
+          const taskId = getNextId(action);
+          return new Promise((resolve, reject) => {
+            const listener = addListener((message) => {
+              const { data } = message;
+            
+              if (!data || !data.action || typeof data.id === "undefined" || typeof data.success === "undefined") {
+                reject(`Invalid message received for action: ${action} with id: ${taskId}, data: ${JSON.stringify(data)}`);
+                removeListener(listener); // a command is responded to once, stop listening immediately
+                return;
+              }
 
-    async function sendCommand<T>(action: SupportedActions, payload: MessageChannelPayload): Promise<T> {
-      return new Promise((resolve) => {
-        const taskId = getNextId()
-        const listener = addListener((message) => {
-          const { data } = message;
-          if (data.action === `${action}-result` && data.id === taskId) {
-            removeListener(listener); // once
-            resolve(data.payload as T);
-          }
-        })
-        postMessage({
-          id: taskId,
-          action,
-          payload,
-        } as MessageChannelMessage);
-      });
+              if (data.success === false || data.error) {
+                reject(data.error || `Error occurred for action: ${action} with id: ${taskId}`);
+                removeListener(listener); // a command is responded to once, stop listening immediately
+                return;
+              }
+
+              if (data.success && data.action === `${action}-result` && data.id === taskId) {
+                resolve(data.payload as T);
+                removeListener(listener); // a command is responded to once, stop listening immediately
+                return;
+              }
+            });
+            postMessage({
+              id: taskId,
+              action,
+              payload,
+            } as MessageChannelMessage);
+          });
+        }
+
+        messageChannelApi = { postMessage, addListener, removeListener, sendCommand };
+        setFeatures(messageChannelApi);
+      })();
     }
-    setFeatures({ postMessage, addListener, removeListener, sendCommand });
-  })()
+  }, []);
 
   return (
     <MessageChannelContext.Provider value={features}>
