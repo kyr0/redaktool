@@ -21,11 +21,12 @@ import {
   milkdownEditorAtom,
   type MilkdownEditorCreatedArgs,
 } from "../MarkdownEditor";
-import { AiModelDropdown } from "../AiModelDropdown";
+import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import {
   compilePrompt,
   finalizePrompt,
+  type CompilePrompt,
   type Prompt,
 } from "../../lib/content-script/prompt-template";
 import { Button } from "../../ui/button";
@@ -33,6 +34,7 @@ import { useTranslation, Trans } from "react-i18next";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -79,7 +81,7 @@ import {
   ReloadIcon,
   StopIcon,
 } from "@radix-ui/react-icons";
-import type { PromptTokenUsage } from "../../lib/worker/llm/prompt";
+import type { InferenceProviderType, PromptTokenUsage } from "../../lib/worker/llm/interfaces";
 import { Slider } from "../../ui/slider";
 import { Toggle } from "../../ui/toggle";
 import { Switch } from "../../ui/switch";
@@ -94,7 +96,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { cn } from "../../lib/content-script/utils";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { Badge } from "../../ui/badge";
-import type { HyperParameters } from "../../shared";
+import { getNextId, type HyperParameters } from "../../shared";
 import {
   Accordion,
   AccordionContent,
@@ -103,11 +105,14 @@ import {
 } from "../../ui/accordion";
 import { AutosizeTextarea } from "../AutoresizeTextarea";
 import { db } from "../../lib/content-script/db";
+import { inferenceProvidersDbState } from "../settings/db";
+import type { InferenceProvider } from "../settings/types";
+import { useMessageChannelContext } from "../../message-channel";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 
 const settingsFieldsStateDb = db<Record<string, string>>("settingsFields");
-const modelPkStateDb = db<Record<string, string>>("modelPk", {});
+const modelPkStateDb = db<Record<string, ModelPreference>>("modelPk");
 const expertModeStateDb = db<number>("expertMode", 0);
 
 export interface DynamicFieldsSerialization {
@@ -135,7 +140,6 @@ export interface GenericModuleProps extends PropsWithChildren {
   inputEditorAtom: WritableAtom<string>;
   defaultPromptTemplate: string;
   outputTokenScaleFactor: number;
-  defaultModelName: string;
   getPromptValues?: () => Record<string, string>;
   onCustomInstructionChange?: (instruction: string) => void;
   onEditorCreated?: (
@@ -171,7 +175,6 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   inputEditorAtom,
   defaultPromptTemplate,
   outputTokenScaleFactor,
-  defaultModelName,
   onEditorCreated,
   onInputEditorCreated,
   onCustomInstructionChange,
@@ -182,6 +185,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   getPromptValues,
   children,
 }) => {
+  const outputDbState = db(`${name}-output`);
+  const inputDbState = db(`${name}-input`);
   const { t, i18n } = useTranslation();
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
   const [inputEditorContent, setInputEditorContent] = useState<string>(
@@ -191,7 +196,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [stopStreamCallback, setStopStreamCallback] = useState<{
     stopStream: Function;
   }>();
-  const [modelPk, setModelPk] = useState<string>(defaultModelName);
+  const [modelPk, setModelPk] = useState<ModelPreference>();
   const [internalEditorArgs, setInternalEditorArgs] =
     useState<MilkdownEditorCreatedArgs>();
   const [internalInputEditorArgs, setInternalInputEditorArgs] =
@@ -200,7 +205,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     id: uuid(),
     original: defaultPromptTemplate,
     text: "",
-    model: defaultModelName,
+    model: "",
+    inferenceProvider: "openai",
     estimatedInputTokens: 0,
     price: 0,
     priceOutput: 0,
@@ -228,6 +234,28 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const [activeTab, setActiveTab] = useState<"context" | "promptEditor">(
     "context",
   );
+  const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
+  const { sendCommand } = useMemo(() => useMessageChannelContext(), []);
+
+  useEffect(() => {
+    (async() => {
+      console.log("loading inference providers")
+      const inferenceProviders: Array<InferenceProvider> = (await inferenceProvidersDbState.get()).sort((a, b) => a.name.localeCompare(b.name))
+      setInferenceProviders(inferenceProviders)
+      console.log("DONE loading inference providers", inferenceProviders)
+    })()
+  }, [name, inferenceProvidersDbState]);
+
+  useEffect(() => {
+    ;(async () => {
+      const storedModelPk = await modelPkStateDb.get();
+      if (storedModelPk?.[name] && typeof storedModelPk?.[name] !== "string") {
+        console.log("loading inference providers storedModelPk", storedModelPk)
+        setModelPk(storedModelPk[name]);
+      }
+    })();
+
+  }, [inferenceProviders, modelPkStateDb, name])
 
   useEffect(() => {
     (async () => {
@@ -506,15 +534,9 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
     [setInputEditorEl, setInternalInputEditorArgs],
   );
 
-  useEffect(() => {
-    (async () => {
-      const storedModelPk = await modelPkStateDb.get();
-      setModelPk(storedModelPk[name] || defaultModelName);
-    })();
-  }, [modelPkStateDb, name, defaultModelName]);
-
+  
   const setInternalModelPk = useCallback(
-    (value: string) => {
+    (value: ModelPreference) => {
       (async () => {
         setModelPk(value);
         modelPkStateDb.set({
@@ -546,7 +568,7 @@ ${Object.keys(promptPrepared.values || {})
   )
   .join("\n")}
 
-${promptPrepared.original.replace(/\n/g, "\n")}
+${promptPrepared.original?.replace(/\n/g, "\n")}
 \`\`\``);
 
     console.log("promptPrepared", promptPrepared);
@@ -603,11 +625,20 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       }>((resolve, reject) => {
         (async () => {
           try {
+            
+
             // first pass compiler for dynamic fields
-            let parsedPrompt = await compilePrompt(
-              prompt,
-              getValidatedDynamicFieldValues(),
+            let parsedPrompt = await sendCommand<ParseSmartPromptResult>(
+                "compile-prompt", { 
+                  promptTemplate: prompt, 
+                  inputValues: getValidatedDynamicFieldValues() 
+                }
             );
+
+            console.log("parsedPrompt111", parsedPrompt)
+            
+
+
             console.log("new smartprompt parser", parsedPrompt);
 
             const dynamicFields = Object.keys(parsedPrompt.meta)
@@ -629,13 +660,19 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
             };
 
             // second pass compiler for dynamic fields
-            parsedPrompt = await compilePrompt(prompt, finalizedValues);
-
+            parsedPrompt = await sendCommand<ParseSmartPromptResult>(
+              "compile-prompt", { 
+                promptTemplate: prompt, 
+                inputValues: finalizedValues
+              }
+            );
+            
             resolve({
               resolvedValues: finalizedValues,
               parsedPrompt,
               dynamicFields,
             });
+            
           } catch (e) {
             //reject(e);
             toast.error("Fehler beim Kompilieren des Smart-Prompt", {
@@ -652,6 +689,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       setDynamicFieldValues,
       getValidatedDynamicFieldValues,
       compilePrompt,
+      sendCommand,
       prompt,
     ],
   );
@@ -661,10 +699,20 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       prompt,
       editorContent,
       customInstruction,
-      modelName,
+      modelPk,
       hyperParameters,
     }: any) => {
       return new Promise<Prompt>((resolve, reject) => {
+
+        console.log("inferenceProviders?!", inferenceProviders, modelPk);
+        const activeInferenceProvider = inferenceProviders.find((ip) => ip.name === modelPk.providerName)
+
+        console.log("activeInferenceProvider?!", activeInferenceProvider);
+        if (!activeInferenceProvider) {
+          console.log("No active inference provider found", modelPk.providerName, "inferenceProviders", inferenceProviders);
+          return;
+        }
+
         setRecompilingInProgress(true);
         (async () => {
           try {
@@ -688,11 +736,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
             }
             */
 
+            console.log("compilePromptAndSyncFields editorContent", editorContent)
+
             // second pass value evaluation
             const compiledPrompt = await compilePromptAndSyncFields(prompt, {
               USER_LANGUAGE: mapUserLanguageCode(i18n.language),
               CONTENT: editorContent,
-              MODEL_NAME: modelName,
+              MODEL_NAME: modelPk.model,
               CUSTOM_INSTRUCTION: customInstruction || undefined,
               HYPER_FOCUS: hyperParameters.autoTuneFocus,
               HYPER_CREATIVITY: hyperParameters.autoTuneCreativity,
@@ -705,13 +755,8 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
               prompt,
               compiledPrompt.parsedPrompt.prompt,
               compiledPrompt.resolvedValues,
-              modelName,
-              compiledPrompt.parsedPrompt.outputValues.OUTPUT_TOKEN_FACTOR
-                ? Number(
-                    compiledPrompt.parsedPrompt.outputValues
-                      .OUTPUT_TOKEN_FACTOR,
-                  )
-                : outputTokenScaleFactor,
+              modelPk.model, // actual model name (gpt-4o, etc.)
+              activeInferenceProvider, // AI provider configured
               hyperParameters,
             );
             console.log("finalPrompt", finalPrompt);
@@ -733,6 +778,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
       i18n,
       outputTokenScaleFactor,
       textSelection$,
+      inferenceProviders,
       prompt,
     ],
   );
@@ -747,12 +793,13 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         hyperParameters,
       }) => {
         requestAnimationFrame(async () => {
+          console.log("generating prompt with content", "promptContent", promptContent, "inputEditorContent", inputEditorContent);
           setPromptPrepared(
             await generatePrompt({
               prompt,
               editorContent: promptContent || inputEditorContent,
               customInstruction,
-              modelName: modelPk,
+              modelPk,
               hyperParameters,
             }),
           );
@@ -774,6 +821,14 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
   );
 
   useEffect(() => {
+
+    if (!inferenceProviders || !modelPk || !prompt) {
+      console.log("Skipping prompt preparation", inferenceProviders, modelPk, prompt);
+      return;
+    }
+
+    console.log("calling debouncedPreparePrompt", promptContent);
+
     debouncedPreparePrompt({
       promptContent,
       prompt,
@@ -793,6 +848,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
     autoTuneCreativity,
     autoTuneFocus,
     autoTuneGlossary,
+    inferenceProviders,
   ]);
 
   // sync
@@ -835,7 +891,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
         prompt,
         editorContent: promptContent || inputEditorContent,
         customInstruction,
-        modelName: modelPk,
+        modelPk,
         hyperParameters: {
           autoTuneCreativity,
           autoTuneFocus,
@@ -959,6 +1015,8 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
   const onResetPromptClick = useCallback(() => {
     setPrompt(defaultPromptTemplate);
   }, []);
+
+  console.log("re-render")
 
   return (
     <ResizablePanelGroup direction="vertical">
@@ -1246,20 +1304,14 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between ab-border-t ab-border-t-1 ab-border-t-slate-300 ab-border-dashed !ab-pt-1">
               <span className="ab-flex ab-flex-row ab-justify-start ab-items-center">
                 <span className="ab-text-sm ab-font-bold">
-                  Instruktionen:&nbsp;
+                  Prompt für:&nbsp;
                 </span>
-                <span className="ab-text-sm">KI-Modell:&nbsp;</span>
                 <AiModelDropdown
                   value={modelPk}
                   onChange={(value) => {
                     setInternalModelPk(value);
                   }}
-                  options={llmModels.map((m) => ({
-                    label: m.label
-                      .replace(new RegExp(m.provider, "gi"), "")
-                      .trim(),
-                    value: m.pk,
-                  }))}
+                  options={inferenceProviders}
                 />
                 {expertMode && (
                   <>
@@ -1283,7 +1335,7 @@ ${promptPrepared.original.replace(/\n/g, "\n")}
                       Strukturen sowie die Abweichung vom definierten Stil.
                     </MiniInfoButton>
 
-                    {modelPk.indexOf("openai") > -1 && (
+                    {modelPk?.inferenceProvider === "openai" && (
                       <>
                         <span className="ab-text-sm">&nbsp;Fokus:&nbsp;</span>
 

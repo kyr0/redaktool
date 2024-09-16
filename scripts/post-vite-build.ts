@@ -1,4 +1,4 @@
-import { $ } from "bun";
+import { $, argv } from "bun";
 
 // get the manifest file
 const manifestFile = Bun.file("dist/manifest.json");
@@ -31,7 +31,9 @@ Bun.write("dist/manifest.json", JSON.stringify(manifest, null, 2));
 console.log("Copying Xenova/multilingual-e5-small model currently DISABLED");
 
 // remove the old model files
+try {
 await $`rm -r dist/assets/ort-wasm-simd-*`;
+} catch (e) {}
 
 // copy the models to the dist folder
 //await $`mkdir -p dist/models/Xenova/multilingual-e5-small/`;

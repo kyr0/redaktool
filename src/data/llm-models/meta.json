@@ -1,0 +1,14 @@
+[
+  {
+    "pk": "meta-llama3.1:8b",
+    "provider": "meta",
+    "ident": "llama3.1:8b",
+    "label": "Meta Llama 3.1 8B",
+    "maxContextTokens": 8192,
+    "cutoff": "December 2023",
+    "inferenceProviders": [
+      "ollama",
+      "huggingface"
+    ]
+  }
+]

@@ -544,9 +544,7 @@ export const TranscriptionLayout = () => {
                     <CardTitle>Video oder Audio von der Website</CardTitle>
                     <CardDescription>
                       Wählen Sie ein Video oder Audio-Element aus, das auf
-                      dieser Website erkannt wurde, um es in Echtzeit zu
-                      transkribieren. Sobald Sie einen Ton hören, beginnt die
-                      Aufnahme.
+                      dieser Website erkannt wurde.
                     </CardDescription>
                   </CardHeader>
 

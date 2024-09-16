@@ -11,13 +11,13 @@ import {
   cloneAndFilterNode,
   scrollDownMax,
 } from "../../../lib/content-script/dom";
-import { turndown } from "../../../lib/content-script/turndown";
+//import { turndown } from "../../../lib/content-script/turndown";
 import type { MilkdownEditorCreatedArgs } from "../../MarkdownEditor";
 import { db } from "../../../lib/content-script/db";
 
 const editorAtom = atom<string>("");
 const inputEditorAtom = atom<string>("");
-const autoExtractAtom = atom<string>("");
+//const autoExtractAtom = atom<string>("");
 const moduleName = "extraction";
 
 const outputDbState = db(`${moduleName}-output`);
@@ -189,7 +189,6 @@ export const ExtractionModule = () => {
       inputValue={inputEditorContent}
       placeholder="Die KI-Analyse und Zusammenfasstung finden Sie hier, sobald Sie Ihren Text eingegeben und die KI-Verarbeitung mit dem Senden-Button gestartet haben."
       inputPlaceholder="Geben Sie hier den Text ein, den Sie analysieren und zusammenfassen möchten. Sie können auch eine von der KI erstellte Analyse/Zusammenfassung hier einfügen, die Sie mit den Instruktionen weiter nachbearbeiten können."
-      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={extractionPrompt}
       name={moduleName}
       editorAtom={editorAtom}

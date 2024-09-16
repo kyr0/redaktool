@@ -36,14 +36,14 @@
       "world": "ISOLATED"
     }
   ],
-  "host_permissions": ["*://*/*"],
-  "permissions": ["scripting", "activeTab", "storage", "unlimitedStorage"],
+  "host_permissions": ["*://*/*", "http://127.0.0.1/*", "http://localhost/*"],
+  "permissions": ["webRequest", "webRequestBlocking","scripting", "activeTab", "storage", "unlimitedStorage"],
   "background": {
     "service_worker": "src/worker.ts",
     "type": "module"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   },
   "incognito": "split",
   "web_accessible_resources": [

@@ -2,9 +2,9 @@ import type {
   PromptApiOptions, PromptCallSettings
 } from "./interfaces";
 import type { LanguageModelV1 } from "ai";
-import { createOllama } from "ollama-ai-provider";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
-export const ollama = (modelId: string, callSettings: PromptCallSettings, apiOptions: PromptApiOptions): LanguageModelV1 => {
+export const google = (modelId: string, callSettings: PromptCallSettings, apiOptions: PromptApiOptions): LanguageModelV1 => {
   if (
     typeof callSettings.temperature === "undefined" &&
     typeof apiOptions.autoTuneCreativity === "number"
@@ -12,7 +12,6 @@ export const ollama = (modelId: string, callSettings: PromptCallSettings, apiOpt
     // technical temperature scale is [0.0, 2.0], but human-acceptable results are [0.0, 1.0]
     // as long as we don't add other sampling methods such as nucleus sampling (top_p)
     callSettings.temperature = apiOptions.autoTuneCreativity;
-
 
     if (
       typeof callSettings.seed === "undefined" &&
@@ -23,11 +22,9 @@ export const ollama = (modelId: string, callSettings: PromptCallSettings, apiOpt
     }
   }
 
-  console.log("ollama callSettings", callSettings, "modelId", modelId);
+  console.log("google genAI callSettings", callSettings, "modelId", modelId);
 
-  // must be added to the environment variables
-  // OLLAMA_ORIGINS=chrome-extension://* ollama serve
-  return createOllama({
-    baseURL: apiOptions.baseURL,
+  return createGoogleGenerativeAI({
+    apiKey: apiOptions.apiKey,
   }).languageModel(modelId, { /** cacheControl  */})
 }

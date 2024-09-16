@@ -12,6 +12,11 @@ const tunnelListeners: Record<string, (e: MessageEvent) => void> = {};
 
 let messageChannel: MessageChannel;
 
+export interface MessageChannelFeatures<T> {
+  postMessage: (message: T) => void;
+  addListener: (listener: (e: MessageEvent<T>) => void) => string;
+  removeListener: (listenerSecret: string) => void;
+}
 export async function useMessageChannel<T>() {
   if (!messageChannel) {
     // we need a new secret for each tunnel to become unique, non-cached
@@ -77,5 +82,5 @@ export async function useMessageChannel<T>() {
     removeListener: (listenerSecret: string) => {
       delete tunnelListeners[listenerSecret];
     },
-  };
+  } as MessageChannelFeatures<T>;
 }

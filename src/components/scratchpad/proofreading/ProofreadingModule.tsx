@@ -14,7 +14,6 @@ export const ProofreadingModule = () => {
     <GenericModule
       placeholder="Das KI-Lektorat finden Sie hier, sobald Sie Ihren Text eingegeben und die KI-Verarbeitung mit dem Senden-Button gestartet haben."
       inputPlaceholder="Geben Sie hier den Text ein, den Sie von der KI lektorieren lassen möchten. Sie können auch einen von der KI lektorierten Text nochmals hier einfügen, und mit weiteren Instruktionen nachbearbeiten lassen."
-      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={proofreadingPrompt}
       name="proofreading"
       editorAtom={editorAtom}

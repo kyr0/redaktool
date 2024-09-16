@@ -10,21 +10,11 @@ import {
   isDarkModeEnabledInPrefs,
   setDarkModeEnabledInPrefs,
 } from "./lib/content-script/dark-mode";
-import type { EmbeddingModelMessage, MessageChannelMessage } from "./shared";
-import { useMessageChannel } from "./lib/content-script/message-channel";
-
 const fontGeistBold = chrome.runtime.getURL("fonts/Geist-Bold.woff2");
 const fontGeistRegular = chrome.runtime.getURL("fonts/Geist-Regular.woff2");
+import { MessageChannelProvider } from "./message-channel";
 
-/**
- * Could use a message broadcast for LLM message streaming
- * chrome.runtime.onConnect.addListener(function (port) {
-  port.onMessage.addListener(function (msg) {
-    port.postMessage({ contents: document.body.innerHTML });
-  });
-});
- */
-
+/*
 const mlModels = [
   {
     type: "onnx",
@@ -37,6 +27,7 @@ const mlModels = [
     tokenizerPath: "models/Xenova/multilingual-e5-small/tokenizer.json",
   },
 ];
+*/
 
 class FtrElement extends HTMLElement {
   constructor() {
@@ -69,8 +60,9 @@ class FtrElement extends HTMLElement {
     }
   }
 
+  /*  
   async loadMLModels() {
-    const { postMessage } = await useMessageChannel<EmbeddingModelMessage>();
+    const { postMessage } = useMessageChannelContext();
 
     for (const model of mlModels) {
       const modelResponse = await fetch(chrome.runtime.getURL(model.path));
@@ -95,6 +87,7 @@ class FtrElement extends HTMLElement {
       });
     }
   }
+  */
 
   generateMatchingStyleElement(type: "dark" | "light") {
     const style = document.createElement("style");
@@ -131,11 +124,11 @@ class FtrElement extends HTMLElement {
         );
 
         root.render(
-          <>
+          <MessageChannelProvider>
             <AppModal root={this.shadowRoot}>
               <ModalLayout />
             </AppModal>
-          </>,
+          </MessageChannelProvider>,
         );
       }
     })();

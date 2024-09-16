@@ -34,7 +34,7 @@ const AlertDialogContent = React.forwardRef<
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(
-        "ab-fixed ab-left-[50%] ab-top-[50%] ab-z-50 ab-grid ab-w-full ab-max-w-lg ab-translate-x-[-50%] ab-translate-y-[-50%] ab-gap-4 ab-border ab-bg-background ab-p-2 ab-shadow-lg ab-duration-200 data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[state=closed]:ab-slide-out-to-left-1/2 data-[state=closed]:ab-slide-out-to-top-[48%] data-[state=open]:ab-slide-in-from-left-1/2 data-[state=open]:ab-slide-in-from-top-[48%] sm:ab-rounded-lg",
+        "ab-fixed ab-left-[50%] ab-top-[50%] ab-z-50 ab-grid ab-w-full ab-max-w-lg ab-translate-x-[-50%] ab-translate-y-[-50%] ab-gap-4 ab-border ab-p-2 ab-shadow-lg ab-duration-200 data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[state=closed]:ab-slide-out-to-left-1/2 data-[state=closed]:ab-slide-out-to-top-[48%] data-[state=open]:ab-slide-in-from-left-1/2 data-[state=open]:ab-slide-in-from-top-[48%] sm:ab-rounded-lg",
         className,
       )}
       {...props}

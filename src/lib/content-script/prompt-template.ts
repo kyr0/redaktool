@@ -1,8 +1,8 @@
+import type { ModelPreference } from "../../components/AiModelDropdown";
+import type { InferenceProvider } from "../../components/settings/types";
+import { useMessageChannelContext } from "../../message-channel";
 import type { HyperParameters } from "../../shared";
-import type {
-  PromptFinishReason,
-  PromptTokenUsage,
-} from "../worker/llm/prompt";
+import type { InferenceProviderType, PromptApiOptions, PromptCallSettings, PromptTokenUsage } from "../worker/llm/interfaces";
 import type { ParseSmartPromptResult } from "../worker/prompt";
 import { calculatePrompt } from "./pricemodels";
 import { uuid } from "./uuid";
@@ -43,24 +43,33 @@ export const generatePrompt = <T>(
 
 export interface Prompt {
   id: string;
-  original: string;
+  original?: string;
   text: string;
-  model: string;
-  estimatedInputTokens: number;
-  price: number;
+  model: string; // model identification (gpt-4o, etc.)
+  inferenceProvider?: InferenceProviderType; // model provider (openai, anthropic, etc.)
+  provider?: string; // model manufacturer (meta, openai, etc.)
+  estimatedInputTokens?: number;
+  price?: number;
   priceOutput?: number;
   priceInput?: number;
   maxContextTokens?: number;
   estimatedOutputTokens?: number;
   values?: Record<string, string>;
   hyperParameters?: HyperParameters;
+  settingsOverrides?: Partial<PromptCallSettings>;
+  apiOptionsOverrides?: Partial<PromptApiOptions>;
+}
+
+export interface CompilePrompt {
+  promptTemplate: string;
+  inputValues: Record<string, string>;
 }
 
 export interface PromptPartialResponse {
   id: string;
   text: string;
   errorMessage?: string;
-  finishReason?: PromptFinishReason;
+  finishReason?: string;
   actualUsage?: PromptTokenUsage;
   finished: boolean;
   elapsed: number;
@@ -71,6 +80,7 @@ export const compilePrompt = (
   promptTemplate: string,
   inputValues: Record<string, string>,
 ): Promise<ParseSmartPromptResult> => {
+
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
       {
@@ -93,17 +103,30 @@ export const finalizePrompt = (
   prompt: string,
   compiledPrompt: string,
   values: Record<string, string>,
-  model: string,
-  outputTokenScaleFactor: number,
+  modelId: string,
+  inferenceProvider: InferenceProvider,
   hyperParameters: HyperParameters,
 ): Prompt => {
+
+  const apiOptionsOverrides: Partial<PromptApiOptions> = {};
+
+  if (inferenceProvider.apiKey) {
+    apiOptionsOverrides.apiKey = inferenceProvider.apiKey!;
+  }
+
+  if (inferenceProvider.baseURL) {
+    apiOptionsOverrides.baseURL = inferenceProvider.baseURL!;
+  }
+
   return {
     id: uuid(),
     values,
     original: prompt,
-    model,
+    model: modelId,
+    inferenceProvider: inferenceProvider.inferenceProviderName,
     text: compiledPrompt,
-    ...calculatePrompt(compiledPrompt, model, outputTokenScaleFactor),
+    //...calculatePrompt(compiledPrompt, modelPk.model, outputTokenScaleFactor),
     hyperParameters,
+    apiOptionsOverrides,
   } as Prompt;
 };

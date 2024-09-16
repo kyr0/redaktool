@@ -12,6 +12,17 @@ const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
+/*
+const DropdownMenuPortal = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Portal>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Portal>
+>(({ children, ...props }, ref) => (
+  <DropdownMenuPrimitive.Portal {...props} container={window.__ftrShadowRoot}>
+    {children}
+  </DropdownMenuPrimitive.Portal>
+));
+*/
+
 const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
@@ -42,14 +53,16 @@ const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubContent
-    ref={ref}
-    className={cn(
-      "ab-z-50 ab-min-w-[8rem] ab-overflow-hidden ab-rounded-md ab-border ab-bg-popover ab-p-1 ab-text-popover-foreground ab-shadow-lg data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[side=bottom]:ab-slide-in-from-top-2 data-[side=left]:ab-slide-in-from-right-2 data-[side=right]:ab-slide-in-from-left-2 data-[side=top]:ab-slide-in-from-bottom-2",
-      className,
-    )}
-    {...props}
-  />
+  <DropdownMenuPrimitive.Portal container={window.__ftrShadowRoot}>
+    <DropdownMenuPrimitive.SubContent
+      ref={ref}
+      className={cn(
+        "ab-z-50 ab-min-w-[8rem] ab-overflow-hidden ab-rounded-md ab-border ab-bg-popover ab-p-1 ab-text-popover-foreground ab-shadow-lg data-[state=open]:ab-animate-in data-[state=closed]:ab-animate-out data-[state=closed]:ab-fade-out-0 data-[state=open]:ab-fade-in-0 data-[state=closed]:ab-zoom-out-95 data-[state=open]:ab-zoom-in-95 data-[side=bottom]:ab-slide-in-from-top-2 data-[side=left]:ab-slide-in-from-right-2 data-[side=right]:ab-slide-in-from-left-2 data-[side=top]:ab-slide-in-from-bottom-2",
+        className,
+      )}
+      {...props}
+    />
+  </DropdownMenuPrimitive.Portal>
 ));
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName;

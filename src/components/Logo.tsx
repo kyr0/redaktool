@@ -1,4 +1,4 @@
-export const Logo: React.FC = ({ className, alt }: any) => (
+export const Logo: React.FC<{ className: string, alt: string }>= ({ className, alt }) => (
   <img
     className={className}
     alt={alt || "Logo"}

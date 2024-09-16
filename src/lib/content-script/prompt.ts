@@ -2,7 +2,7 @@ import {
   PARTIAL_RESPONSE_NAME,
   PARTIAL_RESPONSE_TEXT_NAME,
 } from "../../shared";
-import type { PromptTokenUsage } from "../worker/llm/prompt";
+import type { PromptTokenUsage } from "../worker/llm/interfaces";
 import { db } from "./db";
 import { prefChrome } from "./prefs";
 import type { Prompt, PromptPartialResponse } from "./prompt-template";

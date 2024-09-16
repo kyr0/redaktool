@@ -4,15 +4,14 @@
 import {
   ANTHROPIC_API_KEY_NAME,
   OPEN_AI_API_KEY_NAME,
-  type EmbeddingModelMessage,
   type MLModel,
+  type MessageChannelPackage,
   type MessageChannelMessage,
 } from "./shared";
 import {
-  systemPromptStreaming,
-  type PromptOptionsUnion,
-  type PromptTokenUsage,
+  promptStreaming,
 } from "./lib/worker/llm/prompt";
+import type { PromptTokenUsage, PromptCallSettings, InferenceProviderType } from "./lib/worker/llm/interfaces";
 import {
   compileSmartPrompt,
   getLastPartialPromptResponse,
@@ -24,27 +23,53 @@ import { cron } from "./lib/worker/scheduler";
 import { getPref, getValue, setValue } from "./lib/worker/prefs";
 import { whisper } from "./lib/worker/transcription/whisper";
 import type {
+  CompilePrompt,
   Prompt,
   PromptPartialResponse,
 } from "./lib/content-script/prompt-template";
 import { getLLMModel } from "./lib/content-script/llm-models";
+/*
 import {
   calculateEffectivePrice,
   getPriceModel,
 } from "./lib/content-script/pricemodels";
+ */
 import { useMessageChannel } from "./lib/worker/message-channel";
 import { loadEmbeddingModel } from "./lib/worker/embedding/model";
-import type { ChatParams } from "openai-fetch";
 
 // establish fast, MessageChannel-based communication between content script and worker
 const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
 
+// instant memory/heap reference pub/sub messaging
 addListener((e) => {
   switch (e.data.action) {
     case "model": {
       const model = e.data.payload as MLModel;
       loadEmbeddingModel(model);
       break;
+    }
+
+    // TODO: 
+    case "compile-prompt": {
+      const compilePrompt = e.data.payload as CompilePrompt;
+      console.log("compile-prompt2", e.data.payload);
+
+      const compileResult = compileSmartPrompt(
+        compilePrompt.promptTemplate,
+        compilePrompt.inputValues,
+      );
+
+      console.log("compileResult2", compileResult);
+      postMessage({
+        id: e.data.id,
+        action: "compile-prompt-result",
+        payload: compileResult
+      })
+      break;
+    }
+
+    case "prompt": {
+      console.log("prompt", e.data.payload);
     }
   }
 });
@@ -133,50 +158,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log("prompt data", prompt);
           console.log("prompt", prompt.text);
 
-          const model = getLLMModel(prompt.model);
-          const costModel = getPriceModel(model.pk);
-
-          console.log("model", model);
-          let apiKey = "";
-
-          const advancedHyperParameters: Partial<Omit<ChatParams, "model">> =
+          const advancedHyperParameters: Partial<Omit<PromptCallSettings, "model">> =
             {};
 
           if (typeof prompt.hyperParameters?.autoTuneCreativity === "number") {
             advancedHyperParameters.temperature =
-              prompt.hyperParameters?.autoTuneCreativity / 100;
+              (prompt.hyperParameters?.autoTuneCreativity / 100)
           }
 
-          switch (model.provider) {
+          switch (prompt.inferenceProvider) {
             case "openai":
-              apiKey = await getPref(OPEN_AI_API_KEY_NAME, "no-key");
-
+              
               if (typeof prompt.hyperParameters?.autoTuneFocus === "number") {
-                advancedHyperParameters.presence_penalty =
+                advancedHyperParameters.presencePenalty =
                   (prompt.hyperParameters?.autoTuneGlossary / 100) * 2;
               }
 
               if (
                 typeof prompt.hyperParameters?.autoTuneGlossary === "number"
               ) {
-                advancedHyperParameters.frequency_penalty =
+                advancedHyperParameters.frequencyPenalty =
                   (prompt.hyperParameters?.autoTuneFocus / 100) * 2;
               }
               break;
 
             case "anthropic":
-              apiKey = await getPref(ANTHROPIC_API_KEY_NAME, "no-key");
-              console.log("anthropic key", apiKey);
-
+              console.log("anthropic key", prompt.apiOptionsOverrides?.apiKey);
               break;
           }
 
           console.log("advancedHyperParameters", advancedHyperParameters);
           let partialResponseText = "";
 
-          systemPromptStreaming(
+          promptStreaming(
+            prompt.model,
             prompt.text,
-            model.provider,
+            prompt.inferenceProvider as InferenceProviderType,
             async (text: string, elapsed: number) => {
               // onChunk
               partialResponseText += text || "";
@@ -205,11 +222,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 text,
                 actualUsage: usage,
                 elapsed,
-                totalPrice: calculateEffectivePrice(
+                totalPrice: /*calculateEffectivePrice(
                   costModel,
-                  usage.prompt_tokens || 0,
-                  usage.completion_tokens || 0,
-                ).total,
+                  usage.promptTokens || 0,
+                  usage.completionTokens || 0,
+                ).total*/ 0,
                 finished: true,
               });
 
@@ -239,13 +256,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             },
             {
               // union of parameters passed down, mapped internally
-              model: model.ident,
-              max_tokens: costModel.maxOutputTokens,
               ...advancedHyperParameters,
+              ...(prompt.settingsOverrides || {}),
             },
             {
               // union of options passed down, mapped internally
-              apiKey,
+              ...(prompt.apiOptionsOverrides || {}),
               // auto-tuning of hyperparameters
               //autoTuneCreativity: prompt.autoTuneCreativity || 0.7,
               //autoTuneFocus: prompt.autoTuneFocus || undefined,

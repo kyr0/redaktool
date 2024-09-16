@@ -11,7 +11,7 @@ export default defineConfig({
   build: {
     minify: false,
     rollupOptions: {
-      treeshake: true,
+      treeshake: false,
       plugins: [
         sourcemaps({
           include: 'node_modules/**',

@@ -1,17 +1,17 @@
-import { Tiktoken, encodingForModel, type TiktokenModel } from "js-tiktoken";
+//import { Tiktoken, encodingForModel, type TiktokenModel } from "js-tiktoken";
 import priceModelsData from "../../data/price-models";
 import type { Prompt } from "./prompt-template";
-import claudeBpeRanks from "@anthropic-ai/tokenizer/claude.json";
-import type { ModelProviderType } from "../worker/llm/prompt";
+//import claudeBpeRanks from "@anthropic-ai/tokenizer/claude.json";
+import type { InferenceProviderType } from "../worker/llm/interfaces";
 
 export interface PriceModel {
   input: number;
   output: number;
-  provider: ModelProviderType;
+  provider: InferenceProviderType;
   maxContextTokens: number;
   maxInputTokens: number;
   maxOutputTokens: number;
-  tikTokenModelName: TiktokenModel;
+  tikTokenModelName: string;
 }
 
 export interface PriceModels {
@@ -53,7 +53,16 @@ export const priceModels = validatePriceModels(priceModelsData);
 
 export const getPriceModel = (model: string) => {
   if (!priceModels[model]) {
-    throw new Error(`Model ${model} not found in price models`);
+    // dynamic price model
+    return {
+      input: 0,
+      output: 0,
+      provider: "unknown",
+      maxContextTokens: 0,
+      maxInputTokens: 0,
+      maxOutputTokens: 0,
+      tikTokenModelName: "unknown",
+    };
   }
   return priceModels[model];
 };
@@ -83,8 +92,10 @@ export const calculatePrompt = (
   model = "openai-gpt-4-turbo",
   outputScaleFactor = 2, // avg output length is 2x input length
 ): Partial<Prompt> => {
-  const priceModel = getPriceModel(model);
+
+  /*
   let estimatedInputTokens = 0;
+  const priceModel = getPriceModel(model);
 
   switch (priceModel.provider) {
     case "openai": {
@@ -113,13 +124,14 @@ export const calculatePrompt = (
     estimatedInputTokens,
     estimatedOutputTokens,
   );
+  */
 
   return {
-    estimatedInputTokens,
-    price: effectivePrice.total,
-    priceOutput: effectivePrice.output,
-    priceInput: effectivePrice.input,
-    estimatedOutputTokens,
-    maxContextTokens: priceModelsData[model].maxContextTokens,
+    estimatedInputTokens: 0,
+    price: 0,//effectivePrice.total,
+    priceOutput: 0,//effectivePrice.output,
+    priceInput: 0,//effectivePrice.input,
+    estimatedOutputTokens: 0,
+    maxContextTokens: priceModelsData[model]?.maxContextTokens,
   };
 };

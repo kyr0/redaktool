@@ -1,5 +1,7 @@
-//import * as ONNX_WEBGPU from "onnxruntime-web/webgpu";
 //import * as ONNX_WASM from "onnxruntime-web/wasm";
+
+
+/*
 import type { MLModel, MessageChannelMessage } from "../../../shared";
 import {
   PreTrainedTokenizer,
@@ -12,7 +14,7 @@ import {
   AutoModel,
   AutoTokenizer,
 } from "./transformers/transformers";
-
+*/
 // @ts-ignore
 //import getModule from "./transformers/ort-wasm-simd-threaded.jsep";
 
@@ -25,6 +27,8 @@ import {
 // https://huggingface.co/Xenova/multilingual-e5-small
 export const loadEmbeddingModel = async (mlModel: MLModel) => {
   // single embedding, german embedding model
+  
+
   /*
   const embedResult = await embed(
     ["query: Foo", "passage: Bar"],

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderIcon, SendIcon } from "lucide-react";
+import { LoaderIcon, SendIcon, XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import {
@@ -35,7 +35,7 @@ const FormSchema = z.object({
 
 export const FeedbackButton = ({
   containerEl,
-}: { containerEl: HTMLElement | undefined }) => {
+}: { containerEl: HTMLElement | null }) => {
   const { t } = useTranslation();
   const [containerHeightCalc, setContainerHeightCalc] = useState<number>(600);
 
@@ -70,6 +70,7 @@ export const FeedbackButton = ({
   >(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [openState, setOpenState] = useState<boolean>(false);
 
   const onSendFeedbackMessage = useCallback(async () => {
     console.log("loc", document.location.href);
@@ -116,8 +117,8 @@ export const FeedbackButton = ({
 
   return (
     <>
-      <Dialog>
-        <DialogTrigger className={"ab-flex"}>
+      <Dialog open={openState}>
+        <DialogTrigger className={"ab-flex"} onClick={() => setOpenState(true)}>
           <div className="ab-ftr-bg ab-my-auto ab-p-0 ab-m-0 ab-px-1 ab-origin-centerab-border-1 ab-flex ab-transform ab-transition-opacity ab-duration-150 ab-rounded">
             <span className="ab-mx-auto !ab-text-sm">
               {t("feedback.buttonTitle")}
@@ -126,12 +127,15 @@ export const FeedbackButton = ({
         </DialogTrigger>
         <DialogContent
           showOverlay={false}
-          wrapperClassName="ab-fixed ab-top-12 ab-left-12 ab-ftr-bg-contrast ab-z-[2147483641]"
+          wrapperClassName="ab-fixed ab-left-[50%] ab-top-[50%] ab-grid ab-w-full ab-max-w-lg ab-translate-x-[-50%] ab-translate-y-[-50%] ab-ftr-bg-contrast ab-z-[2147483641]"
         >
-          <DialogHeader className="ab-rounded-sm">
+          <DialogHeader className="ab-rounded-sm ab-flex !ab-justify-between !ab-items-center !ab-flex-row ">
             <span className="ab-m-2 ab-font-bold">
               {t("feedback.modalTitle")}
             </span>
+            <Button className="!ab-p-0 ab-h-6 ab-w-6 !ab-m-0 !ab-mr-2" variant={"ghost"} onClick={() => setOpenState(false)}>
+              <XIcon className="ab-h-6 ab-w-6 ab-shrink-0" />
+            </Button>
           </DialogHeader>
           <div className="ab-mx-auto ab-w-full ab-max-w-sm ab-m-2">
             <DialogDescription className="ab-mb-2">

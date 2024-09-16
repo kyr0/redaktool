@@ -424,7 +424,7 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
                 orientation="vertical"
                 className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2"
               />
-              <FeedbackButton containerEl={dialogRef.current} />
+              <FeedbackButton containerEl={dialogRef.current as HTMLDivElement} />
             </div>
 
             <div className="ab-flex ab-flex-row ab-items-center">

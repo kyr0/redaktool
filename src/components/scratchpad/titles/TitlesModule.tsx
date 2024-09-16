@@ -14,7 +14,6 @@ export const TitlesModule = () => {
     <GenericModule
       placeholder="Titelvorschläge finden Sie hier, sobald Sie Ihren Text eingegeben und die KI-Verarbeitung mit dem Senden-Button gestartet haben."
       inputPlaceholder="Geben Sie hier den Text ein, zu dem Sie Titelvorschläge erhaltrn möchten. Sie können auch eine von der KI erstellte Titelvorschläge hier einfügen, die Sie mit den Instruktionen weiter nachbearbeiten können."
-      defaultModelName="openai-gpt-4o"
       defaultPromptTemplate={titlesPrompt}
       name="titles"
       editorAtom={editorAtom}
