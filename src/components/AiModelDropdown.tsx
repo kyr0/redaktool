@@ -171,7 +171,7 @@ export function AiModelDropdown({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="ab-z-[2147483646]">
-            <DropdownMenuLabel>KI-Modell wählen:</DropdownMenuLabel>
+            <DropdownMenuLabel>KI-Modell wählen</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
             {selectedInferenceProvider.models.map((option) => (

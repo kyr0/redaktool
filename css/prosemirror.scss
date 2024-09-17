@@ -268,12 +268,17 @@ img.ProseMirror-separator{
 .ProseMirror hr {
   margin-top: 0.75rem !important;
   margin-bottom: 0.75rem !important;
-  height: 0.5rem !important;
-  border-width: 0.3rem;
-  border-style: double;
+  border-width: 1px !important;
+  border-style: dashed !important;
+  width: 150px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
-
+.ProseMirror hr + h6:has(+ hr) {
+  background-color: rgb(249 250 251 / var(--tw-bg-opacity)) !important;
+  text-align: center !important;
+}
 
 /* Links */
 .ProseMirror a {
@@ -333,4 +338,8 @@ img.ProseMirror-separator{
   pointer-events: none;
   line-height: 1rem;
   padding-top: 0.5rem;
+}
+
+.ProseMirror span[data-type=emoji] {
+  display: inline-flex;
 }

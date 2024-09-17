@@ -1,29 +1,16 @@
 import { atom } from "nanostores";
-import { GenericModule, type CallbackArgs } from "../GenericModule";
 // @ts-ignore
 import extractionPrompt from "../../../data/prompt-templates/extraction.liquid?raw";
-import { extractedWebsiteDataAtom } from "../../AppModal";
-import { useStore } from "@nanostores/react";
-import { useCallback, useEffect, useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
-import { autoCorrelateMostRelevantContent } from "../../../lib/content-script/scrape";
-import {
-  cloneAndFilterNode,
-  scrollDownMax,
-} from "../../../lib/content-script/dom";
-//import { turndown } from "../../../lib/content-script/turndown";
-import type { MilkdownEditorCreatedArgs } from "../../MarkdownEditor";
-import { db } from "../../../lib/content-script/db";
+import { memo, useCallback, useEffect, useState, type FC } from "react";
+import { GenericPersistentModule, type GenericPersistentModuleWrapperProps } from "../GenericPersistentModule";
 
 const editorAtom = atom<string>("");
 const inputEditorAtom = atom<string>("");
 //const autoExtractAtom = atom<string>("");
-const moduleName = "extraction";
 
-const outputDbState = db(`${moduleName}-output`);
-const inputDbState = db(`${moduleName}-input`);
+export const ExtractionModule: FC<GenericPersistentModuleWrapperProps> = memo(({ isActive }) => {
 
-export const ExtractionModule = () => {
+  /*
   const extractedWebsiteData$ = useStore(extractedWebsiteDataAtom);
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
   const [inputEditorContent, setInputEditorContent] = useState<string>(
@@ -37,7 +24,9 @@ export const ExtractionModule = () => {
   const [hasLoadedContent, setHasLoadedContent] = useState(false);
   const [hasLoadedInputContent, setHasLoadedInputContent] = useState(false);
 
+  */
   console.log("rerender ExtractionModule");
+
   // auto-extract content
   /*
   useEffect(() => {
@@ -71,6 +60,7 @@ export const ExtractionModule = () => {
   }, []);
   */
 
+  /*
   const debouncedAppendToEditor = useDebouncedCallback(
     useCallback(
       ({ content }) => {
@@ -193,11 +183,24 @@ export const ExtractionModule = () => {
       name={moduleName}
       editorAtom={editorAtom}
       inputEditorAtom={inputEditorAtom}
-      outputTokenScaleFactor={1.2}
       onEditorContentChange={onEditorContentChange}
       onInputEditorContentChange={onInputEditorContentChange}
       onEditorCreated={onEditorCreated}
       onInputEditorCreated={onInputEditorCreated}
+
     />
   );
-};
+  */
+
+  return (
+    <GenericPersistentModule
+      placeholder="Die KI-Analyse und Zusammenfasstung finden Sie hier, sobald Sie Ihren Text eingegeben und die KI-Verarbeitung mit dem Senden-Button gestartet haben."
+      inputPlaceholder="Geben Sie hier den Text ein, den Sie analysieren und zusammenfassen möchten. Sie können auch eine von der KI erstellte Analyse/Zusammenfassung hier einfügen, die Sie mit den Instruktionen weiter nachbearbeiten können."
+      prompt={extractionPrompt}
+      moduleName="extraction"
+      editorAtom={editorAtom}
+      inputEditorAtom={inputEditorAtom}
+      isActive={isActive}
+    />
+  );
+});

@@ -23,7 +23,7 @@ import {
 } from "../MarkdownEditor";
 import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
 import { formatCurrencyForDisplay } from "../../lib/content-script/format";
-import { format } from "date-fns"
+import { format } from "date-fns";
 import {
   compilePrompt,
   finalizePrompt,
@@ -33,6 +33,7 @@ import {
 import { Button } from "../../ui/button";
 import { useTranslation, Trans } from "react-i18next";
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -128,13 +129,13 @@ export interface GenericModuleProps extends PropsWithChildren {
   value?: string;
   inputValue?: string;
   name: string;
+  isActive?: boolean;
   placeholder?: string;
   inputPlaceholder?: string;
   promptSettingsWrapperClassName?: string;
   editorAtom: WritableAtom<string>;
   inputEditorAtom: WritableAtom<string>;
   defaultPromptTemplate: string;
-  outputTokenScaleFactor: number;
   getPromptValues?: () => Record<string, string>;
   onCustomInstructionChange?: (instruction: string) => void;
   onEditorCreated?: (
@@ -159,17 +160,17 @@ const hyperParametersStateDb = db<HyperParameters>(
   defaultHyperParameters,
 );
 
-export const GenericModule: React.FC<GenericModuleProps> = ({
+export const GenericModule: React.FC<GenericModuleProps> = memo(({
   value,
   inputValue,
   name,
+  isActive,
   promptSettingsWrapperClassName,
   placeholder,
   inputPlaceholder,
   editorAtom,
   inputEditorAtom,
   defaultPromptTemplate,
-  outputTokenScaleFactor,
   onEditorCreated,
   onInputEditorCreated,
   onCustomInstructionChange,
@@ -180,8 +181,6 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   getPromptValues,
   children,
 }) => {
-  const outputDbState = db(`${name}-output`);
-  const inputDbState = db(`${name}-input`);
   const { t, i18n } = useTranslation();
   const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
   const [inputEditorContent, setInputEditorContent] = useState<string>(
@@ -237,7 +236,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   useEffect(() => {
     const port = chrome.runtime.connect({ name: `${name}-llm-stream`});
     setLlmPort(port);
-  }, [name])
+  }, [name]);
 
   useEffect(() => {
     scrollDownMax(editorEl);
@@ -249,14 +248,13 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         const chunk = message.payload;
 
         if (chunk.id === currentPromptId) {
-          console.log("chunk matching current prompt", chunk);
-
           if (!chunk.finished && !chunk.error) {
             setEditorContent((prev) => prev + chunk.text);
             scrollDownMax(editorEl);
           }
 
           if (chunk.finished) {
+            console.log("finished streaming", chunk);
             setStreamingInProgress(false);
             setIsDoneStreaming(true);
           }
@@ -277,15 +275,19 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   }, [currentPromptId, editorEl]);
 
   useEffect(() => {
+    const listener = (message: any) => {
+      onPortMessageReceived(message);
+    };
 
-    if (llmPort && onPortMessageReceived) {
-      llmPort.onMessage.addListener(onPortMessageReceived);
+    if (llmPort) {
+      console.log("registering onPortMessageReceived listener", listener);
+      llmPort.onMessage.addListener(listener);
     }
 
     return () => {
-      if (onPortMessageReceived && llmPort) {
-        console.log("removing onPortMessageReceived listener", onPortMessageReceived);
-        llmPort.onMessage.removeListener(onPortMessageReceived);
+      if (llmPort) {
+        console.log("removing onPortMessageReceived listener", listener);
+        llmPort.onMessage.removeListener(listener);
       }
     };
   }, [llmPort, onPortMessageReceived]);
@@ -297,24 +299,24 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
       setInferenceProviders(inferenceProviders)
       console.log("DONE loading inference providers", inferenceProviders)
     })()
-  }, [name, inferenceProvidersDbState]);
+  }, [name]);
 
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       const storedModelPk = await modelPkStateDb.get();
       if (storedModelPk?.[name] && typeof storedModelPk?.[name] !== "string") {
         console.log("loading inference providers storedModelPk", storedModelPk)
         setModelPk(storedModelPk[name]);
       }
     })();
-  }, [inferenceProviders, modelPkStateDb, name])
+  }, [name]);
 
   useEffect(() => {
     (async () => {
       const storedExpertMode = await expertModeStateDb.get();
       setExpertMode(storedExpertMode === 1);
     })();
-  }, [expertModeStateDb]);
+  }, []);
 
   const onInternalSetExpertMode = useCallback(
     (evt: any) => {
@@ -327,13 +329,15 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         setActiveTab("context");
       }
     },
-    [setExpertMode, activeTab],
+    [activeTab],
   );
 
   useEffect(() => {
     (async () => {
-      const storedFields = await settingsFieldsStateDb.get();
 
+      console.log("flip-flop", isActive, name);
+
+      const storedFields = await settingsFieldsStateDb.get();
       const keys = Object.keys(storedFields);
 
       if (keys.length === 0) {
@@ -367,13 +371,20 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         }
       }
 
+      //console.log("SETTING setDynamicFieldValues flip-flop", isActive, name, deserialization);
       // store in db
-      setDynamicFieldValues((fieldValues) => ({
-        ...fieldValues,
-        ...deserialization,
-      }));
+      setDynamicFieldValues((fieldValues) => {
+        const nextState = ({
+          ...fieldValues,
+          ...deserialization,
+        })
+
+        console.log("SETTING setDynamicFieldValues flip-flop", isActive, name, nextState);
+
+        return nextState;
+      });
     })();
-  }, [name]);
+  }, [name, isActive]);
 
   useEffect(() => {
     (async () => {
@@ -391,6 +402,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         }
         newSerialization[serializationKey] = dynamicFieldValues[fieldName];
       }
+      console.log("flip-flop DB settingsFieldsStateDb set", name, newSerialization);
 
       // store in db, don't override, merge
       settingsFieldsStateDb.set({
@@ -430,7 +442,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         hyperParametersStateDb.set(hyperParameters);
       })();
     },
-    [setAutoTuneCreativity, hyperParametersStateDb],
+    [],
   );
 
   const onInternalSetAutoTuneFocus = useCallback(
@@ -443,7 +455,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         hyperParametersStateDb.set(hyperParameters);
       })();
     },
-    [setAutoTuneFocus, hyperParametersStateDb],
+    [],
   );
 
   const onInternalSetAutoTuneGlossary = useCallback(
@@ -456,11 +468,13 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         hyperParametersStateDb.set(hyperParameters);
       })();
     },
-    [setAutoTuneGlossary, hyperParametersStateDb],
+    [],
   );
 
   useEffect(() => {
     (async () => {
+
+
       const hyperParameters = await hyperParametersStateDb.get();
       setAutoTuneCreativity(
         hyperParameters.autoTuneCreativity ||
@@ -476,7 +490,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
           defaultHyperParameters.autoTuneGlossary,
       );
     })();
-  }, [hyperParametersStateDb]);
+  }, [isActive]);
 
   const onResetHyperParametersClick = useCallback(() => {
     // db
@@ -529,7 +543,7 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         //}
       }
     }
-  }, [textSelection$, textSelection$?.element, editorContent]);
+  }, [textSelection$, editorContent]);
 
   useEffect(() => {
     if (typeof onEditorCreated === "function" && internalEditorArgs) {
@@ -543,7 +557,9 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         args: internalEditorArgs,
       });
     }
-  }, [internalEditorArgs, onEditorCreated, prompt]);
+  }, [internalEditorArgs, onEditorCreated]);
+
+ 
 
   useEffect(() => {
     if (typeof onInputEditorCreated === "function" && internalInputEditorArgs) {
@@ -557,7 +573,8 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
         args: internalInputEditorArgs,
       });
     }
-  }, [internalInputEditorArgs, onInputEditorCreated, prompt]);
+  }, [internalInputEditorArgs, onInputEditorCreated]);
+
 
 
   // sync editor content with extraction
@@ -578,40 +595,40 @@ export const GenericModule: React.FC<GenericModuleProps> = ({
   const onInputEditorChangeInternal = useCallback(
     (markdown: string) => {
       console.log("onInputEditorChangeInternal", markdown);
-      setInputEditorContent(markdown);
+      setInputEditorContent((prev) => (prev !== markdown ? markdown : prev));
     },
     [setInputEditorContent],
   );
 
   const onEditorCreatedInternal = useCallback(
     (args: MilkdownEditorCreatedArgs) => {
-      setEditorEl(args.el);
-      setInternalEditorArgs(args);
+      setEditorEl((prev) => (prev !== args.el ? args.el : prev));
+      setInternalEditorArgs((prev) => (prev !== args ? args : prev));
     },
-    [setEditorEl, setInternalEditorArgs],
+    [],
   );
 
   const onInputEditorCreatedInternal = useCallback(
     (args: MilkdownEditorCreatedArgs) => {
       console.log("onInputEditorCreatedInternal", args);
-      setInputEditorEl(args.el);
-      setInternalInputEditorArgs(args);
+      setInputEditorEl((prev) => (prev !== args.el ? args.el : prev));
+      setInternalInputEditorArgs((prev) => (prev !== args ? args : prev));
     },
-    [setInputEditorEl, setInternalInputEditorArgs],
+    [],
   );
 
   
   const setInternalModelPk = useCallback(
     (value: ModelPreference) => {
       (async () => {
-        setModelPk(value);
+        setModelPk((prev) => (prev !== value ? value : prev));
         modelPkStateDb.set({
           ...(await modelPkStateDb.get()),
           [name]: value,
         });
       })();
     },
-    [setModelPk, name, modelPkStateDb],
+    [name, modelPkStateDb],
   );
 
   const onSharePromptClick = useCallback(() => {
@@ -654,14 +671,11 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
   // sync prompt with editor content
   const onPromptChangeInternal = useCallback(
-    //(value: string) => {
-    //  setPrompt(value);
-
     (evt: any) => {
       console.log("onPromptChangeInternal", evt.target?.value);
-      setPrompt(evt.target?.value);
+      setPrompt((prev) => (prev !== evt.target?.value ? evt.target?.value : prev));
     },
-    [setPrompt],
+    [],
   );
 
   const getValidatedDynamicFieldValues = useCallback(
@@ -822,7 +836,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       finalizePrompt,
       mapUserLanguageCode,
       i18n,
-      outputTokenScaleFactor,
       textSelection$,
       inferenceProviders,
       prompt,
@@ -894,7 +907,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     autoTuneCreativity,
     autoTuneFocus,
     autoTuneGlossary,
-    inferenceProviders,
+    inferenceProviders
   ]);
 
   // sync
@@ -918,11 +931,11 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
   // back-sync
   useEffect(() => {
-    setEditorContent(value || "");
+    setEditorContent((prev) => (prev !== value ? value || "" : prev));
   }, [value]);
 
   useEffect(() => {
-    setInputEditorContent(inputValue || "");
+    setInputEditorContent((prev) => (prev !== inputValue ? inputValue || "" : prev));
   }, [inputValue]);
 
   const onPromptSendClick = useCallback(() => {
@@ -948,9 +961,13 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
         setCurrentPromptId(finalPrompt.id);
 
         setEditorContent((prev) =>  `${prev}
+
+ 
 ---
-##### ${format(new Date(), 'dd.MM.yyyy')} ${format(new Date(), 'HH:mm')} Uhr  - ${modelPk?.providerName} - ${modelPk?.model} 
+###### ${format(new Date(), 'dd.MM.yyyy')} ${format(new Date(), 'HH:mm')} Uhr  - ${modelPk?.providerName} - ${modelPk?.model} 
 ---
+ 
+
 `);
 
         llmPort.postMessage({ action: "prompt", payload: finalPrompt });
@@ -1054,7 +1071,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     customInstruction,
     promptContent,
     inputEditorContent,
-    outputTokenScaleFactor,
     editorEl,
     modelPk,
     i18n.language,
@@ -1204,7 +1220,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                               [field.key]: value,
                             }));
                           }}
-                          defaultValue={
+                          value={
                             dynamicFieldValues[field.key] || field.default
                           }
                         >
@@ -1248,46 +1264,48 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                 className="ab-w-full ab-flex ab-flex-col ab-h-full ab-overflow-auto"
               >
                 <div className="ab-flex ab-justify-between">
-                  <TabsList className="!ab-p-0 !ab-m-0  !ab-min-h-8 !ab-h-8 ab-justify-between">
-                    <TabsTrigger
-                      className={cn(
-                        "ab-text-sm",
-                        activeTab === "context"
-                          ? "ab-ftr-active-menu-item"
-                          : "ab-ftr-menu-item ab-bg-secondary",
-                      )}
-                      value="context"
-                      onClick={() => setActiveTab("context")}
-                    >
-                      Text-Eingabe&nbsp;
-                      <MiniInfoButton>
-                        Der Text, der hier eingegben wird, wird von der KI
-                        verarbeitet. Also z.B. für die Übersetzung.
-                      </MiniInfoButton>
-                    </TabsTrigger>
-                    {expertMode && (
+                  <TabsList className="!ab-p-0 !ab-m-0 !ab-min-h-8 !ab-h-8 !ab-justify-between !ab-w-full">
+                    <span className="ab-flex ab-flex-row">
                       <TabsTrigger
                         className={cn(
-                          "ab-text-sm !ab-ml-2",
-                          activeTab === "promptEditor"
+                          "ab-text-sm",
+                          activeTab === "context"
                             ? "ab-ftr-active-menu-item"
                             : "ab-ftr-menu-item ab-bg-secondary",
                         )}
-                        value="promptEditor"
-                        onClick={() => setActiveTab("promptEditor")}
+                        value="context"
+                        onClick={() => setActiveTab("context")}
                       >
-                        Prompt-Editor&nbsp;
+                        Text-Eingabe&nbsp;
                         <MiniInfoButton>
-                          Im Prompt-Editor können die genauen Instruktionen, die
-                          an die KI gesendet werden, angepasst werden. Außerdem
-                          werden RAG-Worlflow-Abläufe und Einstellungen hier
-                          dynamisch geskripted. Dieser Bereich ist für Experten
-                          mit Prompt Engineering-Erfahrung gedacht.
+                          Der Text, der hier eingegben wird, wird von der KI
+                          verarbeitet. Also z.B. für die Übersetzung.
                         </MiniInfoButton>
                       </TabsTrigger>
-                    )}
+                      {expertMode && (
+                        <TabsTrigger
+                          className={cn(
+                            "ab-text-sm !ab-ml-2",
+                            activeTab === "promptEditor"
+                              ? "ab-ftr-active-menu-item"
+                              : "ab-ftr-menu-item ab-bg-secondary",
+                          )}
+                          value="promptEditor"
+                          onClick={() => setActiveTab("promptEditor")}
+                        >
+                          Prompt-Editor&nbsp;
+                          <MiniInfoButton>
+                            Im Prompt-Editor können die genauen Instruktionen, die
+                            an die KI gesendet werden, angepasst werden. Außerdem
+                            werden RAG-Worlflow-Abläufe und Einstellungen hier
+                            dynamisch geskripted. Dieser Bereich ist für Experten
+                            mit Prompt Engineering-Erfahrung gedacht.
+                          </MiniInfoButton>
+                        </TabsTrigger>
+                      )}
+                    </span>
                     <div className="ab-flex ab-items-center ab-h-6 ab-ml-2">
-                      <span className="ab-text-sm ab-mr-2">Expertenmodus</span>
+                      <span className="ab-text-sm ab-mr-2">Experte</span>
                       <input
                         type="checkbox"
                         checked={expertMode}
@@ -1297,7 +1315,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                     </div>
                   </TabsList>
                   {activeTab === "promptEditor" && (
-                    <span>
+                    <span className="ab-flex">
                       <Button
                         size={"sm"}
                         className="ab-ftr-button  ab-bg-secondary !ab-ml-2 !ab-h-6 hover:ab-ftr-bg-halfcontrast ab-origin-right"
@@ -1375,7 +1393,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between ab-border-t ab-border-t-1 ab-border-t-slate-300 ab-border-dashed !ab-pt-1">
               <span className="ab-flex ab-flex-row ab-justify-start ab-items-center">
                 <span className="ab-text-sm ab-font-bold">
-                  Prompt für:&nbsp;
+                  KI:&nbsp;
                 </span>
                 <AiModelDropdown
                   value={modelPk}
@@ -1478,7 +1496,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                   maxHeight={100}
                   value={customInstruction}
                   name={`${name}PromptInstructionEditor`}
-                  placeholder="Links finden Sie die Standard-Einstellungen. Geben Sie hier flexibel weitere Anforderungen an die KI ein..."
+                  placeholder="Weitere Regeln für die KI..."
                   className="!ab-block ab-mb-2 !ab-text-sm ab-h-12"
                   onChange={(evt) => setCustomInstruction(evt.target.value)}
                 />
@@ -1548,6 +1566,8 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                   calculateTokensFromBudget(20 ),
                 )}
                 */}
+
+
           {(recompilingInProgress || streamingInProgress) && (
             <span className="ab-flex ab-flex-row ab-items-center ab-justify-end">
               {recompilingInProgress && (
@@ -1576,4 +1596,4 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       </ResizablePanel>
     </ResizablePanelGroup>
   );
-};
+});
