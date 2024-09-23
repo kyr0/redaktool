@@ -182,19 +182,13 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   children,
 }) => {
   const { t, i18n } = useTranslation();
-  const [editorContent, setEditorContent] = useState<string>(editorAtom.get());
-  const [inputEditorContent, setInputEditorContent] = useState<string>(
-    inputEditorAtom.get(),
-  );
-  const [prompt, setPrompt] = useState<string>(defaultPromptTemplate);
-  const [stopStreamCallback, setStopStreamCallback] = useState<{
-    stopStream: Function;
-  }>();
+  const [editorContent, setEditorContent] = useState(editorAtom.get());
+  const [inputEditorContent, setInputEditorContent] = useState(inputEditorAtom.get());
+  const [prompt, setPrompt] = useState(defaultPromptTemplate);
+  const [stopStreamCallback, setStopStreamCallback] = useState<{ stopStream: Function }>();
   const [modelPk, setModelPk] = useState<ModelPreference>();
-  const [internalEditorArgs, setInternalEditorArgs] =
-    useState<MilkdownEditorCreatedArgs>();
-  const [internalInputEditorArgs, setInternalInputEditorArgs] =
-    useState<MilkdownEditorCreatedArgs>();
+  const [internalEditorArgs, setInternalEditorArgs] = useState<MilkdownEditorCreatedArgs>();
+  const [internalInputEditorArgs, setInternalInputEditorArgs] = useState<MilkdownEditorCreatedArgs>();
   const [promptPrepared, setPromptPrepared] = useState<Prompt>({
     id: uuid(),
     original: defaultPromptTemplate,
@@ -209,40 +203,50 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   const textSelection$ = useStore(guardedSelectionGuaranteedAtom);
   const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
   const [inputEditorEl, setInputEditorEl] = useState<HTMLElement | null>(null);
-  const [expertMode, setExpertMode] = useState<boolean>(false); // sync expert mode with db
+  const [expertMode, setExpertMode] = useState(false); // sync expert mode with db
   const [dynamicFields, setDynamicFields] = useState<Array<ParseResult>>([]);
-  const [dynamicFieldValues, setDynamicFieldValues] = useState<
-    Record<string, string>
-  >({});
-
-  const [recompilingInProgress, setRecompilingInProgress] =
-    useState<boolean>(false);
-
-  const [streamingInProgress, setStreamingInProgress] =
-    useState<boolean>(false);
-
-  const [customInstruction, setCustomInstruction] = useState<string>("");
-  const [promptContent, setPromptContent] = useState<string>("");
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
+  const [recompilingInProgress, setRecompilingInProgress] = useState(false);
+  const [streamingInProgress, setStreamingInProgress] = useState(false);
+  const [customInstruction, setCustomInstruction] = useState("");
+  const [promptContent, setPromptContent] = useState("");
   const [lastActualUsage, setLastActualUsage] = useState<PromptTokenUsage>();
   const [lastTotalPrice, setLastTotalPrice] = useState<number>();
-  const [activeTab, setActiveTab] = useState<"context" | "promptEditor">(
-    "context",
-  );
+  const [activeTab, setActiveTab] = useState<"context" | "promptEditor">("context");
   const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
-  const [llmPort, setLlmPort] = useState<chrome.runtime.Port>();
-  const [currentPromptId, setCurrentPromptId] = useState<string>();
-  const [isDoneStreaming, setIsDoneStreaming] = useState<boolean>(false);
+  const [llmPort, setLlmPort] = useState<chrome.runtime.Port | null>(null);
+  const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
+  const [isDoneStreaming, setIsDoneStreaming] = useState(false);
 
+  // ensure llmPort is always connected and disconnects on component rerender
   useEffect(() => {
-    const port = chrome.runtime.connect({ name: `${name}-llm-stream`});
-    setLlmPort(port);
-  }, [name]);
+    if (isActive) {
+      setLlmPort((llmPort) => {
+        if (llmPort === null) {
+          llmPort = chrome.runtime.connect({ name: `${name}-llm-stream` });
+        }
+        return llmPort;
+      });
+    }
+
+    return () => {
+      setLlmPort((llmPort) => {
+        if (llmPort) {
+          llmPort.disconnect();
+        }
+        return null;
+      });
+    };
+  }, [isActive, name]);
 
   useEffect(() => {
     scrollDownMax(editorEl);
   }, [editorEl]);
 
   const onPortMessageReceived = useCallback((message: any) => {
+
+    console.log("onPortMessageReceived", message);
+
     switch (message.action) {
       case "prompt-response": {
         const chunk = message.payload;
@@ -274,20 +278,38 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
     }
   }, [currentPromptId, editorEl]);
 
-  useEffect(() => {
-    const listener = (message: any) => {
-      onPortMessageReceived(message);
-    };
+  const [, setListenerRegistered] = useState<Function|null>(null);
 
+  useEffect(() => {
+    
     if (llmPort) {
-      console.log("registering onPortMessageReceived listener", listener);
-      llmPort.onMessage.addListener(listener);
+      
+      setListenerRegistered((listener) => {
+
+        if (typeof listener === "function") {
+          console.log("removing previous onPortMessageReceived listener", listener);
+          llmPort.onMessage.removeListener(listener as any);
+        }
+        const newListener = (message: any) => {
+          onPortMessageReceived(message);
+        };
+        console.log("adding new onPortMessageReceived listener", newListener);
+        llmPort.onMessage.addListener(newListener);
+
+        return newListener;
+      });
     }
 
     return () => {
       if (llmPort) {
-        console.log("removing onPortMessageReceived listener", listener);
-        llmPort.onMessage.removeListener(listener);
+        setListenerRegistered((listenerRegistered) => {
+
+          if (typeof listenerRegistered === "function") {
+            console.log("removing onPortMessageReceived listener on destruct", listenerRegistered);
+            llmPort.onMessage.removeListener(listenerRegistered as any);
+          }
+          return null;
+        });
       }
     };
   }, [llmPort, onPortMessageReceived]);
@@ -1110,7 +1132,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
             <div className="ab-flex ab-flex-col ab-w-full ab-h-full ab-overflow-auto">
               <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-6 ab-items-center ab-mb-2">
                 <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-md">
-                  Einstellungen:
+                  Einstellungen
                 </span>
                 <span className="ab-mr-1">
                   <MiniInfoButton>

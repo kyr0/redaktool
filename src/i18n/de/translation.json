@@ -13,6 +13,7 @@
   "module_transcription": "Transkription",
   "module_settings": "Einstellungen",
   "module_interview": "Interview",
+  "module_prose": "Prosa",
   "summaryModule.audiencePromptPlaceholder": "Zielgruppe eingeben",
   "summaryModule.audiencePromptLabel": "Zielgruppe",
   "summaryModule.tonePromptPlaceholder": "Tonalität eingeben",

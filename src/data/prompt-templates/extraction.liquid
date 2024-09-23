@@ -6,6 +6,7 @@ WICHTIGSTE INSTRUKTIONEN: {{ CUSTOM_INSTRUCTION }}
 
 REGELN:
 - Schreibe zuerst eine kurze Zusammenfassung der Text-Eingabe.
+- The summary MUST be written in a the following tone: "{{TONE}}"
 {% if DATA_FORMAT == "markdown" %}
   - Verwende in der Markdown-Formatierung NIEMALS den Code-Block ```
 {% endif %}
@@ -72,3 +73,4 @@ ENDE DES BEISPIEL.
 {% field AUDIENCE = "{ label: 'Zielgruppe', default: 'Erwachsene, Allgemeinheit', global: true }" %}
 {% field TARGET_LANGUAGE = "{ label: 'Ausgabesprache', default: 'Deutsch', options: ['Deutsch', 'Englisch', 'Chinesisch (Mandarin)', 'Spanisch', 'Französisch', 'Italienisch', 'Portugiesisch', 'Niederländisch', 'Russisch', 'Japanisch'], global: true }" %}
 {% field REMOVE_ADS = "{ label: 'Werbung entfernen', default: 'Ja', options: ['Ja', 'Nein'] }" %}
+{% field TONE = "{ label: 'Tonalität', default: 'Nachrichten', global: true }" %}

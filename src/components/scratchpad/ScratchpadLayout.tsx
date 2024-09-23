@@ -6,6 +6,7 @@ import {
   MessageCircleDashed,
   Newspaper,
   PartyPopper,
+  PenIcon,
   PenTool,
   Scale,
 } from "lucide-react";
@@ -28,12 +29,13 @@ import { CoachModule } from "./coach/CoachModule";
 import { ProofreadingModule } from "./proofreading/ProofreadingModule";
 import { TitlesModule } from "./titles/TitlesModule";
 import { InterviewModule } from "./interview/InterviewModule";
+import { ProseModule } from "./prose/ProseModule";
 import { db } from "../../lib/content-script/db"; // Import the db API
 
 export type ToolName =
+  | "prose"
   | "source"
   | "translation"
-  | "summary"
   | "titles"
   | "rewrite"
   | "coach"
@@ -41,7 +43,7 @@ export type ToolName =
 
 export const ScratchpadLayout = () => {
   const { t, i18n } = useTranslation();
-  const [activeView, setActiveView] = useState<ToolName>();
+  const [activeView, setActiveView] = useState<ToolName>("prose");
 
   // Load the last active view from the database
   useEffect(() => {
@@ -70,6 +72,20 @@ export const ScratchpadLayout = () => {
         <span className="ab-h-8 ab-mr-2 ab-font-bold ab-text-lg ab-flex ab-items-center">
           Aufgabe:
         </span>
+
+        <TabsTrigger
+          value="prose"
+          onClick={() => setActiveView("prose")}
+          className={`!ab-pt-0 !ab-max-h-10 !ab-text-md ${
+            activeView === "prose"
+              ? "ab-ftr-active-menu-item-main"
+              : "ab-ftr-menu-item"
+          }`}
+        >
+          <PenIcon className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
+          {t("module_prose")}
+        </TabsTrigger>
+
         <TabsTrigger
           value="source"
           onClick={() => setActiveView("source")}
@@ -93,18 +109,6 @@ export const ScratchpadLayout = () => {
         >
           <Languages className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
           {t("module_translation")}
-        </TabsTrigger>
-        <TabsTrigger
-          onClick={() => setActiveView("summary")}
-          value="summary"
-          className={`!ab-pt-0 !ab-max-h-10 !ab-text-md  ${
-            activeView === "summary"
-              ? "ab-ftr-active-menu-item-main"
-              : "ab-ftr-menu-item"
-          }`}
-        >
-          <ListBulletIcon className="ab-w-4 ab-h-4 ab-shrink-0 ab-mr-1" />{" "}
-          {t("module_summary")}
         </TabsTrigger>
         <TabsTrigger
           onClick={() => setActiveView("coach")}
@@ -157,6 +161,14 @@ export const ScratchpadLayout = () => {
       </TabsList>
       <TabsContent
         forceMount
+        hidden={activeView !== "prose"}
+        value="prose"
+        className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
+      >
+        <ProseModule isActive={activeView === "prose"} />
+      </TabsContent>
+      <TabsContent
+        forceMount
         hidden={activeView !== "source"}
         value="source"
         className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
@@ -171,14 +183,6 @@ export const ScratchpadLayout = () => {
       >
         <TranslationModule isActive={activeView === "translation"} />
       </TabsContent>
-      <TabsContent
-        forceMount
-        hidden={activeView !== "summary"}
-        value="summary"
-        className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
-      >
-        <SummaryModule isActive={activeView === "summary"} />
-      </TabsContent>
 
       <TabsContent
         forceMount
@@ -188,6 +192,7 @@ export const ScratchpadLayout = () => {
       >
         <CoachModule isActive={activeView === "coach"} />
       </TabsContent>
+
       <TabsContent
         forceMount
         hidden={activeView !== "rewrite"}

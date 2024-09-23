@@ -13,6 +13,7 @@
   "module_settings": "Settings",
   "module_titles": "Titele suggestions",
   "module_interview": "Interview",
+  "module_prose": "Prose",
   "summaryModule.audiencePromptPlaceholder": "Enter the audience",
   "summaryModule.audiencePromptLabel": "Audience",
   "summaryModule.tonePromptPlaceholder": "Enter the tone",
