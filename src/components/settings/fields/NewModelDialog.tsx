@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTrigger,
 } from "../../../ui/dialog";
-
 import { Button } from "../../../ui/button";
 import {
   Form,
@@ -21,13 +20,14 @@ import {
   FormMessage,
 } from "../../../ui/form";
 import { Input } from "../../../ui/input";
-import { Textarea } from "../../../ui/textarea";
 import { useTranslation } from "react-i18next";
 import type { ModelSchema, SettingsFieldProps } from "../types";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../../ui/select";
 
 const FormSchema = z.object({
   id: z.string().min(2),
   name: z.string().min(5),
+  type: z.enum(["llm", "tts", "embed", "stt"]),
 });
 
 export const NewModelButton = ({
@@ -42,7 +42,8 @@ export const NewModelButton = ({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       id: "",
-      name: ""
+      name: "",
+      type: "llm"
     },
   });
 
@@ -132,6 +133,65 @@ export const NewModelButton = ({
                   )}
                 />
 
+                <FormField
+                  control={newModelForm.control}
+                  name="type" 
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Select
+                          {...field}
+                          onValueChange={(value) => {
+                            newModelForm.setValue("type", value as any);
+                          }}
+                          value={
+                            field.value
+                          }
+                        >
+                          <SelectTrigger className="ab-h-8">
+                            <SelectValue
+                              placeholder={"Typ"}
+                              className="!ab-text-sm"
+                              
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="ab-z-[2147483646]">
+                            <SelectItem
+                              className="!ab-text-sm"
+                              key={"llm"}
+                              value={"llm"}
+                            >
+                              Spachmodell
+                            </SelectItem>
+                            <SelectItem
+                              className="!ab-text-sm"
+                              key={"embed"}
+                              value={"embed"}
+                            >
+                              Embedding-Modell
+                            </SelectItem>
+                            <SelectItem
+                              className="!ab-text-sm"
+                              key={"stt"}
+                              value={"stt"}
+                            >
+                              Transkriptions-Modell
+                            </SelectItem>
+                            <SelectItem
+                              className="!ab-text-sm"
+                              key={"tts"}
+                              value={"tts"}
+                            >
+                              VoiceOver-Modell
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+               
                 <Button
                   size={"sm"}
                   className="ab-w-full ab-flex ab-justify-center ab-items-center ab-text-sm hover:!ab-bg-primary-foreground"

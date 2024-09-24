@@ -11,7 +11,7 @@ import { ANTHROPIC_API_KEY_NAME } from "../../shared";
 import { CheckCheck, SaveIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
-import { llms } from "../../lib/content-script/llm-models";
+import { wellKnownAIModels } from "../../lib/content-script/ai-models";
 import { ApiKeyField } from "./fields/ApiKey";
 import { NewProviderFormSchema } from "./types";
 import { ProviderChooserField } from "./fields/ProviderChooser";

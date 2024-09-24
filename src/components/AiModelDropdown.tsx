@@ -18,6 +18,7 @@ import { ArrowDown, Mail, MessageSquare, PlusCircle, UserPlus } from "lucide-rea
 import { useEditor } from "@milkdown/react";
 import type { InferenceProviderType } from "../lib/worker/llm/interfaces";
 import type { InferenceProvider } from "./settings/types";
+import type { AIModelType } from "../lib/content-script/ai-models";
 
 export type ModelPreference = {
   inferenceProvider: InferenceProviderType;
@@ -32,6 +33,7 @@ export interface AiModelEntry {
 
 export interface AiModelDropdownProps {
   value?: ModelPreference;
+  type: AIModelType;
   options: Array<InferenceProvider>;
   onChange: (value: ModelPreference) => void;
 }
@@ -39,6 +41,7 @@ export interface AiModelDropdownProps {
 export function AiModelDropdown({
   value,
   options,
+  type,
   onChange,
 }: AiModelDropdownProps) {
   const { t, i18n } = useTranslation();
@@ -100,7 +103,9 @@ export function AiModelDropdown({
           <DropdownMenuLabel>KI-Anbieter wählen:</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {options.map((option) => (
+          {options.filter(option => !!option.models
+            .find(option => option.type === type))
+            .map((option) => (
             <DropdownMenuItem key={`${option.name}-item}`} onSelect={() => {
               setSelectedInferenceProvider(option);
 
@@ -174,7 +179,9 @@ export function AiModelDropdown({
             <DropdownMenuLabel>KI-Modell wählen</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {selectedInferenceProvider.models.map((option) => (
+            {selectedInferenceProvider.models
+              .filter(model => model.type === type)
+              .map((option) => (
               <DropdownMenuItem key={`${option.name}-item}`} onSelect={() => {
                 setSelectedModel({
                   inferenceProvider: selectedInferenceProvider.inferenceProviderName,

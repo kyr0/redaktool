@@ -1,5 +1,6 @@
 // DEPRECATED
 //import("webextension-polyfill");
+declare const self: ServiceWorkerGlobalScope;
 
 import {
   ANTHROPIC_API_KEY_NAME,
@@ -8,6 +9,8 @@ import {
   type MessageChannelPackage,
   type MessageChannelMessage,
   type DbKeyValue,
+  type AudioFile,
+  type TranscriptionTask,
 } from "./shared";
 import {
   promptStreaming,
@@ -22,13 +25,13 @@ import { db, dbGetValue, dbSetValue } from "./lib/worker/db";
 import { fetchRssFeed } from "./lib/worker/rss";
 import { cron } from "./lib/worker/scheduler";
 import { getPref, getValue, setValue } from "./lib/worker/prefs";
-import { whisper } from "./lib/worker/transcription/whisper";
+import { transcribeOpenai } from "./lib/worker/transcription/openai";
 import type {
   CompilePrompt,
   Prompt,
   PromptPartialResponse,
 } from "./lib/content-script/prompt-template";
-import { getLLMModel } from "./lib/content-script/llm-models";
+import { getWellKnownAIModel } from "./lib/content-script/ai-models";
 /*
 import {
   calculateEffectivePrice,
@@ -37,9 +40,155 @@ import {
  */
 import { useMessageChannel } from "./lib/worker/message-channel";
 import { loadEmbeddingModel } from "./lib/worker/embedding/model";
+import { getAudioFileAsAudioBuffer, type AudioMetaData } from "./lib/audio-dsp";
 
 // establish fast, MessageChannel-based communication between content script and worker
 const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
+
+/*
+
+
+async function decodeAudioUsingWebCodecs(file: File, codec: string, metaData: AudioMetaData) {
+  // Step 1: Read the file data as an ArrayBuffer
+  const arrayBuffer = await file.arrayBuffer();
+
+  // Step 2: Initialize the AudioDecoder
+  const audioDecoder = new AudioDecoder({
+    output: handleDecodedFrame,
+    error: (error) => console.error("AudioDecoder error:", error),
+  });
+
+  // Step 3: Configure the AudioDecoder with the correct codec
+  audioDecoder.configure({
+    codec, 
+    sampleRate: metaData.sampleRate,
+    numberOfChannels: metaData.numberOfChannels,
+  });
+
+  // Helper function to convert ArrayBuffer to EncodedAudioChunk
+  function createEncodedAudioChunk(arrayBuffer: ArrayBuffer) {
+    return new EncodedAudioChunk({
+      type: 'key',
+      timestamp: 0, // Adjust if you have timing data
+      data: new Uint8Array(arrayBuffer),
+    });
+  }
+
+  // Step 4: Feed the encoded data to the AudioDecoder
+  const encodedChunk = createEncodedAudioChunk(arrayBuffer);
+  audioDecoder.decode(encodedChunk);
+
+  // Initialize variables for accumulating frames
+  const decodedFrames: Float32Array[][] = [];
+  let totalFrames = 0;
+  let sampleRate = 0;
+  let numberOfChannels = 0;
+
+  // Step 5: Handle the output PCM data and integrate with OfflineAudioContext
+  async function handleDecodedFrame(frame: AudioData) {
+    // Set the sampleRate and numberOfChannels on the first frame
+    if (totalFrames === 0) {
+      sampleRate = frame.sampleRate;
+      numberOfChannels = frame.numberOfChannels;
+    }
+
+    // Keep track of the total number of frames
+    totalFrames += frame.numberOfFrames;
+
+    // Copy the PCM data from the frame
+    const frameData: Float32Array[] = [];
+    for (let channel = 0; channel < frame.numberOfChannels; channel++) {
+      const channelData = new Float32Array(frame.numberOfFrames);
+      frame.copyTo(channelData, { planeIndex: channel });
+      frameData.push(channelData);
+    }
+
+    // Store the frame data
+    decodedFrames.push(frameData);
+
+    // Close the frame after processing to free up memory
+    frame.close();
+  }
+
+  // When decoding finishes, this function will be called
+  async function finalizeDecoding() {
+    // Create an OfflineAudioContext with the accumulated data
+    const offlineContext = new OfflineAudioContext(
+      numberOfChannels,
+      totalFrames,
+      sampleRate
+    );
+
+    // Create an AudioBuffer to store the complete decoded data
+    const audioBuffer = offlineContext.createBuffer(
+      numberOfChannels,
+      totalFrames,
+      sampleRate
+    );
+
+    // Copy accumulated frame data into the AudioBuffer
+    let offset = 0;
+    for (const frameData of decodedFrames) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        audioBuffer.copyToChannel(frameData[channel], channel, offset);
+      }
+      offset += frameData[0].length;
+    }
+
+    console.log("Final Decoded AudioBuffer:", audioBuffer);
+    return audioBuffer; // Return or process further
+  }
+
+  // Monitor the state of the decoder and finalize when it's done
+  await audioDecoder.flush()
+  audioDecoder.close();
+
+  return finalizeDecoding();
+}
+
+  */
+
+// Create the offscreen document if it doesn't already exist
+async function decodeSliceOffscreen(file: File) {
+  try {
+    const url = chrome.runtime.getURL('audio-processor.html');
+    await chrome.offscreen.createDocument({
+      url,
+      reasons: ["AUDIO_PLAYBACK"] as chrome.offscreen.Reason[],
+      justification: 'Transcoding and slicing transcription audio.' // details for using the API
+    });
+
+    const client = (await self.clients.matchAll({includeUncontrolled: true}))
+    .find(c => c.url === url);
+
+    console.log("client", client);
+
+    /*
+
+    const res = await chrome.runtime.sendMessage({
+      type: 'decode-filter-slice',
+      payload: { buffer, metaData },
+    });
+    console.log("res", res);
+    */
+
+    if (client) {
+      const mc = new MessageChannel();
+      client.postMessage(file, [mc.port2]);
+      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+      const res: MessageEvent = await new Promise(cb => (mc.port1.onmessage = cb));
+      
+      console.log("res data", res.data);
+      if (res?.data) {
+        //await chrome.offscreen.closeDocument();
+        return res.data
+      }
+    }
+
+  } catch (error) {
+    console.error("Error creating offscreen document", error);
+  }
+}
 
 // instant memory/heap reference pub/sub messaging
 addListener(async(e) => {
@@ -48,6 +197,81 @@ addListener(async(e) => {
     case "model": {
       const model = e.data.payload as MLModel;
       loadEmbeddingModel(model);
+      break;
+    }
+
+    case "transcribe": {
+
+      try {
+
+        const transcriptionTask = e.data.payload as TranscriptionTask;
+        console.log("transcribe", transcriptionTask);
+
+        const transcriptionResponse = await transcribeOpenai(transcriptionTask);
+        console.log("transcriptionResponse", transcriptionResponse);
+
+        postMessage({
+          id: e.data.id,
+          success: true,
+          action: "transcribe-result",
+          payload: transcriptionResponse 
+        })
+
+      } catch (error) {
+        console.log("transcribe error", e.data.payload, error);
+        postMessage({
+          id: e.data.id,
+          success: false,
+          error,
+          action: "transcribe-result",
+          payload: null
+        })
+      }
+      break;
+    }
+
+    case "process-transcription-audio": {
+
+      try {
+        // audio.audioFile is of type File
+        const audio = e.data.payload as AudioFile;
+
+        console.log("audio recv", audio);
+        //const codec = getCodecFromMimeType(audio.audioFile.type);
+        //const metaData = audio.metaData;
+        //const fileBlob = new Blob([audio.audioFile], { type: audio.audioFile.type });
+        //const arrayBuffer = await audio.audioFile.arrayBuffer();
+        //console.log("arrayBuffer", arrayBuffer);
+
+        const wavBlobs = await decodeSliceOffscreen(audio.audioFile);
+
+        console.log("wavBlobs", wavBlobs);
+
+        postMessage({
+          id: e.data.id,
+          success: true,
+          action: "process-transcription-audio-result",
+          payload: wavBlobs 
+        })
+      } catch (error) {
+        console.log("compile prompt error", e.data.payload, error);
+        postMessage({
+          id: e.data.id,
+          success: false,
+          error,
+          action: "process-transcription-audio",
+          payload: null
+        })
+      }
+
+      /*
+      // create an AudioContext to decode the audio file and get its duration
+      const audioBuffer = await decodeAudioUsingWebCodecs(audio.audioFile, codec, audio.metaData);
+      const duration = audioBuffer.duration;
+      */
+
+      // create an OfflineAudioContext with the correct length based on the audio file duration
+      
       break;
     }
 
@@ -348,6 +572,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
 
         // multi-provider LLM prompt processing
+        /*
         case "prompt": {
           const prompt = data as Prompt;
           console.log("prompt data", prompt);
@@ -417,11 +642,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 text,
                 actualUsage: usage,
                 elapsed,
-                totalPrice: /*calculateEffectivePrice(
-                  costModel,
-                  usage.promptTokens || 0,
-                  usage.completionTokens || 0,
-                ).total*/ 0,
+                totalPrice: 0,
                 finished: true,
               });
 
@@ -465,6 +686,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           );
           break;
         }
+        */
 
         // compilation of smart prompt; handled in worker process for security context separation and for performance
         case "compile-prompt": {
@@ -482,6 +704,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         // whisper audio transcription
+        /*
         case "transcribe": {
           console.log("prompt", data.blobDataUrl);
 
@@ -492,13 +715,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           console.log("blob", blob);
 
-          const whisperResponse = await whisper(blob, prevTranscription);
+          const whisperResponse = await transcribeOpenai(blob, prevTranscription);
           sendResponse({
             success: true,
             value: JSON.stringify(whisperResponse),
           });
           break;
         }
+        */
 
         // news radar rss feed fetching
         case "rss": {

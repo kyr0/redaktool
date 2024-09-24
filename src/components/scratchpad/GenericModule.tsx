@@ -1419,6 +1419,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                 </span>
                 <AiModelDropdown
                   value={modelPk}
+                  type="llm"
                   onChange={(value) => {
                     setInternalModelPk(value);
                   }}

@@ -1,3 +1,4 @@
+import type { AudioMetaData } from "./lib/audio-dsp";
 import type { CompilePrompt, Prompt } from "./lib/content-script/prompt-template";
 import type { ParseSmartPromptResult } from "./lib/worker/prompt";
 
@@ -8,7 +9,13 @@ export const PARTIAL_RESPONSE_TEXT_NAME = "PARTIAL_RESPONSE_TEXT";
 
 export const PARTIAL_RESPONSE_NAME = "PARTIAL_RESPONSE";
 
-export type SupportedActions = "model" | "compile-prompt" | "compile-prompt-result" | "prompt" | "db-get" | "db-get-result" | "db-set" | "db-set-result";
+export type SupportedActions = "model" | 
+  "compile-prompt" | "compile-prompt-result" | 
+  "prompt" | 
+  "db-get" | "db-get-result" | 
+  "db-set" | "db-set-result" | 
+  "process-transcription-audio" | "process-transcription-audio-result" |
+  "transcribe" | "transcribe-result";
 
 export interface MessageChannelPackage<T> {
   id: string;
@@ -28,6 +35,24 @@ export interface MLModel {
   tokenizer: Blob;
   config: any;
 }
+
+export interface AudioFile {
+  audioFile: File;
+  metaData: AudioMetaData;
+}
+
+export type InferenceProviderType = "openai" | "deepgram";
+
+export interface TranscriptionTask {
+  blob: Blob;
+  codec: string;
+  model: string;
+  providerType: InferenceProviderType;
+  apiKey?: string;
+  prompt?: string; // optional, previous transcription
+}
+
+export type SlicedAudioWavs = Array<{ blob: Blob; duration: number }>
 
 export interface DbKeyValue {
   key: string;
@@ -54,8 +79,28 @@ export interface DbMessage extends MessageChannelPackage<DbKeyValue> {
   payload: DbKeyValue;
 }
 
-export type MessageChannelMessage = EmbeddingModelMessage | PromptMessage | CompilePromptMessage | CompilePromptResultMessage | DbMessage;
-export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue;
+export interface ErrorMessage extends MessageChannelPackage<null> {
+  payload: null;
+}
+
+export interface ProcessTranscriptionAudioMessage extends MessageChannelPackage<AudioFile> {
+  payload: AudioFile;
+}
+
+export interface ProcessTranscriptionAudioResultMessage extends MessageChannelPackage<SlicedAudioWavs> {
+  payload: SlicedAudioWavs;
+}
+
+export interface TranscriptionMessage extends MessageChannelPackage<TranscriptionTask> {
+  payload: TranscriptionTask;
+}
+
+export interface TranscriptionResultMessage extends MessageChannelPackage<TranscriptionTask> {
+  payload: TranscriptionTask;
+}
+
+export type MessageChannelMessage = EmbeddingModelMessage | PromptMessage | CompilePromptMessage | CompilePromptResultMessage | DbMessage | ProcessTranscriptionAudioMessage | ErrorMessage | ProcessTranscriptionAudioResultMessage | TranscriptionMessage | TranscriptionResultMessage;
+export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue | AudioFile | SlicedAudioWavs | TranscriptionTask | null;
 
 export interface HyperParameters {
   autoTuneCreativity: number;

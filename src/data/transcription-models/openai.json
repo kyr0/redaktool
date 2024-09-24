@@ -1,0 +1,13 @@
+[
+  {
+    "pk": "openai-whisper-1",
+    "provider": "openai",
+    "ident": "whisper-1",
+    "label": "OpenAI Whisper 1 (large-v2)",
+    "maxContextTokens": 8191,
+    "type": "stt",
+    "inferenceProviders": [
+      "openai"
+    ]
+  }
+]

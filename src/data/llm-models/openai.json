@@ -6,6 +6,7 @@
     "label": "OpenAI GPT-4o-mini",
     "maxInputTokens": 128000,
     "cutoff": "October 2023",
+    "type": "llm",
     "inferenceProviders": [
       "openai"
     ]
@@ -17,6 +18,7 @@
     "label": "OpenAI GPT-4o",
     "maxContextTokens": 128000,
     "cutoff": "October 2023",
+    "type": "llm",
     "inferenceProviders": [
       "openai"
     ]
@@ -28,6 +30,7 @@
     "label": "OpenAI GPT-4 Turbo",
     "maxContextTokens": 128000,
     "cutoff": "December 2023",
+    "type": "llm",
     "inferenceProviders": [
       "openai"
     ]
@@ -39,6 +42,7 @@
     "label": "OpenAI GPT-3.5 Turbo",
     "maxContextTokens": 16384,
     "cutoff": "September 2023",
+    "type": "llm",
     "inferenceProviders": [
       "openai"
     ]

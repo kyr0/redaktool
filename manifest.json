@@ -37,7 +37,7 @@
     }
   ],
   "host_permissions": ["*://*/*", "http://127.0.0.1/*", "http://localhost/*"],
-  "permissions": ["webRequest", "webRequestBlocking","scripting", "activeTab", "storage", "unlimitedStorage"],
+  "permissions": ["webRequest", "scripting", "activeTab", "storage", "unlimitedStorage", "offscreen"],
   "background": {
     "service_worker": "src/worker.ts",
     "type": "module"
@@ -48,7 +48,7 @@
   "incognito": "split",
   "web_accessible_resources": [
     {
-      "resources": ["message-channel.html", "message-channel.js"],
+      "resources": ["message-channel.html", "message-channel.js", "audio-processor.html", "audio-processor.js", "data/OK.mp3"],
       "matches": ["<all_urls>"],
       "use_dynamic_url": true
     },

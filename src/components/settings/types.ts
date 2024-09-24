@@ -1,12 +1,13 @@
 import * as z from "zod";
-import { llmInferenceProviderIdents } from "../../lib/content-script/llm-models";
+import { aiInferenceProviderIdents } from "../../lib/content-script/ai-models";
 import type { UseFormReturn } from "react-hook-form";
 
-export const InferenceProviderNameSchema = z.enum(llmInferenceProviderIdents)
+export const InferenceProviderNameSchema = z.enum(aiInferenceProviderIdents)
 
 export const ModelSchema = z.object({
   id: z.string(),
   name: z.string(),
+  type: z.enum(["llm", "embed", "stt", "tts"]).default("llm"),
 })
 
 export const NewProviderFormSchema = z.object({

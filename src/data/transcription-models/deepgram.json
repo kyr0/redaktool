@@ -1,0 +1,24 @@
+[
+  {
+    "pk": "deepgram-nova-2",
+    "provider": "deepgram",
+    "ident": "nova-2",
+    "label": "Deepgram Nova 2",
+    "maxContextTokens": 8191,
+    "type": "stt",
+    "inferenceProviders": [
+      "deepgram"
+    ]
+  },
+  {
+    "pk": "deepgram-whisper-large",
+    "provider": "openai",
+    "ident": "whisper-large",
+    "label": "Deepgram Whisper Cloud (Large)",
+    "maxContextTokens": 8191,
+    "type": "stt",
+    "inferenceProviders": [
+      "deepgram"
+    ]
+  }
+]

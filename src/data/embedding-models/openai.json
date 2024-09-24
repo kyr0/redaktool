@@ -1,0 +1,24 @@
+[
+  {
+    "pk": "openai-text-embedding-3-small",
+    "provider": "openai",
+    "ident": "text-embedding-3-small",
+    "label": "OpenAI Text Embedding 3 Small",
+    "maxContextTokens": 8191,
+    "type": "embed",
+    "inferenceProviders": [
+      "openai"
+    ]
+  },
+  {
+    "pk": "openai-text-embedding-3-large",
+    "provider": "openai",
+    "ident": "text-embedding-3-large",
+    "label": "OpenAI Text Embedding 3 Large",
+    "maxContextTokens": 8191,
+    "type": "embed",
+    "inferenceProviders": [
+      "openai"
+    ]
+  }
+]

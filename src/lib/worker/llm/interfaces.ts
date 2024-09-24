@@ -25,7 +25,8 @@ export type InferenceProviderType =
   | "cohere"
   | "google"
   | "huggingface"
-  | "ollama";
+  | "ollama"
+  | "deepgram";
 
 export type PromptCallSettings = {
     /**

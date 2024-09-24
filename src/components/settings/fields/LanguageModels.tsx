@@ -29,7 +29,7 @@ import { useEditor } from "@milkdown/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type * as z from "zod";
 import llmModels from "../../../data/llm-models";
-import { getModelListForInferenceProvider } from "../../../lib/content-script/llm-models";
+import { getModelListForInferenceProvider, type AIModelType } from "../../../lib/content-script/ai-models";
 import type { InferenceProviderType, PromptApiOptions, PromptTokenUsage } from "../../../lib/worker/llm/interfaces";
 
 import { CheckCheck, FlaskConical, MoreHorizontal, PlusIcon, Trash, Trash2 } from "lucide-react"
@@ -51,6 +51,9 @@ import { sendPrompt } from "../../../lib/content-script/prompt";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { LoadingSpinner } from "../../../ui/loading-spinner";
 import { NewModelButton } from "./NewModelDialog";
+import { transcribeInWorker } from "../../../lib/content-script/transcribe";
+import { cat } from "@xenova/transformers";
+import type { TranscriptionTask } from "../../../shared";
 
 export const models: Array<z.infer<typeof ModelSchema>> = []
 
@@ -62,9 +65,22 @@ const ModelCardUrlMap: {
   "ollama": "https://ollama.com/models",
 }
 
-export type LLMEntry = { id: string, name: string }
+const getLabelForModelType = (type: AIModelType) => {
+  switch (type) {
+    case "embed":
+      return "Embedding-Modell"
+    case "tts":
+      return "VoiceOver-Modell"
+    case "stt":
+      return "Transkriptions-Modell"
+    default:
+      return "Sprachmodell"
+  }
+}
 
-export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps & { models: Array<LLMEntry> }) => {
+export type AIModelEntry = { id: string, name: string, type: AIModelType }
+
+export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps & { models: Array<AIModelEntry> }) => {
 
   const [isTesting, setIsTesting] = useState<string|null>(null)
 
@@ -79,39 +95,99 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
       apiOptionsOverrides.baseURL = form.getValues().baseURL!;
     }
 
-    sendPrompt(
-      {
-        id: `test-prompt-${Date.now()}`,
-        model: model.id,
-        provider: form.getValues().inferenceProviderName,
-        inferenceProvider: form.getValues().inferenceProviderName,
-        text: "MUST ONLY answer with: 'OK'.",
-        apiOptionsOverrides
-      },
-      () => {},
-      (
-        wholeText: string,
-        usage: PromptTokenUsage,
-        totalPrice: number,
-      ) => {
-        console.log("Test result", wholeText, usage, totalPrice)
-       
-        setIsTesting(null)
-        toast.info("KI-Modell erfolgreich getestet!", {
-          duration: 5000,
-          icon: (
-            <CheckCheck className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
-          ),
-          style: {
-            fontWeight: "normal",
-          },
-        });
-      },
-      (error: string) => {
-        console.log("Test error", error)
-        setIsTesting(null)
+    if (model.type === "llm") {
+      sendPrompt(
+        {
+          id: `test-prompt-${Date.now()}`,
+          model: model.id,
+          provider: form.getValues().inferenceProviderName,
+          inferenceProvider: form.getValues().inferenceProviderName,
+          text: "MUST ONLY answer with: 'OK'.",
+          apiOptionsOverrides
+        },
+        () => {},
+        (
+          wholeText: string,
+          usage: PromptTokenUsage,
+          totalPrice: number,
+        ) => {
+          console.log("Test result", wholeText, usage, totalPrice)
+        
+          setIsTesting(null)
+          toast.info("Sprachmodell erfolgreich getestet!", {
+            duration: 5000,
+            icon: (
+              <CheckCheck className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+            ),
+            style: {
+              fontWeight: "normal",
+            },
+          });
+        },
+        (error: string) => {
+          console.log("Test error", error)
+          setIsTesting(null)
+          toast.info(
+            `Fehler beim Testen des Sprachmodells: ${error}`,
+            {
+              duration: 5000,
+              icon: (
+                <ExclamationTriangleIcon className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+              ),
+              style: {
+                fontWeight: "normal",
+              },
+            },
+          );
+        },
+      )
+    } else if (model.type === "tts") {
+
+      console.log("VoiceOver TTS model", model)
+      
+    } else if (model.type === "stt") {
+
+      // load test audio blob
+      const blobUrl = chrome.runtime.getURL("data/OK.mp3")
+
+      console.log("Test STT model", blobUrl)
+      
+      try {
+        fetch(blobUrl).then(async(response) => {
+
+          const blob = await response.blob()
+
+          console.log("Fetched blob", blob)
+
+          const transcription = await transcribeInWorker({
+            blob, 
+            codec: "mp3",
+            prompt: "",
+            providerType: form.getValues().inferenceProviderName,
+            model: model.id,
+            apiKey: form.getValues().apiKey!,
+          } as TranscriptionTask);
+
+          console.log("Transcription test result", transcription)
+
+          // "OK", "Okay" etc.
+          if (transcription.text && transcription.text.length >= 2) {
+
+            toast.info("Transkriptions-Modell erfolgreich getestet!", {
+              duration: 5000,
+              icon: (
+                <CheckCheck className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+              ),
+              style: {
+                fontWeight: "normal",
+              },
+            });
+          }
+        })
+      } catch (error) {
+        console.log("Error fetching blob", error)
         toast.info(
-          `Fehler beim Testen des AI-Providers: ${error}`,
+          `Fehler beim Testen des Transkriptions-Modells: ${error}`,
           {
             duration: 5000,
             icon: (
@@ -122,8 +198,14 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
             },
           },
         );
-      },
-    )
+      } finally {
+        setIsTesting(null)
+      }
+    } else if (model.type === "embed") {
+
+      console.log("Embedding model", model)
+
+    }
   }, [form])
 
   const onTestModelClick = useCallback((model: z.infer<typeof ModelSchema>) => {
@@ -181,6 +263,20 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
               Anzeigename
             </span>
           )
+        },
+      },
+      {
+        accessorKey: "type",
+        size: 200,
+        header: () => {
+          return (
+            <span className="ab-flex ab-flex-row ab-justify-start ab-items-center ab-text-sm">
+              Typ
+            </span>
+          )
+        },
+        cell: ({ row }) => {
+          return getLabelForModelType(row.getValue("type"))
         },
       },
       {
@@ -266,7 +362,7 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
 
   return (
     <span ref={ref}>
-     <FormLabel>💬 Sprachmodelle:</FormLabel>
+     <FormLabel>🧠 KI-Modelle:</FormLabel>
       <FormDescription>
         Entfernen Sie oder fügen Sie die KI-Modelle hinzu, die im Modell-Selektor angezeigt werden sollen:{" "}
         <a

@@ -13,7 +13,7 @@ import {
 } from "../../ui/collapsible"
 import { ArrowDown, ArrowUp, ArrowUpIcon, ChevronDown, ChevronUp, PlusIcon } from "lucide-react";
 import { NameField } from "./fields/Name";
-import { llmInferenceProviders } from "../../lib/content-script/llm-models";
+import { aiInferenceProviders } from "../../lib/content-script/ai-models";
 
 export interface ProviderEditPanelProps {
   form: UseFormReturn<z.infer<typeof NewProviderFormSchema>>;
@@ -34,7 +34,7 @@ export const ProviderEditPanel: React.FC<ProviderEditPanelProps & { mode: "updat
     console.log("setting name?!?", form.getValues().name, inferenceProviderName)
     if (!form.getValues().name || mode === "create") {
       console.log("setting name!")
-      form.setValue("name", llmInferenceProviders.find((llmInferenceProvider) => llmInferenceProvider.ident === inferenceProviderName)?.label || "");
+      form.setValue("name", aiInferenceProviders.find((llmInferenceProvider) => llmInferenceProvider.ident === inferenceProviderName)?.label || "");
     }
   }, [form, inferenceProviderName, mode])
 
@@ -46,7 +46,7 @@ export const ProviderEditPanel: React.FC<ProviderEditPanelProps & { mode: "updat
   return (
     <>
       {inferenceProviderName !== "ollama" && <ApiKeyField form={form} mode={mode} />}
-      <LanguageModelsField form={form} mode={mode} models={form.getValues().models}/>
+      <LanguageModelsField form={form} mode={mode} models={form.getValues().models} />
       <Collapsible onOpenChange={onOpenChange}>
         <CollapsibleTrigger className="ab-flex ab-flex-row ab-items-center ab-justify-start ab-font-bold">
         {advancedSettingsOpen && <ChevronDown className="ab-shrink-0 ab-w-6 ab-h-6" />}

@@ -30,6 +30,7 @@ import {
   blobToAudioBuffer,
   blobToDataUrl,
   getAudioFileAsAudioBuffer,
+  getAudioMetadata,
   processAudioBufferWithBandpass,
   sliceAudioBufferAtPauses,
 } from "../../lib/audio-dsp";
@@ -38,35 +39,19 @@ import { filterForVisibleElements } from "../../lib/content-script/element";
 import { prefPerPage } from "../../lib/content-script/prefs";
 import { formatDuration } from "../../lib/content-script/format";
 import { Mic2Icon, PauseCircleIcon, PauseIcon, PlayIcon } from "lucide-react";
+import { messageChannelApi, useMessageChannelContext } from "../../message-channel";
+import type { InferenceProviderType, SlicedAudioWavs, TranscriptionTask } from "../../shared";
+import { transcribeInWorker } from "../../lib/content-script/transcribe";
+import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
+import type { InferenceProvider } from "../settings/types";
+import { inferenceProvidersDbState } from "../settings/db";
+import { db } from "../../lib/content-script/db";
+
 interface HTMLMediaElementWithCaptureStream extends HTMLMediaElement {
   captureStream(): MediaStream;
 }
 
-async function transcribeInWorker(blob: Blob, prevTranscription: string) {
-  return new Promise((resolve, reject) => {
-    (async () => {
-      chrome.runtime.sendMessage(
-        {
-          action: "transcribe",
-          text: JSON.stringify({
-            blobDataUrl: await blobToDataUrl(blob),
-            prevTranscription,
-          }),
-        },
-        (response) => {
-          console.log("transcribeInWorker response", response);
-          if (response.success) {
-            const value = JSON.parse(response.value);
-            //console.log("got value", value);
-            resolve(value);
-          } else {
-            reject("could not transcribe");
-          }
-        },
-      );
-    })();
-  });
-}
+const modelPkStateDb = db<ModelPreference>("transcriptionModelPk");
 
 async function downloadMediaAsBlob(videoElement: HTMLVideoElement) {
   try {
@@ -122,9 +107,7 @@ export const TranscriptionLayout = () => {
   const [audioBufferSlices, setAudioBufferSlices] = useState<
     Array<AudioBuffer>
   >([]);
-  const [audioBufferBlobs, setAudioBufferBlobs] = useState<
-    Array<{ duration: number; blob: Blob }>
-  >([]);
+  const [audioBufferBlobs, setAudioBufferBlobs] = useState<SlicedAudioWavs>([]);
   const [editorValue, setEditorValue] = useState<string>("");
   const [selectedMediaElement, setSelectedMediaElement] =
     useState<HTMLMediaElement | null>(null);
@@ -142,6 +125,36 @@ export const TranscriptionLayout = () => {
   );
   const [isTranscriptionRunning, setIsTranscriptionRunning] =
     useState<boolean>(false);
+  const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
+  const [modelPk, setModelPk] = useState<ModelPreference>();
+
+  useEffect(() => {
+    (async() => {
+      console.log("loading inference providers")
+      const inferenceProviders: Array<InferenceProvider> = (await inferenceProvidersDbState.get()).sort((a, b) => a.name.localeCompare(b.name))
+      setInferenceProviders(inferenceProviders)
+      console.log("DONE loading inference providers", inferenceProviders)
+    })()
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const storedModelPk = await modelPkStateDb.get();
+      
+      console.log("loading inference providers storedModelPk", storedModelPk)
+      setModelPk(storedModelPk);
+    })();
+  }, [name]);
+
+  const setInternalModelPk = useCallback(
+    (value: ModelPreference) => {
+      (async () => {
+        setModelPk((prev) => (prev !== value ? value : prev));
+        modelPkStateDb.set(await modelPkStateDb.get());
+      })();
+    },
+    [modelPkStateDb],
+  );
 
   const onFindVisibleMediaElements = useCallback(() => {
     const mediaElementsPref = prefPerPage<Array<string>>("mediaElements", []);
@@ -176,6 +189,23 @@ export const TranscriptionLayout = () => {
 
   useEffect(() => {
     (async () => {
+
+      console.log("audioFile", audioFile);
+
+      if (!audioFile || !audioContext) return;
+
+      const metaData = await getAudioMetadata(audioFile);
+
+      const wavBlobs: SlicedAudioWavs = await messageChannelApi.sendCommand("process-transcription-audio", {
+        audioFile,
+        metaData,
+      });
+
+      setAudioBufferBlobs(wavBlobs);
+
+      console.log("wavBlobs", wavBlobs)
+
+      /*
       if (audioFile && audioContext) {
         if (audioPlayerStatusRef.current) {
           audioPlayerStatusRef.current.innerHTML =
@@ -193,9 +223,11 @@ export const TranscriptionLayout = () => {
           audioPlayerContainerRef.current.classList.remove("ab-hidden");
         }
       }
+      */
     })();
-  }, [audioFile, audioContext]);
+  }, [audioFile, audioContext, messageChannelApi]);
 
+  /*
   useEffect(() => {
     if (audioBuffer && audioContext) {
       (async () => {
@@ -209,7 +241,9 @@ export const TranscriptionLayout = () => {
       })();
     }
   }, [audioBuffer, audioContext]);
+  */
 
+  /*
   useEffect(() => {
     if (audioBufferSlices.length === 0) return;
 
@@ -233,6 +267,7 @@ export const TranscriptionLayout = () => {
       audioPlayerStatusRef.current.innerHTML = "";
     }
   }, [audioBufferSlices]);
+  */
 
   useEffect(() => {
     if (!mediaElContainerRef.current) return;
@@ -254,17 +289,42 @@ export const TranscriptionLayout = () => {
     (blob: Blob, index: number, elapsedMins: number, elapsedSecs: number) => {
       let prevTranscription = "";
       return async () => {
+
+        if (!modelPk) {
+          console.error("No model selected");
+          return;
+        }
+
+        if (!inferenceProviders) {
+          console.error("No inference providers found");
+          return;
+        }
+
+        const activeInferenceProvider = inferenceProviders.find((ip) => ip.name === modelPk.providerName)
+
+        if (!activeInferenceProvider) {
+          console.log("No active inference provider found", modelPk.providerName, "inferenceProviders", inferenceProviders);
+          return;
+        }
+
         setIsTranscriptionRunning(true);
         setIndexesTranscribing((indexesTranscribing) => {
           return [...indexesTranscribing, index - 1];
         });
+
         console.log("transcribe slice", blob);
-        const transcription = (await transcribeInWorker(
+        console.log("transcribe with activeInferenceProvider", activeInferenceProvider);
+        console.log("transcribe with modelPk", modelPk);
+
+        const transcription = await transcribeInWorker({
           blob,
-          prevTranscription,
-        )) as {
-          text: string;
-        };
+          prompt: prevTranscription,
+          apiKey: activeInferenceProvider?.apiKey,
+          model: modelPk?.model,
+          codec: "wav", // TODO: might be opus?
+          providerType: activeInferenceProvider.inferenceProviderName as InferenceProviderType,
+        })
+        
         console.log("done transcribe slice", transcription);
 
         // buffer
@@ -310,7 +370,7 @@ export const TranscriptionLayout = () => {
         setIsTranscriptionRunning(false);
       };
     },
-    [elapsedTimes],
+    [elapsedTimes, modelPk, inferenceProviders],
   );
 
   const onSelectMediaElement = useCallback(
@@ -506,11 +566,6 @@ export const TranscriptionLayout = () => {
                           onChange={onTranscribe}
                           placeholder="Select audio or video file..."
                         />
-
-                        <strong className="ab-flex ab-mt-2">
-                          Datei-Analyse und Schnitt können die App kurzfristig
-                          einfrieren lassen.
-                        </strong>
                       </div>
                     </form>
 
@@ -623,6 +678,20 @@ export const TranscriptionLayout = () => {
               minSize={20}
               className="ab-h-full  ab-flex ab-flex-col ab-w-full !ab-overflow-y-auto"
             >
+            <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-justify-between">
+              <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
+                <AiModelDropdown
+                  value={modelPk}
+                  type="stt"
+                  onChange={(value) => {
+                    setInternalModelPk(value);
+                  }}
+                  options={inferenceProviders}
+                />
+              </h5>
+            </div>
+             
+              {/*
               <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-justify-between">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
                   Gesamte Aufnahme (Audio):
@@ -663,6 +732,7 @@ export const TranscriptionLayout = () => {
 
                 <AudioPlayer className="w-[100%]" audioBlob={audioBlob!} />
               </div>
+              */}
               <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
                   Audio-Abschnitte

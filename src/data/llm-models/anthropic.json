@@ -6,6 +6,7 @@
     "label": "Anthropic Claude 3.5 Sonnet",
     "maxContextTokens": 200000,
     "cutoff": "April 2024",
+    "type": "llm",
     "inferenceProviders": [
       "anthropic"
     ]
@@ -17,6 +18,7 @@
     "label": "Anthropic Claude 3 Opus",
     "maxContextTokens": 200000,
     "cutoff": "August 2023",
+    "type": "llm",
     "inferenceProviders": [
       "anthropic"
     ]
@@ -28,6 +30,7 @@
     "label": "Anthropic Claude 3 Haiku",
     "maxContextTokens": 200000,
     "cutoff": "August 2023",
+    "type": "llm",
     "inferenceProviders": [
       "anthropic"
     ]

@@ -10,7 +10,7 @@ import {
 import { Input } from "../../../ui/input";
 import type { SettingsFieldProps } from "../types";
 import type { InferenceProviderType } from "../../../lib/worker/llm/interfaces";
-import { llmInferenceProviderIdents, llmInferenceProviders } from "../../../lib/content-script/llm-models";
+import { aiInferenceProviderIdents, aiInferenceProviders } from "../../../lib/content-script/ai-models";
 
 export const NameField = ({ form, mode }: SettingsFieldProps) => {
 

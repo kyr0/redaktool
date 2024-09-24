@@ -1,45 +1,180 @@
-export function getCodecForIdent(mimeTypeOrCodec: string) {
-  switch (mimeTypeOrCodec) {
-    case "opus":
-    case 'audio/webm':
-      return 'opus';
-    case 'aac':
-    case 'audio/m4a':
-      return 'aac';
-    case "mp3":
-    case 'audio/mpeg':
-      return 'mp3';
-    case "wav":
-    case "riff":
-    case "pcm":
-    case 'audio/wav':
-      return 'wav';
-    default:
-      throw new Error('Unknown or unsupported audio codec');
+/*
+// Listen for messages from the extension
+chrome.runtime.onMessage.addListener(msg => {
+  console.log("audio processor recv msg", msg);
+  if ('decode-filter-slice' in msg) decodeFilterSlice(msg['decode-filter-slice']);
+});
+
+// Play sound with access to DOM APIs
+async function decodeFilterSlice({ buffer, metaData }) {
+  console.log("decode filter slice", buffer, metaData);
+  const audioContext = new AudioContext(metaData.numberOfChannels, metaData.sampleRate * metaData.duration, metaData.sampleRate);
+
+  console.log("offline audio context", audioContext);
+
+  const audioBuffer = await audioContext.decodeAudioData(buffer);
+
+  console.log("audio buffer", audioBuffer);
+
+  const source = audioContext.createBufferSource();
+
+  const audio = new Audio(source);
+  audio.volume = 0.0;
+  audio.play(); // prevent Chrome from closing the processing thread
+}
+  */
+
+/*
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'decode-filter-slice') {
+    sendResponse(decodeFilterSlice(msg.payload));
   }
+});
+
+*/
+
+let timeout;
+navigator.serviceWorker.onmessage = e => {
+  clearTimeout(timeout);
+  console.log("audio processor recv msg", e);
+
+  if (e.data instanceof File) {
+    decodeFilterSlice(e.data).then(file => {
+      console.log("file res", file);
+      e.ports[0].postMessage(file);
+      timeout = setTimeout(close, 60e3);
+    });
+  };
 }
 
-export function audioBufferToWav(audioBuffer: AudioBuffer) {
+async function decodeFilterSlice(file) {
+  console.log("decode filter slice", file);
+
+  // prevent Chrome from disposing the offscreen audio context
+  silentLoopedPlayback(file)
+
+  const audioContext = new AudioContext();
+  const buffer = await file.arrayBuffer();
+  console.log("buffer", buffer);
+
+  // AudioBuffer
+  const filteredAudioBuffer = await processAudioBufferWithBandpass(
+    await getAudioFileAsAudioBuffer(file, audioContext)
+  );
+  console.log("filteredAudioBuffer", filteredAudioBuffer);
+
+  const filteredAudioBufferSlices = await sliceAudioBufferAtPauses(filteredAudioBuffer, 60)
+
+  console.log("filteredAudioBufferSlices", filteredAudioBufferSlices);
+
+  const wavBlobs = [];
+  for (let i = 0; i < filteredAudioBufferSlices.length; i++) {
+    console.log("Blobbing to wav", i);
+    wavBlobs.push({
+      blob: audioBufferToWav(filteredAudioBufferSlices[i]),
+      duration: filteredAudioBufferSlices[i].duration,
+    })
+  }
+  return wavBlobs;
+}
+
+function silentLoopedPlayback(file) {
+    // Create an Object URL from the file
+  const objectURL = URL.createObjectURL(file);
+
+  // Create the Audio element and set the source
+  const audio = new Audio(objectURL);
+
+  // Set the audio to loop
+  audio.loop = true;
+
+  // Set the volume to 0 for absolute silence
+  audio.volume = 0.001;
+
+  // Start playback
+  audio.play();
+}
+
+function audioBufferToMediaStream(audioBuffer) {
+  // Create a regular AudioContext
+  const audioContext = new AudioContext();
+  
+  // Create a buffer source and set the buffer
+  const source = audioContext.createBufferSource();
+  source.buffer = audioBuffer;
+  
+  // Create a MediaStreamDestination
+  const destination = audioContext.createMediaStreamDestination();
+  
+  // Connect the source to the destination
+  source.connect(destination);
+  
+  // Return the MediaStream and the source node
+  return { stream: destination.stream, source };
+}
+
+function transcodeToOpusBlob(stream, source) {
+  return new Promise((resolve, reject) => {
+    try {
+      // Extract audio tracks from the captured MediaStream
+      const audioTracks = stream.getAudioTracks();
+      const audioStream = new MediaStream(audioTracks);
+
+      // Set up the MediaRecorder with audioStream
+      const recorder = new MediaRecorder(audioStream, {
+        mimeType: "audio/webm; codecs=opus",
+        audioBitsPerSecond: 128000,
+      });
+
+      const audioChunks = [];
+
+      // When data is available (fired periodically based on recorder settings)
+      recorder.ondataavailable = (e) => {
+        audioChunks.push(e.data);
+      };
+
+      // Handle the stop event to get the complete audio blob
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, {
+          type: recorder.mimeType,
+        });
+        resolve(audioBlob);
+      };
+
+      // Start the audio buffer playback
+      source.start();
+
+      // Start the recording
+      recorder.start(1000 /*ms*/);
+
+      // Ensure the recorder stops when the buffer source finishes playing
+      source.onended = () => {
+        recorder.stop();
+      };
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function audioBufferToWav(audioBuffer) {
   return new Blob([audioBufferToWavArrayBuffer(audioBuffer)], {
     type: "audio/wav",
   });
 }
 
-export const blobToDataUrl = (blob: Blob): Promise<string> => {
+const blobToDataUrl = (blob) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      resolve(reader.result as string);
+      resolve(reader.result);
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
 };
 
-export default function audioBufferToWavArrayBuffer(
-  buffer: AudioBuffer,
-  opt?: { float32?: boolean },
-): ArrayBuffer {
+function audioBufferToWavArrayBuffer(buffer, opt) {
   opt = opt || {};
 
   const numChannels = buffer.numberOfChannels;
@@ -47,23 +182,16 @@ export default function audioBufferToWavArrayBuffer(
   const format = opt.float32 ? 3 : 1;
   const bitDepth = format === 3 ? 32 : 16;
 
-  let result: Float32Array;
+  let result;
   if (numChannels === 2) {
     result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
   } else {
     result = buffer.getChannelData(0);
   }
-
   return encodeWAV(result, format, sampleRate, numChannels, bitDepth);
 }
 
-function encodeWAV(
-  samples: Float32Array,
-  format: number,
-  sampleRate: number,
-  numChannels: number,
-  bitDepth: number,
-): ArrayBuffer {
+function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
   const bytesPerSample = bitDepth / 8;
   const blockAlign = numChannels * bytesPerSample;
 
@@ -92,7 +220,7 @@ function encodeWAV(
   return buffer;
 }
 
-function interleave(inputL: Float32Array, inputR: Float32Array): Float32Array {
+function interleave(inputL, inputR) {
   const length = inputL.length + inputR.length;
   const result = new Float32Array(length);
 
@@ -107,71 +235,52 @@ function interleave(inputL: Float32Array, inputR: Float32Array): Float32Array {
   return result;
 }
 
-function writeFloat32(output: DataView, offset: number, input: Float32Array) {
+function writeFloat32(output, offset, input) {
   for (let i = 0; i < input.length; i++, offset += 4) {
     output.setFloat32(offset, input[i], true);
   }
 }
 
-function floatTo16BitPCM(
-  output: DataView,
-  offset: number,
-  input: Float32Array,
-) {
+function floatTo16BitPCM(output, offset, input) {
   for (let i = 0; i < input.length; i++, offset += 2) {
     const s = Math.max(-1, Math.min(1, input[i]));
     output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
 }
 
-function writeString(view: DataView, offset: number, string: string) {
+function writeString(view, offset, string) {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
 }
 
-export async function sliceAudioBufferAtPauses(
-  originalBuffer: AudioBuffer,
-  maxSecondsPerChunk = 30,
-) {
-  // First, detect pauses using the updated algorithm
+async function sliceAudioBufferAtPauses(originalBuffer, maxSecondsPerChunk = 30) {
   const pauses = detectPauses(originalBuffer);
   const sampleRate = originalBuffer.sampleRate;
-  const chunks: Array<AudioBuffer> = [];
+  const chunks = [];
   let currentChunkStart = 0;
-  let lastPauseBeforeMaxChunk = 0; // Keeps track of the last pause before reaching maxSecondsPerChunk
+  let lastPauseBeforeMaxChunk = 0;
 
-  // OfflineAudioContext for the original buffer's sample rate and channels
   const offlineContext = new OfflineAudioContext(
     originalBuffer.numberOfChannels,
     originalBuffer.length,
-    originalBuffer.sampleRate,
+    originalBuffer.sampleRate
   );
 
   for (let i = 0; i < pauses.length; i++) {
     const pause = pauses[i];
-    // Calculate the end of the current chunk in samples
-    const nextChunkStart = Math.floor(pause * sampleRate); // Ensuring integer index
+    const nextChunkStart = Math.floor(pause * sampleRate);
 
-    // Check if adding this pause would exceed maxSecondsPerChunk
     if (nextChunkStart - currentChunkStart > maxSecondsPerChunk * sampleRate) {
-      // Use the lastPauseBeforeMaxChunk to split before exceeding maxSecondsPerChunk
-      // Ensure we have a valid last pause, otherwise, use the current pause to avoid infinite loops
-      const splitPoint =
-        lastPauseBeforeMaxChunk > 0 ? lastPauseBeforeMaxChunk : nextChunkStart;
+      const splitPoint = lastPauseBeforeMaxChunk > 0 ? lastPauseBeforeMaxChunk : nextChunkStart;
       const chunkLength = splitPoint - currentChunkStart;
       const chunkBuffer = offlineContext.createBuffer(
         originalBuffer.numberOfChannels,
         chunkLength,
-        sampleRate,
+        sampleRate
       );
 
-      // Copy the data for each channel
-      for (
-        let channel = 0;
-        channel < originalBuffer.numberOfChannels;
-        channel++
-      ) {
+      for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
         const originalData = originalBuffer.getChannelData(channel);
         const chunkData = chunkBuffer.getChannelData(channel);
         for (let i = 0; i < chunkLength; i++) {
@@ -179,31 +288,22 @@ export async function sliceAudioBufferAtPauses(
         }
       }
 
-      // Add the chunk to the list
       chunks.push(chunkBuffer);
-      // Update the start for the next chunk
       currentChunkStart = splitPoint;
-      // Reset lastPauseBeforeMaxChunk as we've just used it for splitting
       lastPauseBeforeMaxChunk = 0;
     } else {
-      // Update lastPauseBeforeMaxChunk as this pause does not exceed maxSecondsPerChunk
       lastPauseBeforeMaxChunk = nextChunkStart;
     }
   }
 
-  // Handle potential leftover audio as the last chunk
   if (currentChunkStart < originalBuffer.length) {
     const remainingLength = originalBuffer.length - currentChunkStart;
     const chunkBuffer = offlineContext.createBuffer(
       originalBuffer.numberOfChannels,
       remainingLength,
-      sampleRate,
+      sampleRate
     );
-    for (
-      let channel = 0;
-      channel < originalBuffer.numberOfChannels;
-      channel++
-    ) {
+    for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
       const channelData = originalBuffer.getChannelData(channel);
       const chunkData = chunkBuffer.getChannelData(channel);
       for (let i = 0; i < remainingLength; i++) {
@@ -212,22 +312,11 @@ export async function sliceAudioBufferAtPauses(
     }
     chunks.push(chunkBuffer);
   }
-
   return chunks;
 }
 
-export interface AudioMetaData { 
-  sampleRate: number, 
-  numberOfChannels: number, 
-  duration: number 
-}
-
-export async function getAudioMetadata(file: File): Promise<AudioMetaData> {
-
-  // unpack file header - read a portion of the file (e.g., the first 1MB) to avoid loading the entire file
+async function getAudioMetadata(file) {
   const arrayBuffer = await file.slice(0, 1024 * 1024).arrayBuffer();
-
-  // Create an AudioContext
   const audioContext = new AudioContext();
 
   return new Promise((resolve, reject) => {
@@ -236,34 +325,28 @@ export async function getAudioMetadata(file: File): Promise<AudioMetaData> {
       (audioBuffer) => {
         const sampleRate = audioBuffer.sampleRate;
         const numberOfChannels = audioBuffer.numberOfChannels;
-        const duration = audioBuffer.duration
+        const duration = audioBuffer.duration;
 
-        // Close the context to free up resources
         audioContext.close();
-
         resolve({ sampleRate, numberOfChannels, duration });
       },
       (error) => {
-        reject(new Error('Unable to decode audio data.'));
+        reject(new Error("Unable to decode audio data."));
       }
     );
   });
 }
 
-
-export async function getAudioFileAsAudioBuffer(
-  file: File,
-  audioContext: BaseAudioContext,
-): Promise<AudioBuffer> {
+async function getAudioFileAsAudioBuffer(file, audioContext) {
   const arrayBuffer = await file.arrayBuffer();
   return await audioContext.decodeAudioData(arrayBuffer);
 }
 
-export function detectPauses(audioBuffer: AudioBuffer): Array<number> {
-  const channelData = audioBuffer.getChannelData(0); // Assuming mono audio
+function detectPauses(audioBuffer) {
+  const channelData = audioBuffer.getChannelData(0);
   const sampleRate = audioBuffer.sampleRate;
-  const thresholdDb = -45; // dB threshold for silence
-  const minSilenceDuration = 0.5; // seconds
+  const thresholdDb = -45;
+  const minSilenceDuration = 0.5;
 
   let isSilence = false;
   let silenceStartIndex = 0;
@@ -282,11 +365,9 @@ export function detectPauses(audioBuffer: AudioBuffer): Array<number> {
         silenceStartIndex = i;
         lowestVolumeSoFar = db;
         lowestVolumeMomentIndex = i;
-      } else {
-        if (db < lowestVolumeSoFar) {
-          lowestVolumeSoFar = db;
-          lowestVolumeMomentIndex = i;
-        }
+      } else if (db < lowestVolumeSoFar) {
+        lowestVolumeSoFar = db;
+        lowestVolumeMomentIndex = i;
       }
     } else if (isSilence) {
       const silenceDuration = (i - silenceStartIndex) / sampleRate;
@@ -302,30 +383,18 @@ export function detectPauses(audioBuffer: AudioBuffer): Array<number> {
   return pauses;
 }
 
-// https://www.researchgate.net/publication/370932659_Poperedne_obroblenna_audiodanih_dla_sistem_transkribuvanna_golosu
-export function processAudioBufferWithBandpass(
-  originalBuffer: AudioBuffer,
-): Promise<AudioBuffer> {
+function processAudioBufferWithBandpass(originalBuffer) {
   return new Promise((resolve, reject) => {
     const offlineContext = new OfflineAudioContext(
       originalBuffer.numberOfChannels,
       originalBuffer.length,
-      originalBuffer.sampleRate,
+      originalBuffer.sampleRate
     );
 
-    // Define the lower and upper cutoff frequencies based on the research findings
-    const lowerFrequency = 150; // Set to the lower bound of the desired range
-    const upperFrequency = 7000; // Set to the upper bound of the desired range
-
-    // Calculate the center frequency and bandwidth
-    const centerFrequency = (upperFrequency + lowerFrequency) / 2;
-    const bandwidth = upperFrequency - lowerFrequency;
-
-    // Configure the bandpass filter
     const bandpassFilter = offlineContext.createBiquadFilter();
     bandpassFilter.type = "bandpass";
-    bandpassFilter.frequency.value = centerFrequency;
-    bandpassFilter.Q.value = centerFrequency / bandwidth;
+    bandpassFilter.frequency.value = 590;
+    bandpassFilter.Q.value = Math.sqrt(1100 / 80);
 
     const source = offlineContext.createBufferSource();
     source.buffer = originalBuffer;
@@ -335,16 +404,12 @@ export function processAudioBufferWithBandpass(
 
     offlineContext
       .startRendering()
-      .then((processedBuffer) => {
-        resolve(processedBuffer);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+      .then((processedBuffer) => resolve(processedBuffer))
+      .catch((error) => reject(error));
   });
 }
 
-export const blobToArrayBuffer = (blob: Blob): Promise<ArrayBuffer> => {
+const blobToArrayBuffer = (blob) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -359,7 +424,7 @@ export const blobToArrayBuffer = (blob: Blob): Promise<ArrayBuffer> => {
   });
 };
 
-export const blobToAudioBuffer = async (blob: Blob): Promise<AudioBuffer> => {
+const blobToAudioBuffer = async (blob) => {
   const arrayBuffer = await blobToArrayBuffer(blob);
   const audioContext = new AudioContext();
   return await audioContext.decodeAudioData(arrayBuffer);

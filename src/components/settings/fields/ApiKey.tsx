@@ -16,6 +16,7 @@ const ApiKeyUrlMap: {
 } = {
   "openai": "https://platform.openai.com/api-keys",
   "anthropic": "https://console.anthropic.com/settings/keys",
+  "deepgram": "https://console.deepgram.com/project/"
 }
 
 export const ApiKeyField = ({ form }: SettingsFieldProps) => {

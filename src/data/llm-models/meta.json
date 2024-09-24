@@ -6,6 +6,7 @@
     "label": "Meta Llama 3.1 8B",
     "maxContextTokens": 8192,
     "cutoff": "December 2023",
+    "type": "llm",
     "inferenceProviders": [
       "ollama",
       "huggingface"

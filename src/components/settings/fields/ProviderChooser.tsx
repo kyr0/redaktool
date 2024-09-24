@@ -15,14 +15,15 @@ import {
 } from "../../../ui/dropdown-menu";
 import { Check, ArrowDown } from "lucide-react";
 import { cn } from "../../../lib/content-script/utils";
-import { llmProviders, llmInferenceProviders } from '../../../lib/content-script/llm-models';
+import { aiModelProviders, aiInferenceProviders } from '../../../lib/content-script/ai-models';
 import type { SettingsFieldProps } from "../types";
 import { useEffect, useState } from "react";
 import { inferenceProvidersDbState } from "../db";
 
 export const ProviderChooserField = ({ form, disabled }: SettingsFieldProps & { disabled?: boolean }) => {
 
-  const [selectableInferenceProviders, setSelectableInferenceProviders] = useState<Array<{ ident: string, label: string }>>(llmInferenceProviders.map((llmInferenceProvider) => ({ ident: llmInferenceProvider.ident, label: llmInferenceProvider.label })))
+  const [selectableInferenceProviders, setSelectableInferenceProviders] = 
+    useState<Array<{ ident: string, label: string }>>(aiInferenceProviders.map((llmInferenceProvider) => ({ ident: llmInferenceProvider.ident, label: llmInferenceProvider.label })))
 
   /*
   useEffect(() => {
@@ -39,7 +40,7 @@ export const ProviderChooserField = ({ form, disabled }: SettingsFieldProps & { 
   }, [])
   */
  
-  console.log("llmProviders", llmProviders, "llmInferenceProviders", llmInferenceProviders) 
+  console.log("llmProviders", aiModelProviders, "llmInferenceProviders", aiInferenceProviders) 
   return (
     <FormField
       control={form.control}
@@ -56,7 +57,7 @@ export const ProviderChooserField = ({ form, disabled }: SettingsFieldProps & { 
                 className="!ab-text-md"
               >
                  {field.value
-                    ? llmInferenceProviders.find(
+                    ? aiInferenceProviders.find(
                         (llmInferenceProvider) => llmInferenceProvider.ident === field.value
                       )?.label
                     : "Select AI inference provider"}
@@ -69,7 +70,7 @@ export const ProviderChooserField = ({ form, disabled }: SettingsFieldProps & { 
                 <DropdownMenuItem
                   key={selectableLlmInferenceProvider.ident}
                   onSelect={() => {
-                    console.log("selected", selectableLlmInferenceProvider.ident)
+                    //console.log("selected", selectableLlmInferenceProvider.ident)
                     form.setValue("inferenceProviderName", selectableLlmInferenceProvider.ident as any)
                   }}
                   >
@@ -80,7 +81,7 @@ export const ProviderChooserField = ({ form, disabled }: SettingsFieldProps & { 
                         ? "ab-opacity-100"
                         : "ab-opacity-0"
                     )}
-                  /> <span>{llmInferenceProviders.find(llmInferenceProvider => llmInferenceProvider.ident === selectableLlmInferenceProvider.ident)?.label}</span>
+                  /> <span>{aiInferenceProviders.find(llmInferenceProvider => llmInferenceProvider.ident === selectableLlmInferenceProvider.ident)?.label}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
