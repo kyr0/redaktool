@@ -1,11 +1,7 @@
 import {
-  ArrowDown,
   ArrowLeftCircle,
-  BombIcon,
-  BookIcon,
   CogIcon,
   GlobeIcon,
-  InfoIcon,
   MessageCircleWarning,
   SendIcon,
   ShareIcon,
@@ -18,16 +14,13 @@ import {
 } from "../../ui/resizable";
 import {
   MarkdownEditor,
-  milkdownEditorAtom,
   type MilkdownEditorCreatedArgs,
 } from "../MarkdownEditor";
 import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
-import { formatCurrencyForDisplay } from "../../lib/content-script/format";
 import { format } from "date-fns";
 import {
   compilePrompt,
   finalizePrompt,
-  type CompilePrompt,
   type Prompt,
 } from "../../lib/content-script/prompt-template";
 import { Button } from "../../ui/button";
@@ -36,13 +29,11 @@ import {
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useState,
   type PropsWithChildren,
 } from "react";
 import {
   mapUserLanguageCode,
-  sendPrompt,
 } from "../../lib/content-script/prompt";
 import type { WritableAtom } from "nanostores";
 import { useDebouncedCallback } from "use-debounce";
@@ -68,42 +59,28 @@ import { upperCaseFirst } from "../../lib/string-casing";
 import { LoadingSpinner } from "../../ui/loading-spinner";
 import {
   guardedSelectionGuaranteedAtom,
-  selectionGuaranteedAtom,
 } from "../../lib/content-script/stores/use-selection";
 import {
   kmpSearchMarkdown,
-  sliceOutMarkdownTextIntersection,
   turndown,
 } from "../../lib/content-script/turndown";
-import llmModels from "../../data/llm-models/index";
 import { uuid } from "../../lib/content-script/uuid";
 import {
   QuestionMarkCircledIcon,
-  QuestionMarkIcon,
   ReloadIcon,
   StopIcon,
 } from "@radix-ui/react-icons";
-import type { InferenceProviderType, PromptTokenUsage } from "../../lib/worker/llm/interfaces";
+import type { PromptTokenUsage } from "../../lib/worker/llm/interfaces";
 import { Slider } from "../../ui/slider";
-import { Toggle } from "../../ui/toggle";
-import { Switch } from "../../ui/switch";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../../ui/tooltip";
 import { MiniInfoButton } from "../MiniInfoButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { cn } from "../../lib/content-script/utils";
-import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
-import { Badge } from "../../ui/badge";
-import { getNextId, type HyperParameters } from "../../shared";
+import type { HyperParameters } from "../../shared";
 import { AutosizeTextarea } from "../AutoresizeTextarea";
 import { db } from "../../lib/content-script/db";
 import { inferenceProvidersDbState } from "../settings/db";
 import type { InferenceProvider } from "../settings/types";
-import { messageChannelApi, useMessageChannelContext } from "../../message-channel";
+import { useLlmStreaming } from "../../lib/content-script/llm";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 //import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 
@@ -185,7 +162,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   const [editorContent, setEditorContent] = useState(editorAtom.get());
   const [inputEditorContent, setInputEditorContent] = useState(inputEditorAtom.get());
   const [prompt, setPrompt] = useState(defaultPromptTemplate);
-  const [stopStreamCallback, setStopStreamCallback] = useState<{ stopStream: Function }>();
   const [modelPk, setModelPk] = useState<ModelPreference>();
   const [internalEditorArgs, setInternalEditorArgs] = useState<MilkdownEditorCreatedArgs>();
   const [internalInputEditorArgs, setInternalInputEditorArgs] = useState<MilkdownEditorCreatedArgs>();
@@ -214,9 +190,17 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   const [lastTotalPrice, setLastTotalPrice] = useState<number>();
   const [activeTab, setActiveTab] = useState<"context" | "promptEditor">("context");
   const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
-  const [llmPort, setLlmPort] = useState<chrome.runtime.Port | null>(null);
+  //const [llmPort, setLlmPort] = useState<chrome.runtime.Port | null>(null);
   const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
   const [isDoneStreaming, setIsDoneStreaming] = useState(false);
+  const [promptIdSkipList, setPromptIdSkipList] = useState<string[]>([]);
+
+  const stopStreamCallback = useCallback(() => {
+    setPromptIdSkipList((prev) => [...prev, currentPromptId!]);
+    setStreamingInProgress(false);
+  }, [promptIdSkipList, currentPromptId]);
+
+  /*
 
   // ensure llmPort is always connected and disconnects on component rerender
   useEffect(() => {
@@ -238,46 +222,43 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
       });
     };
   }, [isActive, name]);
+  */
+
+  const onPayloadReceived = useCallback((chunk: any) => {
+
+    console.log("onPayloadReceived", chunk);
+
+    if (chunk.id === currentPromptId && !promptIdSkipList.find(_id => _id === chunk.id)) {
+      if (!chunk.finished && !chunk.error) {
+        setEditorContent((prev) => prev + chunk.text);
+        scrollDownMax(editorEl);
+      }
+
+      if (chunk.finished) {
+        console.log("finished streaming", chunk);
+        setStreamingInProgress(false);
+        setIsDoneStreaming(true);
+      }
+
+      if (chunk.error) {
+        setStreamingInProgress(false);
+        toast.error("Fehler beim Ausführen des Prompts", {
+          icon: (
+            <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
+          ),
+          description: chunk.error
+        });
+      }
+    }
+  }, [currentPromptId, editorEl, promptIdSkipList]);
+
+  const startPromptStreaming = useLlmStreaming({ onPayloadReceived, name });
 
   useEffect(() => {
     scrollDownMax(editorEl);
   }, [editorEl]);
 
-  const onPortMessageReceived = useCallback((message: any) => {
-
-    console.log("onPortMessageReceived", message);
-
-    switch (message.action) {
-      case "prompt-response": {
-        const chunk = message.payload;
-
-        if (chunk.id === currentPromptId) {
-          if (!chunk.finished && !chunk.error) {
-            setEditorContent((prev) => prev + chunk.text);
-            scrollDownMax(editorEl);
-          }
-
-          if (chunk.finished) {
-            console.log("finished streaming", chunk);
-            setStreamingInProgress(false);
-            setIsDoneStreaming(true);
-          }
-
-          if (chunk.error) {
-            setStreamingInProgress(false);
-            toast.error("Fehler beim Ausführen des Prompts", {
-              icon: (
-                <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
-              ),
-              description: chunk.error
-            });
-          }
-        }
-        break;
-      }
-    }
-  }, [currentPromptId, editorEl]);
-
+  /*
   const [, setListenerRegistered] = useState<Function|null>(null);
 
   useEffect(() => {
@@ -313,6 +294,7 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
       }
     };
   }, [llmPort, onPortMessageReceived]);
+  */
 
   useEffect(() => {
     (async() => {
@@ -596,8 +578,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
       });
     }
   }, [internalInputEditorArgs, onInputEditorCreated]);
-
-
 
   // sync editor content with extraction
   const onEditorChangeInternal = useCallback(
@@ -979,7 +959,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
       setStreamingInProgress(true);
 
-      if (llmPort) {
+      if (startPromptStreaming) {
         setCurrentPromptId(finalPrompt.id);
 
         setEditorContent((prev) =>  `${prev}
@@ -992,7 +972,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
 `);
 
-        llmPort.postMessage({ action: "prompt", payload: finalPrompt });
+        startPromptStreaming(finalPrompt);
       }
 
       /*
@@ -1100,15 +1080,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     autoTuneFocus,
     autoTuneGlossary,
     expertMode,
-    llmPort,
   ]);
-
-  const onStopPromptStreamingClick = useCallback(() => {
-    if (stopStreamCallback) {
-      console.log("onStopPromptStreamingClick");
-      stopStreamCallback.stopStream();
-    }
-  }, [stopStreamCallback, setStreamingInProgress]);
 
   const onHelpClick = useCallback(() => {
     window.open("https://github.com/kyr0/redaktool/wiki", "_blank");
@@ -1124,160 +1096,11 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     <ResizablePanelGroup direction="vertical">
       <ResizablePanel defaultSize={50} minSize={20}>
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel
-            defaultSize={30}
-            minSize={10}
-            className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pr-2 ab-overflow-y-auto"
-          >
-            <div className="ab-flex ab-flex-col ab-w-full ab-h-full ab-overflow-auto">
-              <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-6 ab-items-center ab-mb-2">
-                <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-md">
-                  Einstellungen
-                </span>
-                <span className="ab-mr-1">
-                  <MiniInfoButton>
-                    Diese Einstellungen werden automatisch mit den Texteingaben
-                    an die KI gesendet.
-                  </MiniInfoButton>
-                </span>
-              </div>
-              <div
-                className={`ab-flex ab-w-full ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-0 ab-overflow-y-auto ${
-                  promptSettingsWrapperClassName || ""
-                }`}
-              >
-                <div className="ab-w-full ab-grid ab-items-start ab-grid-cols-2 ab-gap-2 ab-gap-y-2 ab-overflow-y-auto">
-                  
-                  {!modelPk && (
-                    <Label className="ab-mb-2 ab-flex ab-text-sm ab-col-span-2">
-                      <CogIcon className="ab-w-4 ab-h-4 ab-mr-1 ab-ml-1" />
-                      Bitte wählen Sie ein KI-Modell aus.
-                    </Label>
-                  )}
-
-                  {recompilingInProgress &&
-                    promptPrepared.text !== "" && (
-                      <Label className="ab-mb-2 ab-flex ab-text-sm ab-col-span-2">
-                        <CogIcon className="ab-w-4 ab-h-4 ab-mr-1 ab-ml-1" />
-                        Smart-Prompt wird kompiliert...
-                      </Label>
-                    )}
-
-                  {!recompilingInProgress &&
-                    dynamicFields.length === 0 &&
-                    promptPrepared.text !== "" && (
-                      <Label className="ab-mb-2 ab-flex ab-col-span-2 ab-ml-1">
-                        Keine dynamischen Einstellungen verfügbar
-                      </Label>
-                    )}
-
-                  {dynamicFields.map((field) => (
-                    <div
-                      key={field.key}
-                      className={`ab-w-full ${
-                        field.type === "textarea" ? "ab-col-span-2" : ""
-                      }`}
-                    >
-                      <Label className="ab-mb-1 ab-flex ab-justify-between ab-items-center">
-                        <span className="ab-flex ab-flex-row ab-items-center !ab-text-sm">
-                          {field.label}{" "}
-                          {field.global && (
-                            <>
-                              <GlobeIcon className="ab-ml-1 ab-h-4 ab-w-4" />
-                            </>
-                          )}
-                        </span>
-                        {field.info && (
-                          <MiniInfoButton>{field.info}</MiniInfoButton>
-                        )}
-                      </Label>
-
-                      {(field.type === "text" || field.type === "number") && (
-                        <Input
-                          type={field.type || "text"}
-                          name={`${name}${field.key}Input`}
-                          placeholder={field.label}
-                          value={dynamicFieldValues[field.key] || field.default}
-                          className="!ab-block !ab-text-sm ab-h-8"
-                          onChange={(evt) => {
-                            console.log(
-                              "field change",
-                              field.key,
-                              evt.target.value,
-                            );
-                            setDynamicFieldValues((prev) => ({
-                              ...prev,
-                              [field.key]: evt.target.value,
-                            }));
-                          }}
-                        />
-                      )}
-
-                      {field.type === "textarea" && (
-                        <Textarea
-                          name={`${name}${field.key}Input`}
-                          placeholder={field.label}
-                          value={dynamicFieldValues[field.key] || field.default}
-                          className="!ab-block !ab-text-sm"
-                          onChange={(evt) => {
-                            console.log(
-                              "field change",
-                              field.key,
-                              evt.target.value,
-                            );
-                            setDynamicFieldValues((prev) => ({
-                              ...prev,
-                              [field.key]: evt.target.value,
-                            }));
-                          }}
-                        />
-                      )}
-
-                      {field.type === "select" && (
-                        <Select
-                          onValueChange={(value) => {
-                            console.log("onValueChange", value);
-                            setDynamicFieldValues((prev) => ({
-                              ...prev,
-                              [field.key]: value,
-                            }));
-                          }}
-                          value={
-                            dynamicFieldValues[field.key] || field.default
-                          }
-                        >
-                          <SelectTrigger className="ab-h-8">
-                            <SelectValue
-                              placeholder={field.label}
-                              className="!ab-text-sm"
-                            />
-                          </SelectTrigger>
-                          <SelectContent className="ab-z-[2147483646]">
-                            {(field.options || []).map((option) => (
-                              <SelectItem
-                                className="!ab-text-sm"
-                                key={option + Math.random()}
-                                value={option}
-                              >
-                                {upperCaseFirst(option)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle className="ml-1 mr-1" />
 
           <ResizablePanel
             defaultSize={70}
             minSize={60}
-            className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pl-2"
+            className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pl-0"
           >
             <div className="ab-flex ab-w-full ab-h-full ab-overflow-auto">
               <Tabs
@@ -1544,7 +1367,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                   <Button
                     size={"sm"}
                     className="ab-scale-75 ab-ftr-button ab-mr-0 !ab-h-14 !ab-w-14 !ab-rounded-full hover:!ab-bg-primary-foreground"
-                    onClick={onStopPromptStreamingClick}
+                    onClick={stopStreamCallback}
                   >
                     <StopIcon className="ab-w-12 ab-h-12" />
                   </Button>
@@ -1552,6 +1375,157 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
               </span>
             </div>
           </ResizablePanel>
+
+          <ResizableHandle withHandle className="ab-ml-1 ab-mr-1" />
+
+          <ResizablePanel
+            defaultSize={30}
+            minSize={10}
+            className="ab-h-full ab-flex ab-flex-col ab-w-full ab-pr-0 ab-overflow-y-auto"
+          >
+            <div className="ab-flex ab-flex-col ab-w-full ab-h-full ab-overflow-auto">
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-justify-between ab-rounded-sm !ab-h-6 ab-items-center ab-mb-2">
+                <span className="ab-flex ab-flex-row ab-p-1 ab-px-2 ab-text-md">
+                  Einstellungen
+                </span>
+                <span className="ab-mr-1">
+                  <MiniInfoButton>
+                    Diese Einstellungen werden automatisch mit den Texteingaben
+                    an die KI gesendet.
+                  </MiniInfoButton>
+                </span>
+              </div>
+              <div
+                className={`ab-flex ab-w-full ab-h-full ab-items-center ab-justify-start ab-flex-col ab-p-0 ab-overflow-y-auto ${
+                  promptSettingsWrapperClassName || ""
+                }`}
+              >
+                <div className="ab-w-full ab-grid ab-items-start ab-grid-cols-2 ab-gap-2 ab-gap-y-2 ab-overflow-y-auto">
+                  
+                  {!modelPk && (
+                    <Label className="ab-mb-2 ab-flex ab-text-sm ab-col-span-2">
+                      <CogIcon className="ab-w-4 ab-h-4 ab-mr-1 ab-ml-1" />
+                      Bitte wählen Sie ein KI-Modell aus.
+                    </Label>
+                  )}
+
+                  {recompilingInProgress &&
+                    promptPrepared.text !== "" && (
+                      <Label className="ab-mb-2 ab-flex ab-text-sm ab-col-span-2">
+                        <CogIcon className="ab-w-4 ab-h-4 ab-mr-1 ab-ml-1" />
+                        Smart-Prompt wird kompiliert...
+                      </Label>
+                    )}
+
+                  {!recompilingInProgress &&
+                    dynamicFields.length === 0 &&
+                    promptPrepared.text !== "" && (
+                      <Label className="ab-mb-2 ab-flex ab-col-span-2 ab-ml-1">
+                        Keine dynamischen Einstellungen verfügbar
+                      </Label>
+                    )}
+
+                  {dynamicFields.map((field) => (
+                    <div
+                      key={field.key}
+                      className={`ab-w-full ${
+                        field.type === "textarea" ? "ab-col-span-2" : ""
+                      }`}
+                    >
+                      <Label className="ab-mb-1 ab-flex ab-justify-between ab-items-center">
+                        <span className="ab-flex ab-flex-row ab-items-center !ab-text-sm">
+                          {field.label}{" "}
+                          {field.global && (
+                            <>
+                              <GlobeIcon className="ab-ml-1 ab-h-4 ab-w-4" />
+                            </>
+                          )}
+                        </span>
+                        {field.info && (
+                          <MiniInfoButton>{field.info}</MiniInfoButton>
+                        )}
+                      </Label>
+
+                      {(field.type === "text" || field.type === "number") && (
+                        <Input
+                          type={field.type || "text"}
+                          name={`${name}${field.key}Input`}
+                          placeholder={field.label}
+                          value={dynamicFieldValues[field.key] || field.default}
+                          className="!ab-block !ab-text-sm ab-h-8"
+                          onChange={(evt) => {
+                            console.log(
+                              "field change",
+                              field.key,
+                              evt.target.value,
+                            );
+                            setDynamicFieldValues((prev) => ({
+                              ...prev,
+                              [field.key]: evt.target.value,
+                            }));
+                          }}
+                        />
+                      )}
+
+                      {field.type === "textarea" && (
+                        <Textarea
+                          name={`${name}${field.key}Input`}
+                          placeholder={field.label}
+                          value={dynamicFieldValues[field.key] || field.default}
+                          className="!ab-block !ab-text-sm"
+                          onChange={(evt) => {
+                            console.log(
+                              "field change",
+                              field.key,
+                              evt.target.value,
+                            );
+                            setDynamicFieldValues((prev) => ({
+                              ...prev,
+                              [field.key]: evt.target.value,
+                            }));
+                          }}
+                        />
+                      )}
+
+                      {field.type === "select" && (
+                        <Select
+                          onValueChange={(value) => {
+                            console.log("onValueChange", value);
+                            setDynamicFieldValues((prev) => ({
+                              ...prev,
+                              [field.key]: value,
+                            }));
+                          }}
+                          value={
+                            dynamicFieldValues[field.key] || field.default
+                          }
+                        >
+                          <SelectTrigger className="ab-h-8">
+                            <SelectValue
+                              placeholder={field.label}
+                              className="!ab-text-sm"
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="ab-z-[2147483646]">
+                            {(field.options || []).map((option) => (
+                              <SelectItem
+                                className="!ab-text-sm"
+                                key={option + Math.random()}
+                                value={option}
+                              >
+                                {upperCaseFirst(option)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </ResizablePanel>
+
         </ResizablePanelGroup>
       </ResizablePanel>
       <VerticalResizeHandle withHandle />

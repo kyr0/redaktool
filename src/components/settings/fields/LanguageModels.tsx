@@ -32,7 +32,7 @@ import llmModels from "../../../data/llm-models";
 import { getModelListForInferenceProvider, type AIModelType } from "../../../lib/content-script/ai-models";
 import type { InferenceProviderType, PromptApiOptions, PromptTokenUsage } from "../../../lib/worker/llm/interfaces";
 
-import { CheckCheck, FlaskConical, MoreHorizontal, PlusIcon, Trash, Trash2 } from "lucide-react"
+import { CheckCheck, FlaskConical, MessageCircleWarning, MoreHorizontal, PlusIcon, Trash, Trash2 } from "lucide-react"
  
 import { Button } from "../../../ui/button"
 import {
@@ -54,6 +54,8 @@ import { NewModelButton } from "./NewModelDialog";
 import { transcribeInWorker } from "../../../lib/content-script/transcribe";
 import { cat } from "@xenova/transformers";
 import type { TranscriptionTask } from "../../../shared";
+import { scrollDownMax } from "../../../lib/content-script/dom";
+import { useLlmStreaming } from "../../../lib/content-script/llm";
 
 export const models: Array<z.infer<typeof ModelSchema>> = []
 
@@ -82,9 +84,60 @@ export type AIModelEntry = { id: string, name: string, type: AIModelType }
 
 export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps & { models: Array<AIModelEntry> }) => {
 
-  const [isTesting, setIsTesting] = useState<string|null>(null)
+  const [isTesting, setIsTesting] = useState<z.infer<typeof ModelSchema>|null>(null)
+  const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
+
+  const onPayloadReceived = useCallback((chunk: any) => {
+
+    console.log("onPayloadReceived", chunk);
+
+    if (chunk.id === currentPromptId) {
+
+      if (chunk.finished) {
+        console.log("finished testing", chunk);
+
+        setIsTesting(null)
+        toast.info("Sprachmodell erfolgreich getestet!", {
+          duration: 5000,
+          icon: (
+            <CheckCheck className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+          ),
+          style: {
+            fontWeight: "normal",
+          },
+        });
+      }
+
+      if (chunk.error) {
+        setIsTesting(null)
+        toast.info(
+          `Fehler beim Testen des Sprachmodells: ${chunk.error}`,
+          {
+            duration: 5000,
+            icon: (
+              <ExclamationTriangleIcon className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+            ),
+            style: {
+              fontWeight: "normal",
+            },
+          },
+        );
+      }
+    }
+  }, [currentPromptId]);
+
+
+  const startPromptStreaming = useLlmStreaming({ name: "settings-test", onPayloadReceived });
+
+  useEffect(() => {
+    if (isTesting) {
+      testModel(isTesting)
+    }
+  }, [isTesting])
 
   const testModel = useCallback((model: z.infer<typeof ModelSchema>) => {
+
+    
     const apiOptionsOverrides: Partial<PromptApiOptions> = {};
 
     if (form.getValues().apiKey) {
@@ -95,55 +148,11 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
       apiOptionsOverrides.baseURL = form.getValues().baseURL!;
     }
 
-    if (model.type === "llm") {
-      sendPrompt(
-        {
-          id: `test-prompt-${Date.now()}`,
-          model: model.id,
-          provider: form.getValues().inferenceProviderName,
-          inferenceProvider: form.getValues().inferenceProviderName,
-          text: "MUST ONLY answer with: 'OK'.",
-          apiOptionsOverrides
-        },
-        () => {},
-        (
-          wholeText: string,
-          usage: PromptTokenUsage,
-          totalPrice: number,
-        ) => {
-          console.log("Test result", wholeText, usage, totalPrice)
-        
-          setIsTesting(null)
-          toast.info("Sprachmodell erfolgreich getestet!", {
-            duration: 5000,
-            icon: (
-              <CheckCheck className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
-            ),
-            style: {
-              fontWeight: "normal",
-            },
-          });
-        },
-        (error: string) => {
-          console.log("Test error", error)
-          setIsTesting(null)
-          toast.info(
-            `Fehler beim Testen des Sprachmodells: ${error}`,
-            {
-              duration: 5000,
-              icon: (
-                <ExclamationTriangleIcon className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
-              ),
-              style: {
-                fontWeight: "normal",
-              },
-            },
-          );
-        },
-      )
-    } else if (model.type === "tts") {
+    console.log("model type?", model.type)
 
-      console.log("VoiceOver TTS model", model)
+    if (model.type === "tts") {
+
+      console.log("TODO: Test VoiceOver TTS model", model)
       
     } else if (model.type === "stt") {
 
@@ -182,6 +191,19 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
                 fontWeight: "normal",
               },
             });
+          } else {
+            toast.info(
+              `Fehler beim Testen des Transkriptions-Modells: Transkription nicht erfolgreich: "${transcription.text}"`,
+              {
+                duration: 5000,
+                icon: (
+                  <MessageCircleWarning className="ab-w-16 ab-h-16 ab-shrink-0 ab-mr-2 ab-pr-2" />
+                ),
+                style: {
+                  fontWeight: "normal",
+                },
+              },
+            );
           }
         })
       } catch (error) {
@@ -203,19 +225,29 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
       }
     } else if (model.type === "embed") {
 
-      console.log("Embedding model", model)
+      console.log("TODO: Test embedding model", model)
 
+    } else {
+      const promptId = `test-prompt-${Date.now()}`
+      setCurrentPromptId(promptId);
+      startPromptStreaming(
+        {
+          id: promptId,
+          model: model.id,
+          provider: form.getValues().inferenceProviderName,
+          inferenceProvider: form.getValues().inferenceProviderName,
+          text: "MUST ONLY answer with: 'OK'.",
+          apiOptionsOverrides
+        }
+      )
     }
-  }, [form])
+  }, [form, startPromptStreaming])
 
   const onTestModelClick = useCallback((model: z.infer<typeof ModelSchema>) => {
     console.log("test model", model)
     
-    setIsTesting(model.id)
+    setIsTesting(model)
 
-    setTimeout(() => {
-      testModel(model);
-    }, 50)
   }, [form])
 
   const onRemoveModelClick = useCallback((model: z.infer<typeof ModelSchema>) => {
@@ -226,7 +258,6 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
     form.setValue("models", models)
     setData(models)
   }, [form])
-
 
   const [columns, setColumns] = useState<Array<ColumnDef<z.infer<typeof ModelSchema>>>>([])
 
@@ -294,7 +325,7 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
           return (
             <span className="ab-flex ab-flex-row ab-justify-end ab-items-center">
               <Button variant="outline" className="ab-h-8 ab-p-0 !ab-mr-2" onClick={() => onTestModelClick(rowData)}>
-                {(isTesting && isTesting === rowData.id) ? <LoadingSpinner className="ab-shrink-0 ab-w-4 ab-h-4 ab-mr-2" /> : 
+                {(isTesting && isTesting.id === rowData.id) ? <LoadingSpinner className="ab-shrink-0 ab-w-4 ab-h-4 ab-mr-2" /> : 
                   <FlaskConical className="ab-shrink-0 ab-h-4 ab-w-4 ab-mr-2" />}
                 <span className="ab-text-sm">Testen</span>
               </Button>

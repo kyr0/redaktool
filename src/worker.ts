@@ -41,6 +41,7 @@ import {
 import { useMessageChannel } from "./lib/worker/message-channel";
 import { loadEmbeddingModel } from "./lib/worker/embedding/model";
 import { getAudioFileAsAudioBuffer, type AudioMetaData } from "./lib/audio-dsp";
+import { transcribeDeepgram } from "./lib/worker/transcription/deepgram";
 
 // establish fast, MessageChannel-based communication between content script and worker
 const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
@@ -148,45 +149,66 @@ async function decodeAudioUsingWebCodecs(file: File, codec: string, metaData: Au
 
   */
 
+let offscreenClient: Client | null = null;
+let messageChannel: MessageChannel | null = null;
+
 // Create the offscreen document if it doesn't already exist
-async function decodeSliceOffscreen(file: File) {
-  try {
-    const url = chrome.runtime.getURL('audio-processor.html');
+async function initializeOffscreenClient() {
+  const url = chrome.runtime.getURL('audio-processor.html');
+
+  if (!offscreenClient) {
+
+    // TODO: FIX: Only a single offscreen document may be created.
+
+    console.log("create offscreen client as it doesn't exist", url);
     await chrome.offscreen.createDocument({
       url,
-      reasons: ["AUDIO_PLAYBACK"] as chrome.offscreen.Reason[],
+      reasons: ["AUDIO_PLAYBACK"] as Array<chrome.offscreen.Reason>,
       justification: 'Transcoding and slicing transcription audio.' // details for using the API
     });
 
-    const client = (await self.clients.matchAll({includeUncontrolled: true}))
-    .find(c => c.url === url);
+    offscreenClient = (await self.clients.matchAll({ includeUncontrolled: true }))
+      .find(c => c.url === url) || null;
 
-    console.log("client", client);
+    console.log("client", offscreenClient);
+  }
 
-    /*
+  if (offscreenClient && !messageChannel) {
+    messageChannel = new MessageChannel();
+  }
+}
 
-    const res = await chrome.runtime.sendMessage({
-      type: 'decode-filter-slice',
-      payload: { buffer, metaData },
-    });
-    console.log("res", res);
-    */
+async function postMessageToOffscreen(file: File): Promise<any> {
 
-    if (client) {
-      const mc = new MessageChannel();
-      client.postMessage(file, [mc.port2]);
-      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-      const res: MessageEvent = await new Promise(cb => (mc.port1.onmessage = cb));
-      
-      console.log("res data", res.data);
-      if (res?.data) {
-        //await chrome.offscreen.closeDocument();
-        return res.data
-      }
+  try {
+    await initializeOffscreenClient();
+  } catch(e) {
+    console.warn("Warning: Initializing offscreen client failed", e);
+  }
+
+  return new Promise((resolve, reject) => {
+    if (offscreenClient && messageChannel) {
+      messageChannel.port1.onmessage = (event) => {
+        if (event.data) {
+          resolve(event.data);
+        } else {
+          reject(new Error("No data received from offscreen client"));
+        }
+      };
+      offscreenClient.postMessage(file, [messageChannel.port2]);
+    } else {
+      reject(new Error("Offscreen client or message channel not initialized"));
     }
+  });
+}
 
+async function decodeSliceOffscreen(file: File) {
+  try {
+    const res = await postMessageToOffscreen(file);
+    console.log("res data", res);
+    return res;
   } catch (error) {
-    console.error("Error creating offscreen document", error);
+    console.error("Error decoding slice offscreen", error);
   }
 }
 
@@ -206,8 +228,17 @@ addListener(async(e) => {
 
         const transcriptionTask = e.data.payload as TranscriptionTask;
         console.log("transcribe", transcriptionTask);
-
-        const transcriptionResponse = await transcribeOpenai(transcriptionTask);
+        let transcriptionResponse;
+        switch (transcriptionTask.providerType) {
+          case "openai": {
+            transcriptionResponse = await transcribeOpenai(transcriptionTask);
+            break;
+          }
+          case "deepgram": {
+            transcriptionResponse = await transcribeDeepgram(transcriptionTask);
+            break;
+          }
+        }
         console.log("transcriptionResponse", transcriptionResponse);
 
         postMessage({

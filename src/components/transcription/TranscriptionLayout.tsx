@@ -101,7 +101,7 @@ export const TranscriptionLayout = () => {
   const mediaElContainerRef = useRef<any>();
   const audioPlayerStatusRef = useRef<any>();
   const videoEl$ = getElementSelectionStore();
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  //const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioBufferSlices, setAudioBufferSlices] = useState<
@@ -181,9 +181,7 @@ export const TranscriptionLayout = () => {
       setElapsedTimes([]);
       setIndexesTranscribing([]);
 
-      const audioContext = new AudioContext();
       setAudioFile(file);
-      setAudioContext(audioContext);
     }
   }, []);
 
@@ -192,40 +190,50 @@ export const TranscriptionLayout = () => {
 
       console.log("audioFile", audioFile);
 
-      if (!audioFile || !audioContext) return;
+      if (!audioFile) return;
 
       const metaData = await getAudioMetadata(audioFile);
 
+      console.log("metaData", metaData);
+
+      console.log("processing audio... (slicing)");
       const wavBlobs: SlicedAudioWavs = await messageChannelApi.sendCommand("process-transcription-audio", {
         audioFile,
         metaData,
       });
 
-      setAudioBufferBlobs(wavBlobs);
+      if (wavBlobs && Array.isArray(wavBlobs)) {
 
-      console.log("wavBlobs", wavBlobs)
+        console.log("done (slicing)", wavBlobs);
 
-      /*
-      if (audioFile && audioContext) {
-        if (audioPlayerStatusRef.current) {
-          audioPlayerStatusRef.current.innerHTML =
-            "Applying bandpass filter...";
+        setAudioBufferBlobs(wavBlobs);
+
+        console.log("wavBlobs", wavBlobs)
+
+        /*
+        if (audioFile && audioContext) {
+          if (audioPlayerStatusRef.current) {
+            audioPlayerStatusRef.current.innerHTML =
+              "Applying bandpass filter...";
+          }
+
+          setAudioBuffer(
+            await processAudioBufferWithBandpass(
+              await getAudioFileAsAudioBuffer(audioFile, audioContext),
+            ),
+          );
+
+          if (audioPlayerContainerRef.current) {
+            console.log("shoing audio player");
+            audioPlayerContainerRef.current.classList.remove("ab-hidden");
+          }
         }
-
-        setAudioBuffer(
-          await processAudioBufferWithBandpass(
-            await getAudioFileAsAudioBuffer(audioFile, audioContext),
-          ),
-        );
-
-        if (audioPlayerContainerRef.current) {
-          console.log("shoing audio player");
-          audioPlayerContainerRef.current.classList.remove("ab-hidden");
-        }
+        */
+      } else {
+        console.error("Failed to process audio file:", wavBlobs);
       }
-      */
     })();
-  }, [audioFile, audioContext, messageChannelApi]);
+  }, [audioFile, messageChannelApi]);
 
   /*
   useEffect(() => {
@@ -570,9 +578,9 @@ export const TranscriptionLayout = () => {
                     </form>
 
                     <CardDescription className="ab-mt-2">
-                      Es werden keine Daten vorab auf Server hochgeladen, die
-                      Audio-Abschnitte werden lediglich an OpenAI zur
-                      Transkription gesendet.
+                      Es werden keine Daten vorab auf Server hochgeladen.
+                      Die Audio-Abschnitte werden noch im Browser geschnitten
+                      und anschließend mit dem gewählten KI-Modell transkribiert.
                     </CardDescription>
                   </CardContent>
                 </div>

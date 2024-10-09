@@ -21,7 +21,7 @@ export const validateAIModels = (aiModelsData: AIModels): AIModels => {
   aiModelsData.forEach((aiModelData) => {
 
     // fix, some models are missing type
-    if (typeof aiModelData.type !== "string") {
+    if (!aiModelData.type) {
       aiModelData.type = "llm"
     }
 

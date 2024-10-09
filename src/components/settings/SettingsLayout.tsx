@@ -106,6 +106,7 @@ export const SettingsLayout = () => {
 
                 {inferenceProviders.map((inferenceProvider) => (
                   <CommandItem
+                    forceMount
                     key={inferenceProvider.name}
                     value={inferenceProvider.name}
                     onSelect={onSetActiveSettingsModule}

@@ -142,6 +142,7 @@ export const ModalLayout = () => {
                   </CommandItem>
                   */}
                   <CommandItem
+                    forceMount
                     value="scratchpad"
                     onSelect={onCommandSelect}
                     className={
@@ -174,6 +175,7 @@ export const ModalLayout = () => {
                 <CommandGroup className="!ab-pl-0">
                   <CommandSeparator className="ab-mb-1 !ab-pl-0" />
                   <CommandItem
+                    forceMount
                     value="transcription"
                     onSelect={onCommandSelect}
                     className={
@@ -191,6 +193,7 @@ export const ModalLayout = () => {
 
                 <CommandGroup className="!ab-pl-0">
                   <CommandItem
+                    forceMount
                     value="settings"
                     onSelect={onCommandSelect}
                     className={

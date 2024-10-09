@@ -57,23 +57,33 @@ async function decodeFilterSlice(file) {
   const buffer = await file.arrayBuffer();
   console.log("buffer", buffer);
 
-  // AudioBuffer
-  const filteredAudioBuffer = await processAudioBufferWithBandpass(
-    await getAudioFileAsAudioBuffer(file, audioContext)
-  );
-  console.log("filteredAudioBuffer", filteredAudioBuffer);
-
-  const filteredAudioBufferSlices = await sliceAudioBufferAtPauses(filteredAudioBuffer, 60)
-
-  console.log("filteredAudioBufferSlices", filteredAudioBufferSlices);
-
   const wavBlobs = [];
-  for (let i = 0; i < filteredAudioBufferSlices.length; i++) {
-    console.log("Blobbing to wav", i);
+  
+  try {
+    // AudioBuffer
+    const filteredAudioBuffer = await processAudioBufferWithBandpass(
+      await getAudioFileAsAudioBuffer(file, audioContext)
+    );
+    console.log("filteredAudioBuffer", filteredAudioBuffer);
+
+    const filteredAudioBufferSlices = await sliceAudioBufferAtPauses(filteredAudioBuffer, 60)
+
+    console.log("filteredAudioBufferSlices", filteredAudioBufferSlices);
+
+
+    for (let i = 0; i < filteredAudioBufferSlices.length; i++) {
+      console.log("Blobbing to wav", i);
+      wavBlobs.push({
+        blob: audioBufferToWav(filteredAudioBufferSlices[i]),
+        duration: filteredAudioBufferSlices[i].duration,
+      })
+    }
+  } catch (error) {
+    console.error("error", error);
+
     wavBlobs.push({
-      blob: audioBufferToWav(filteredAudioBufferSlices[i]),
-      duration: filteredAudioBufferSlices[i].duration,
-    })
+      error,
+    });
   }
   return wavBlobs;
 }

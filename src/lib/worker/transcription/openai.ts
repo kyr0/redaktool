@@ -1,6 +1,7 @@
 import type { TranscriptionTask } from "../../../shared";
+import type { TranscriptionResponse } from "./interfaces";
 
-export async function transcribeOpenai(task: TranscriptionTask) {
+export async function transcribeOpenai(task: TranscriptionTask): Promise<TranscriptionResponse> {
   const formData = new FormData();
   formData.append("file", task.blob, `audio.${task.codec || "wav"}`);
   formData.append("model", task.model || "whisper-1");

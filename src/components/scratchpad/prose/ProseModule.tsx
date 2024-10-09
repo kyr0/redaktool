@@ -11,6 +11,8 @@ const inputEditorAtom = atom<string>("");
 export const ProseModule: FC<GenericPersistentModuleWrapperProps> = ({ isActive }) => {
   const { t, i18n } = useTranslation();
 
+  console.log("prose is active", isActive);
+
   return (
     <GenericPersistentModule
       placeholder="Das Ergbnis finden Sie hier, sobald Sie Ihren Text eingegeben und die KI-Verarbeitung mit dem Senden-Button gestartet haben."

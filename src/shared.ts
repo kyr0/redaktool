@@ -1,6 +1,7 @@
 import type { AudioMetaData } from "./lib/audio-dsp";
 import type { CompilePrompt, Prompt } from "./lib/content-script/prompt-template";
 import type { ParseSmartPromptResult } from "./lib/worker/prompt";
+import type { TranscriptionResponse } from "./lib/worker/transcription/interfaces";
 
 export const OPEN_AI_API_KEY_NAME = "OPEN_AI_API_KEY";
 export const ANTHROPIC_API_KEY_NAME = "ANTHROPIC_API_KEY";
@@ -44,10 +45,13 @@ export interface AudioFile {
 export type InferenceProviderType = "openai" | "deepgram";
 
 export interface TranscriptionTask {
-  blob: Blob;
+  blob: Blob; 
   codec: string;
   model: string;
   providerType: InferenceProviderType;
+  diarize?: boolean;
+  detect_language?: boolean;
+  punctuate?: boolean;
   apiKey?: string;
   prompt?: string; // optional, previous transcription
 }
@@ -95,12 +99,12 @@ export interface TranscriptionMessage extends MessageChannelPackage<Transcriptio
   payload: TranscriptionTask;
 }
 
-export interface TranscriptionResultMessage extends MessageChannelPackage<TranscriptionTask> {
-  payload: TranscriptionTask;
+export interface TranscriptionResultMessage extends MessageChannelPackage<TranscriptionResponse> {
+  payload: TranscriptionResponse;
 }
 
 export type MessageChannelMessage = EmbeddingModelMessage | PromptMessage | CompilePromptMessage | CompilePromptResultMessage | DbMessage | ProcessTranscriptionAudioMessage | ErrorMessage | ProcessTranscriptionAudioResultMessage | TranscriptionMessage | TranscriptionResultMessage;
-export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue | AudioFile | SlicedAudioWavs | TranscriptionTask | null;
+export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue | AudioFile | SlicedAudioWavs | TranscriptionTask | TranscriptionResponse | null;
 
 export interface HyperParameters {
   autoTuneCreativity: number;
