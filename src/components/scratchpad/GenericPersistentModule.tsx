@@ -35,8 +35,6 @@ export const GenericPersistentModule: React.FC<GenericPersistentModuleProps> = m
     const [hasLoadedContent, setHasLoadedContent] = useState(false);
     const [hasLoadedInputContent, setHasLoadedInputContent] = useState(false);
 
-    console.log("rerender module", moduleName);
-
     const debouncedAppendToEditor = useDebouncedCallback(
       useCallback(
         ({ content }) => {
@@ -74,7 +72,7 @@ export const GenericPersistentModule: React.FC<GenericPersistentModuleProps> = m
 
           setTimeout(() => {
             extractedWebsiteDataAtom.set("");
-          }, 1000);// reset buffer when all editors are done
+          }, 1000); // reset buffer when all editors are done
         } else if (editorArgs && editorArgs.getValue!().length === 0 && !hasLoadedContent) {
           const content = await outputDbState.get();
           if (content) {
@@ -97,7 +95,7 @@ export const GenericPersistentModule: React.FC<GenericPersistentModuleProps> = m
             debouncedAppendToInputEditor({ content });
           } else {
             // set placeholder content
-            setEditorContent("");
+            setInputEditorContent("");
           }
           setHasLoadedInputContent(true);
         }

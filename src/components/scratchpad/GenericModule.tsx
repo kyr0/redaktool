@@ -81,8 +81,6 @@ import { db } from "../../lib/content-script/db";
 import { inferenceProvidersDbState } from "../settings/db";
 import type { InferenceProvider } from "../settings/types";
 import { useLlmStreaming } from "../../lib/content-script/llm";
-//import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
-//import { PromptEditor } from "./prompteditor/PromptEditorCodeMirror";
 
 const settingsFieldsStateDb = db<Record<string, string>>("settingsFields", {});
 const modelPkStateDb = db<Record<string, ModelPreference>>("modelPk");
@@ -159,6 +157,7 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   children,
 }) => {
   const { t, i18n } = useTranslation();
+  const customInstructionStateDb = db<string>(`customInstruction-${name}`, "");
   const [editorContent, setEditorContent] = useState(editorAtom.get());
   const [inputEditorContent, setInputEditorContent] = useState(inputEditorAtom.get());
   const [prompt, setPrompt] = useState(defaultPromptTemplate);
@@ -184,48 +183,29 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
   const [recompilingInProgress, setRecompilingInProgress] = useState(false);
   const [streamingInProgress, setStreamingInProgress] = useState(false);
-  const [customInstruction, setCustomInstruction] = useState("");
+  const [customInstruction, setCustomInstruction] = useState<string>("");
   const [promptContent, setPromptContent] = useState("");
   const [lastActualUsage, setLastActualUsage] = useState<PromptTokenUsage>();
   const [lastTotalPrice, setLastTotalPrice] = useState<number>();
   const [activeTab, setActiveTab] = useState<"context" | "promptEditor">("context");
   const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
-  //const [llmPort, setLlmPort] = useState<chrome.runtime.Port | null>(null);
   const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
   const [isDoneStreaming, setIsDoneStreaming] = useState(false);
   const [promptIdSkipList, setPromptIdSkipList] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const storedCustomInstruction = await customInstructionStateDb.get();
+      setCustomInstruction(storedCustomInstruction);
+    })();
+  }, []);
 
   const stopStreamCallback = useCallback(() => {
     setPromptIdSkipList((prev) => [...prev, currentPromptId!]);
     setStreamingInProgress(false);
   }, [promptIdSkipList, currentPromptId]);
 
-  /*
-
-  // ensure llmPort is always connected and disconnects on component rerender
-  useEffect(() => {
-    if (isActive) {
-      setLlmPort((llmPort) => {
-        if (llmPort === null) {
-          llmPort = chrome.runtime.connect({ name: `${name}-llm-stream` });
-        }
-        return llmPort;
-      });
-    }
-
-    return () => {
-      setLlmPort((llmPort) => {
-        if (llmPort) {
-          llmPort.disconnect();
-        }
-        return null;
-      });
-    };
-  }, [isActive, name]);
-  */
-
   const onPayloadReceived = useCallback((chunk: any) => {
-
     console.log("onPayloadReceived", chunk);
 
     if (chunk.id === currentPromptId && !promptIdSkipList.find(_id => _id === chunk.id)) {
@@ -257,44 +237,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   useEffect(() => {
     scrollDownMax(editorEl);
   }, [editorEl]);
-
-  /*
-  const [, setListenerRegistered] = useState<Function|null>(null);
-
-  useEffect(() => {
-    
-    if (llmPort) {
-      
-      setListenerRegistered((listener) => {
-
-        if (typeof listener === "function") {
-          console.log("removing previous onPortMessageReceived listener", listener);
-          llmPort.onMessage.removeListener(listener as any);
-        }
-        const newListener = (message: any) => {
-          onPortMessageReceived(message);
-        };
-        console.log("adding new onPortMessageReceived listener", newListener);
-        llmPort.onMessage.addListener(newListener);
-
-        return newListener;
-      });
-    }
-
-    return () => {
-      if (llmPort) {
-        setListenerRegistered((listenerRegistered) => {
-
-          if (typeof listenerRegistered === "function") {
-            console.log("removing onPortMessageReceived listener on destruct", listenerRegistered);
-            llmPort.onMessage.removeListener(listenerRegistered as any);
-          }
-          return null;
-        });
-      }
-    };
-  }, [llmPort, onPortMessageReceived]);
-  */
 
   useEffect(() => {
     (async() => {
@@ -338,7 +280,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
 
   useEffect(() => {
     (async () => {
-
       console.log("flip-flop", isActive, name);
 
       const storedFields = await settingsFieldsStateDb.get();
@@ -375,8 +316,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
         }
       }
 
-      //console.log("SETTING setDynamicFieldValues flip-flop", isActive, name, deserialization);
-      // store in db
       setDynamicFieldValues((fieldValues) => {
         const nextState = ({
           ...fieldValues,
@@ -420,18 +359,11 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
   const [autoTuneCreativity, setAutoTuneCreativity] = useState<number>(
     defaultHyperParameters.autoTuneCreativity,
   );
-  /*
-  const [autoTuneFocusActivated, setAutoTuneFocusActivated] =
-    useState<boolean>(false);
-    */
 
   const [autoTuneFocus, setAutoTuneFocus] = useState<number>(
     defaultHyperParameters.autoTuneFocus,
   );
-  /*
-  const [autoTuneGlossaryActivated, setAutoTuneGlossaryActivated] =
-    useState<boolean>(false);
-    */
+
   const [autoTuneGlossary, setAutoTuneGlossary] = useState<number>(
     defaultHyperParameters.autoTuneGlossary,
   );
@@ -477,8 +409,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
 
   useEffect(() => {
     (async () => {
-
-
       const hyperParameters = await hyperParametersStateDb.get();
       setAutoTuneCreativity(
         hyperParameters.autoTuneCreativity ||
@@ -517,15 +447,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
         selectedMd.length,
       );
 
-      /*
-      const slicedContent = sliceOutMarkdownTextIntersection(
-        selectedMd,
-        textSelection$.text,
-      );
-      */
-
-      console.log("selectedMd", selectedMd);
-
       let slicedContent = textSelection$.text;
 
       const sliceIndexes = kmpSearchMarkdown(selectedMd, textSelection$.text);
@@ -541,10 +462,8 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
         // use selected text instead of whole editor content
         setPromptContent(slicedContent);
 
-        //if (!selectionGuaranteedAtom.get()) {
         // reset selection
         guardedSelectionGuaranteedAtom.set(null);
-        //}
       }
     }
   }, [textSelection$, editorContent]);
@@ -562,8 +481,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
       });
     }
   }, [internalEditorArgs, onEditorCreated]);
-
- 
 
   useEffect(() => {
     if (typeof onInputEditorCreated === "function" && internalInputEditorArgs) {
@@ -619,7 +536,6 @@ export const GenericModule: React.FC<GenericModuleProps> = memo(({
     [],
   );
 
-  
   const setInternalModelPk = useCallback(
     (value: ModelPreference) => {
       (async () => {
@@ -707,7 +623,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       }>((resolve, reject) => {
         (async () => {
           try {
-
             // first pass compiler for dynamic fields
             let parsedPrompt = await compilePrompt(prompt, getValidatedDynamicFieldValues());
 
@@ -737,7 +652,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
             });
             
           } catch (e) {
-            //reject(e);
             toast.error("Fehler beim Kompilieren des Smart-Prompt", {
               icon: (
                 <MessageCircleWarning className="ab-shrink-0 !ab-w-8 !ab-h-8" />
@@ -765,7 +679,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       hyperParameters,
     }: any) => {
       return new Promise<Prompt>((resolve, reject) => {
-
         console.log("inferenceProviders?!", inferenceProviders, modelPk);
         const activeInferenceProvider = inferenceProviders.find((ip) => ip.name === modelPk.providerName)
 
@@ -778,26 +691,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
         setRecompilingInProgress(true);
         (async () => {
           try {
-            /*
-            // TODO: use a new state: promptContent and useEffect to sync
-            if (textSelection$?.element) {
-              const selectedMd = turndown(textSelection$.element.innerHTML);
-              const slicedContent = sliceOutMarkdownTextIntersection(
-                selectedMd,
-                textSelection$.text,
-              );
-              console.log("using selected text!", slicedContent);
-
-              // use selected text instead of whole editor content
-              editorContent = slicedContent;
-
-              if (!selectionGuaranteedAtom.get()) {
-                // reset selection
-                guardedSelectionGuaranteedAtom.set(null);
-              }
-            }
-            */
-
             console.log("compilePromptAndSyncFields editorContent", editorContent)
 
             // second pass value evaluation
@@ -878,11 +771,9 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
       ],
     ),
     250,
-    //{ maxWait: 500 },
   );
 
   useEffect(() => {
-
     if (!inferenceProviders || !modelPk || !prompt) {
       console.log("Skipping prompt preparation", inferenceProviders, modelPk, prompt);
       return;
@@ -931,18 +822,28 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
     }
   }, [inputEditorContent]);
 
+  useEffect(() => {
+    // cache the custom instruction
+    customInstructionStateDb.set(customInstruction);
+
+    if (typeof onCustomInstructionChange === "function") {
+      onCustomInstructionChange(customInstruction);
+    }
+  }, [customInstruction]);
+
   // back-sync
   useEffect(() => {
     setEditorContent((prev) => (prev !== value ? value || "" : prev));
   }, [value]);
 
   useEffect(() => {
-    setInputEditorContent((prev) => (prev !== inputValue ? inputValue || "" : prev));
+    if (inputValue !== undefined) {
+      setInputEditorContent((prev) => (prev !== inputValue ? inputValue : prev));
+    }
   }, [inputValue]);
 
   const onPromptSendClick = useCallback(() => {
     (async () => {
-
       console.log("onPromptSendClick input", inputEditorContent);
 
       const finalPrompt = await generatePrompt({
@@ -974,98 +875,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
         startPromptStreaming(finalPrompt);
       }
-
-      /*
-      let isBeginning = true;
-      let originalText = "";
-      let partialText = "";
-      
-
-      const reflush = () => {
-        setTimeout(() => {
-          requestAnimationFrame(() => {
-            if (originalText.trim() !== "") {
-              setEditorContent(`${originalText}\n---\n${partialText || ""}`);
-            } else {
-              setEditorContent(`${partialText || ""}`);
-            }
-            scrollDownMax(editorEl);
-
-            setStreamingInProgress(false);
-          });
-        }, 1);
-      };
-
-      try {
-        const stopStreamCb = sendPrompt(
-          finalPrompt,
-          (text: string) => {
-            console.log("onChunk", text, "editorEl", editorEl);
-            setEditorContent((prev) => {
-              if (isBeginning) {
-                originalText = prev;
-              }
-
-              partialText += text || "";
-
-              return `${prev || ""}${isBeginning && originalText.trim() !== "" ? "\n---\n" : ""}${
-                text || ""
-              }`;
-            });
-
-            isBeginning = false;
-
-            scrollDownMax(editorEl);
-          },
-          (
-            completeText: string,
-            usage: PromptTokenUsage,
-            totalPrice: number,
-          ) => {
-            console.log(
-              "onDone",
-              completeText,
-              "editorEl",
-              editorEl,
-              "usage",
-              usage,
-            );
-
-            setLastActualUsage(usage);
-            setLastTotalPrice(totalPrice);
-
-            partialText = completeText;
-
-            reflush();
-          },
-          (error: string) => {
-            console.error("onError", error);
-            setStreamingInProgress(false);
-            toast.error("Fehler beim Ausführen des Prompts", {
-              icon: (
-                <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
-              ),
-              description: error,
-            });
-          },
-        );
-
-        setStopStreamCallback({
-          stopStream: () => {
-            stopStreamCb.stopStream();
-            reflush();
-          },
-        });
-      } catch (e) {
-        setStreamingInProgress(false);
-        toast.error("Fehler beim Ausführen des Prompts", {
-          icon: (
-            <MessageCircleWarning className="ab-shrink-0 !ab-w-16 ab-pr-1" />
-          ),
-          description: (e as Error).message,
-        });
-      }
-      */
     })();
   }, [
     generatePrompt,
@@ -1214,25 +1023,8 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
                     style={{ resize: "none" }}
                     className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm !ab-font-mono"
                   />
-                  {/*
-                  <PromptEditor
-                    onChange={onPromptChangeInternal}
-                    value={prompt}
-                    className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 !ab-p-0 !-ab-mt-1 ab-outline-none !ab-text-sm"
-                  />
-                  */}
                 </TabsContent>
               </Tabs>
-              {/*
-              <textarea
-                onChange={onPromptChangeInternal}
-                name={`${name}PromptEditor`}
-                placeholder="Change the extracted content to re-generate the prompt"
-                value={prompt}
-                style={{ resize: "none" }}
-                className="ab-flex-1 ab-overflow-auto ab-w-full ab-h-full ab-overscroll-contain ab-ml-1 ab-p-2 ab-outline-none !ab-text-sm"
-              />
-              */}
             </div>
 
             <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between ab-border-t ab-border-t-1 ab-border-t-slate-300 ab-border-dashed !ab-pt-1">
@@ -1538,32 +1330,6 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
           <span className="ab-justify-start ab-items-center ab-flex ab-flex-row">
             <span className="ab-font-bold">🤖 KI-Ergebnisse:&nbsp;</span>
           </span>
-          {/*
-                <span style={{ fontSize: "0.7rem" }}>
-                  Geschätzt: ~{promptPrepared.estimatedInputTokens} I/O ~
-                  {promptPrepared.estimatedOutputTokens} ≈{" "}
-                  {formatCurrencyForDisplay(
-                    promptPrepared.price.toFixed(4),
-                  ).replace(".", i18n.language === "en" ? "." : ",")}{" "}
-                  {lastActualUsage &&
-                    `| Ausgeführt: ${lastActualUsage.prompt_tokens} I/O ${
-                      lastActualUsage.completion_tokens
-                    } = ${
-                      lastTotalPrice
-                        ? formatCurrencyForDisplay(
-                            lastTotalPrice.toFixed(4),
-                          ).replace(".", i18n.language === "en" ? "." : ",")
-                        : ""
-                    }`}
-                </span>
-                */}
-          {/*
-                €; verbleibende Tokens:{" "}
-                {formatCurrencyForDisplay(
-                  calculateTokensFromBudget(20 ),
-                )}
-                */}
-
 
           {(recompilingInProgress || streamingInProgress) && (
             <span className="ab-flex ab-flex-row ab-items-center ab-justify-end">

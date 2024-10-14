@@ -120,7 +120,7 @@ export const ModalLayout = () => {
                     onSelect={onToggleMenu}
                     className={"ab-ftr-active-menu-item"}
                   >
-                    <span>Menü</span>
+                    <span>KI-Werkzeuge</span>
                     <CommandShortcut className="ab-flex ab-flex-col ab-justify-end ab-items-center">
                       <ArrowLeft className="ab-ml-2 ab-h-4 ab-w-4 ab-text-primary ab-shrink-0 ab-border-primary ab-border-spacing-4 ab-rounded-full ab-border-[1px]" />
                     </CommandShortcut>

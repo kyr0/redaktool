@@ -1,129 +1,75 @@
 import {
-  ALargeSmall,
-  BookCheck,
-  FileSignature,
-  Languages,
-  MessageCircleDashed,
-  Newspaper,
-  PartyPopper,
-  PenIcon,
-  PenTool,
-  PlusIcon,
-  Scale,
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState, type FC } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { useTranslation, Trans } from "react-i18next";
-import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import { ExtractionModule } from "./extraction/ExtractionModule";
-import { TranslationModule } from "./translation/TranslationModule";
-import { CoachModule } from "./coach/CoachModule";
-import { ProofreadingModule } from "./proofreading/ProofreadingModule";
-import { TitlesModule } from "./titles/TitlesModule";
-import { InterviewModule } from "./interview/InterviewModule";
-import { ProseModule } from "./prose/ProseModule";
 import { db } from "../../lib/content-script/db"; // Import the db API
 import { Button } from "../../ui/button";
 import { Separator } from "../../ui/separator";
-import type { GenericPersistentModuleWrapperProps } from "./GenericPersistentModule";
-
-export type ToolName =
-  | "prose"
-  | "source"
-  | "translation"
-  | "titles"
-  | "rewrite"
-  | "coach"
-  | "interview"
-  | "community";
-
-export interface TextTool {
-  name: ToolName;
-  label: string;
-  icon: React.ReactNode;
-  closed: boolean;
-  closable: boolean;
-  module: FC<GenericPersistentModuleWrapperProps>;
-}
+import { liveToolsStateAtom, DEFAULT_TOOLS_ACTIVE, type ToolName, BUILTIN_TOOLS, type TextTool, liveActiveToolAtom, toolsStateDb, lastActiveViewDb } from "./state";
+import { useStore } from "@nanostores/react";
 
 export const ScratchpadLayout = () => {
   const { t, i18n } = useTranslation();
-  const [activeView, setActiveView] = useState<ToolName>("prose");
-  const [tools, setTools] = useState<Array<TextTool>>([{
-      name: "prose",
-      label: "Prosa",
-      closable: true,
-      closed: false,
-      icon: <PenIcon className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: ProseModule
-    }, {
-      name: "source",
-      label: "Zusammenfassung",
-      closable: true,
-      closed: false,
-      icon: <MagnifyingGlassIcon className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: ExtractionModule
-    }, {
-      name: "translation",
-      label: "Übersetzung",
-      closable: true,
-      closed: false,
-      icon: <Languages className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: TranslationModule
-    }, {
-      name: "coach",
-      closable: true,
-      closed: false,
-      label: "Schreib-Coach",
-      icon: <PenTool className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: CoachModule
-    }, {
-      name: "rewrite",
-      label: "Lektorat",
-      closable: true,
-      closed: false,
-      icon: <BookCheck className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: ProofreadingModule
-    }, {
-      name: "titles",
-      label: "Titel",
-      closable: true,
-      closed: true,
-      icon: <ALargeSmall className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: TitlesModule
-    }, {
-      name: "interview",
-      label: "Interview",
-      closable: true,
-      closed: true,
-      icon: <MessageCircleDashed className="ab-shrink-0 ab-w-4 ab-h-4" />,
-      module: InterviewModule
-    }, {
-      name: "community",
-      closable: false,
-      closed: false,
-      label: "",
-      icon: <PlusIcon className="ab-shrink-0 ab-h-6 ab-w-6" />,
-      module: () => <div>TODO: Community</div>
-    }
-  ]);
+  const activeViewStore = useStore(liveActiveToolAtom);
+  const activeToolNamesStore = useStore(liveToolsStateAtom);
+  const [tools, setTools] = useState<Array<TextTool>>([]);
+  const [tabClosed, setTabClosed] = useState(false); // state to track if a tab has been closed
 
-  // TODO: store/restore closed state of tools
+  useEffect(() => {
+    const loadToolsState = async () => {
+      const storedToolsState = await toolsStateDb.get();
+      liveToolsStateAtom.set(storedToolsState || DEFAULT_TOOLS_ACTIVE);
+    };
+    loadToolsState();
+  }, []);
+
+  useEffect(() => {
+    const newTools = BUILTIN_TOOLS.filter(tool => activeToolNamesStore.includes(tool.name));
+    setTools(newTools);
+  }, [activeToolNamesStore]);
 
   // Load the last active view from the database
   useEffect(() => {
     const loadLastActiveView = async () => {
-      const lastActiveView = await db("lastActiveView").get();
+      const lastActiveView = await lastActiveViewDb.get();
       if (lastActiveView) {
-        setActiveView(lastActiveView as ToolName);
+        console.log("load last active view", lastActiveView);
+        liveActiveToolAtom.set(lastActiveView as ToolName);
+      } else {
+        liveActiveToolAtom.set(tools.filter(tool => !tool.closed)![0].name); // first one that isn't closed
       }
     };
     loadLastActiveView();
-  }, []);
+  }, [tools]);
+
+  useEffect(() => {
+    if (!tabClosed) { // only execute the logic if a tab has been closed
+      return;
+    }
+    const activeTool = tools.find(tool => tool.name === activeViewStore);
+    
+    if (!activeTool || activeTool.closed) {
+      const activeToolIndex = tools.findIndex(tool => tool.name === activeViewStore);
+      if (activeToolIndex > 0) {
+        const leftTool = tools[activeToolIndex - 1];
+        if (!leftTool.closed) {
+          liveActiveToolAtom.set(leftTool.name);
+          lastActiveViewDb.set(leftTool.name);
+        }
+      } else {
+        const firstOpenTool = tools.find(tool => !tool.closed);
+        if (firstOpenTool) {
+          liveActiveToolAtom.set(firstOpenTool.name);
+          lastActiveViewDb.set(firstOpenTool.name);
+        }
+      }
+      setTabClosed(false); // reset the state after handling
+    }
+  }, [activeViewStore, tools, tabClosed]);
 
   const onCloseTab = useCallback((tab: ToolName) => {
-    console.log("close tab", tab);
     const newTools = tools.map((tool) => {
       if (tool.name === tab) {
         return {
@@ -133,50 +79,42 @@ export const ScratchpadLayout = () => {
       }
       return tool;
     });
-    console.log("newTools", newTools);
     setTools(newTools);
+    const updatedToolsState = newTools.filter(tool => !tool.closed).map(tool => tool.name);
+    liveToolsStateAtom.set(updatedToolsState);
+    toolsStateDb.set(updatedToolsState);
+    setTabClosed(true); // set the state to true when a tab is closed
   }, [tools]);
 
+  // Sync the active view with the database whenever it changes
   useEffect(() => {
-    console.log("activeView", activeView);
-    // find the name of the first open tab
-    const firstOpenTab = tools.find((tool) => !tool.closed)?.name;
-    console.log("firstOpenTab", firstOpenTab || "community");
-    setActiveView(firstOpenTab || "community");
-  }, [tools]);
-
-  // Save the active view to the database whenever it changes
-  useEffect(() => {
-    db("lastActiveView").set(activeView);
-  }, [activeView]);
-
+    if (activeViewStore !== null) {
+      db("lastActiveView").set(activeViewStore);
+    }
+  }, [activeViewStore]);
 
   return (
     <Tabs
-      defaultValue={activeView}
-      value={activeView}
+      defaultValue={activeViewStore || "community"}
+      value={activeViewStore || "community"}
       orientation="vertical"
       className="ab-p-0 ab-m-0 ab-mx-1.5 ab-text-sm ab-h-full ab-flex ab-flex-col ab-items-stretch"
     >
       <TabsList className="-ab-pt-1 ab-h-12 !ab-justify-start !ab-min-h-12 ab-items-stretch ab-transparent">
-        <span className="ab-h-8 ab-mr-2 ab-font-bold ab-text-md ab-flex ab-items-center">
-          Prompt:
-        </span>
-
-        {tools.map((tool) => (
+        {tools.map((tool, index) => (
           <TabsTrigger
             key={tool.name + Math.random()*10000}
             value={tool.name}
-            onClick={() => setActiveView(tool.name)}
+            onClick={() => liveActiveToolAtom.set(tool.name)}
             className={`!ab-pt-0 !ab-max-h-10 !ab-text-md !ab-px-1 ${
-              activeView === tool.name
+              activeViewStore === tool.name
                 ? "ab-ftr-active-menu-item-main"
                 : "ab-ftr-menu-item"
             } ${tool.closed ? 'ab-hidden' : ''} !ab-shadow-none !ab-border-none `}
           >
-            {tool.name === "community" && (<Separator orientation="vertical" className="!ab-h-4 !ab-mr-2 !-ab-ml-0"/>)}
+            {index !== 0 && (<Separator orientation="vertical" className="!ab-h-4 !ab-mr-2 !-ab-ml-0"/>)}
             {tool.icon} 
-            <span className={`ab-ml-1 ${activeView === tool.name ? 'ab-font-bold' : ''}`}>
+            <span className={`ab-ml-1 ${activeViewStore === tool.name ? 'ab-font-bold' : ''}`}>
               {tool.label} 
             </span>
             {tool.closable && (
@@ -191,12 +129,12 @@ export const ScratchpadLayout = () => {
       {tools.map((tool) => (
         <TabsContent
           forceMount
-          hidden={activeView !== tool.name}
+          hidden={activeViewStore !== tool.name}
           value={tool.name}
           key={tool.name}
           className="ab-m-0 ab-p-0 !-ab-mt-1 !ab-overflow-hidden !ab-overflow-y-auto ab-h-full"
         >
-          <tool.module isActive={activeView === tool.name} />
+          <tool.module isActive={activeViewStore === tool.name} />
         </TabsContent>
       ))}
     </Tabs>

@@ -1,6 +1,9 @@
 {
   "productName": "RedakTool",
   "language": "DE",
+  "add_tool": "Werkzeug hinzufügen",
+  "add_tools_description": "Wählen Sie ein Werkzeug aus der Liste aus, um es hinzuzufügen.",
+  "add_community_tools_description": "Wählen Sie ein Werkzeug aus der Community aus, um es hinzuzufügen.",
   "module_source": "Analyse",
   "module_translation": "Übersetzung",
   "module_summary": "Zusammenfassung",
@@ -8,7 +11,7 @@
   "module_rewrite": "Lektorat",
   "module_radar": "News-Radar",
   "module_titles": "Titelvorschläge",
-  "module_scratchpad": "Text-Werkzeuge",
+  "module_scratchpad": "Text",
   "module_archive": "Archiv",
   "module_transcription": "Transkription",
   "module_settings": "Einstellungen",
