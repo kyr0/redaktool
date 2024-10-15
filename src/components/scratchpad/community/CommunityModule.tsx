@@ -63,7 +63,7 @@ export const CommunityModule: FC<GenericPersistentModuleWrapperProps> = memo(({ 
       <div className="ab-grid ab-grid-cols-2 ab-gap-4 ab-mx-auto ab-ml-2">
         {filteredTools.length > 0 ? (
           filteredTools.map(tool => (
-            <Card key={tool.name} className="ab-shadow-md">
+            <Card key={tool.name} className="ab-shadow-md ab-rounded-md">
               <CardHeader className="ab-flex ab-items-center">
                 <CardTitle className="ab-flex ab-items-center">
                   {tool.icon}
@@ -112,7 +112,7 @@ export const CommunityModule: FC<GenericPersistentModuleWrapperProps> = memo(({ 
       <div className="ab-grid ab-grid-cols-2 ab-gap-4 ab-mx-auto ab-ml-2">
         {filteredCommunityTools.length > 0 ? (
           filteredCommunityTools.map(tool => (
-            <Card key={tool.name} className="ab-shadow-md">
+            <Card key={tool.name} className="ab-shadow-md ab-rounded-md">
               <CardHeader className="ab-flex ab-items-center">
                 <CardTitle className="ab-flex ab-items-center">
                   {tool.icon}

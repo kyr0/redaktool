@@ -26,17 +26,25 @@ export const ProviderEditPanel: React.FC<ProviderEditPanelProps & { mode: "updat
 
   form.watch((data, { name, type }) => {
     if (name === "inferenceProviderName") {
+      console.log("setting inferenceProviderName", data.inferenceProviderName)
       setInferenceProviderName(data.inferenceProviderName as InferenceProviderType);
     }
   });
 
   useEffect(() => {
-    console.log("setting name?!?", form.getValues().name, inferenceProviderName)
+    console.log("setting name?!?", form.getValues().name, inferenceProviderName);
     if (!form.getValues().name || mode === "create") {
-      console.log("setting name!")
-      form.setValue("name", aiInferenceProviders.find((llmInferenceProvider) => llmInferenceProvider.ident === inferenceProviderName)?.label || "");
+      console.log("setting name!");
+      const provider = aiInferenceProviders.find(
+        (llmInferenceProvider) => llmInferenceProvider.ident === inferenceProviderName
+      );
+      if (provider) {
+        form.setValue("name", provider.label);
+      } else {
+        console.warn(`No provider found for inferenceProviderName: ${inferenceProviderName}`);
+      }
     }
-  }, [form, inferenceProviderName, mode])
+  }, [form, inferenceProviderName, mode]);
 
   
   const onOpenChange = useCallback((isOpen: boolean) => {

@@ -46,16 +46,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../../../ui/alert-dialog"
-
-import { sendPrompt } from "../../../lib/content-script/prompt";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { LoadingSpinner } from "../../../ui/loading-spinner";
 import { NewModelButton } from "./NewModelDialog";
 import { transcribeInWorker } from "../../../lib/content-script/transcribe";
-import { cat } from "@xenova/transformers";
 import type { TranscriptionTask } from "../../../shared";
-import { scrollDownMax } from "../../../lib/content-script/dom";
 import { useLlmStreaming } from "../../../lib/content-script/llm";
+import { useMessageChannelContext } from "../../../message-channel";
 
 export const models: Array<z.infer<typeof ModelSchema>> = []
 
@@ -86,6 +83,7 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
 
   const [isTesting, setIsTesting] = useState<z.infer<typeof ModelSchema>|null>(null)
   const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
+  const messageChannelApi = useMessageChannelContext();
 
   const onPayloadReceived = useCallback((chunk: any) => {
 
@@ -136,7 +134,6 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
   }, [isTesting])
 
   const testModel = useCallback((model: z.infer<typeof ModelSchema>) => {
-
     
     const apiOptionsOverrides: Partial<PromptApiOptions> = {};
 
@@ -175,7 +172,7 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
             providerType: form.getValues().inferenceProviderName,
             model: model.id,
             apiKey: form.getValues().apiKey!,
-          } as TranscriptionTask);
+          } as TranscriptionTask, messageChannelApi);
 
           console.log("Transcription test result", transcription)
 
@@ -191,6 +188,7 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
                 fontWeight: "normal",
               },
             });
+            setIsTesting(null)
           } else {
             toast.info(
               `Fehler beim Testen des Transkriptions-Modells: Transkription nicht erfolgreich: "${transcription.text}"`,
@@ -203,7 +201,8 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
                   fontWeight: "normal",
                 },
               },
-            );
+            ); 
+            setIsTesting(null)
           }
         })
       } catch (error) {
@@ -219,10 +218,9 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
               fontWeight: "normal",
             },
           },
-        );
-      } finally {
+        ); 
         setIsTesting(null)
-      }
+      } 
     } else if (model.type === "embed") {
 
       console.log("TODO: Test embedding model", model)
@@ -241,7 +239,7 @@ export const LanguageModelsField = ({ form, mode, models }: SettingsFieldProps &
         }
       )
     }
-  }, [form, startPromptStreaming])
+  }, [form, startPromptStreaming, messageChannelApi])
 
   const onTestModelClick = useCallback((model: z.infer<typeof ModelSchema>) => {
     console.log("test model", model)

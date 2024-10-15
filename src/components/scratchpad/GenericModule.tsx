@@ -867,7 +867,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
 
  
 ---
-###### ${format(new Date(), 'dd.MM.yyyy')} ${format(new Date(), 'HH:mm')} Uhr  - ${modelPk?.providerName} - ${modelPk?.model} 
+###### ⬇️ ${format(new Date(), 'dd.MM.yyyy')} ${format(new Date(), 'HH:mm')} Uhr  - ${modelPk?.providerName} - ${modelPk?.model} ⬇️
 ---
  
 
@@ -1027,7 +1027,7 @@ ${promptPrepared.original?.replace(/\n/g, "\n")}
               </Tabs>
             </div>
 
-            <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between ab-border-t ab-border-t-1 ab-border-t-slate-300 ab-border-dashed !ab-pt-1">
+            <div className="ab-flex ab-flex-col ab-ml-0 ab-mr-0 ab-pr-0 ab-justify-between !ab-pt-1">
               <span className="ab-flex ab-flex-row ab-justify-start ab-items-center">
                 <span className="ab-text-sm ab-font-bold">
                   KI:&nbsp;

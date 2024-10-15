@@ -18,13 +18,14 @@ import { cn } from "../../../lib/content-script/utils";
 import { aiModelProviders, aiInferenceProviders } from '../../../lib/content-script/ai-models';
 import type { SettingsFieldProps } from "../types";
 import { useEffect, useState } from "react";
-import { inferenceProvidersDbState } from "../db";
 
 export const ProviderChooserField = ({ form, disabled }: SettingsFieldProps & { disabled?: boolean }) => {
 
   const [selectableInferenceProviders, setSelectableInferenceProviders] = 
     useState<Array<{ ident: string, label: string }>>(aiInferenceProviders.map((llmInferenceProvider) => ({ ident: llmInferenceProvider.ident, label: llmInferenceProvider.label })))
 
+
+    console.log("selectableInferenceProviders", selectableInferenceProviders)
   /*
   useEffect(() => {
     (async() => {

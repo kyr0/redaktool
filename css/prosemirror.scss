@@ -276,7 +276,8 @@ img.ProseMirror-separator{
 }
 
 .ProseMirror hr + h6:has(+ hr) {
-  background-color: rgb(249 250 251 / var(--tw-bg-opacity)) !important;
+  border: 1px dashed rgb(30, 41, 59) !important;
+  border-radius: 0.25rem !important;
   text-align: center !important;
 }
 

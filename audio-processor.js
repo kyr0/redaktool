@@ -38,6 +38,11 @@ navigator.serviceWorker.onmessage = e => {
   clearTimeout(timeout);
   console.log("audio processor recv msg", e);
 
+  if (typeof e.data === "string") {
+    e.ports[0].postMessage("pong");
+    return;
+  }
+
   if (e.data instanceof File) {
     decodeFilterSlice(e.data).then(file => {
       console.log("file res", file);
@@ -49,9 +54,6 @@ navigator.serviceWorker.onmessage = e => {
 
 async function decodeFilterSlice(file) {
   console.log("decode filter slice", file);
-
-  // prevent Chrome from disposing the offscreen audio context
-  silentLoopedPlayback(file)
 
   const audioContext = new AudioContext();
   const buffer = await file.arrayBuffer();
@@ -86,23 +88,6 @@ async function decodeFilterSlice(file) {
     });
   }
   return wavBlobs;
-}
-
-function silentLoopedPlayback(file) {
-    // Create an Object URL from the file
-  const objectURL = URL.createObjectURL(file);
-
-  // Create the Audio element and set the source
-  const audio = new Audio(objectURL);
-
-  // Set the audio to loop
-  audio.loop = true;
-
-  // Set the volume to 0 for absolute silence
-  audio.volume = 0.001;
-
-  // Start playback
-  audio.play();
 }
 
 function audioBufferToMediaStream(audioBuffer) {

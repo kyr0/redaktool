@@ -394,7 +394,12 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
                 orientation="vertical"
                 className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-ml-2"
               />
-              <ZoomFactorDropdown
+              
+              <FeedbackButton containerEl={dialogRef.current as HTMLDivElement} />
+            </div>
+
+            <div className="ab-flex ab-flex-row ab-items-center">
+            <ZoomFactorDropdown
                 zoomFactor={zoomClasses}
                 onChangeZoomFactor={(factor) => {
                   setZoomClasses(factor);
@@ -424,10 +429,6 @@ export const AppModal: React.FC<any> = ({ children, root }) => {
                 orientation="vertical"
                 className="!ab-w-[2px] !ab-h-4 !ab-mx-1 !ab-mr-2"
               />
-              <FeedbackButton containerEl={dialogRef.current as HTMLDivElement} />
-            </div>
-
-            <div className="ab-flex ab-flex-row ab-items-center">
               <button
                 type="button"
                 className={HeaderButtonStyle}

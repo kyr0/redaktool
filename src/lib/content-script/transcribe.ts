@@ -1,7 +1,11 @@
-import { messageChannelApi } from "../../message-channel";
+import type { MessageChannelContextType } from "../../message-channel";
 import type { TranscriptionTask } from "../../shared";
 
-export async function transcribeInWorker(task: TranscriptionTask): Promise<{ text: string }> {
+export async function transcribeInWorker(task: TranscriptionTask, messageChannelApi: MessageChannelContextType): Promise<{ text: string }> {
+
+  if (!messageChannelApi) {
+    throw new Error("messageChannelApi is not initialized");
+  }
   return await messageChannelApi.sendCommand("transcribe", task)
 
   /*

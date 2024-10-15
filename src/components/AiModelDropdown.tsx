@@ -50,7 +50,10 @@ export function AiModelDropdown({
   const [selectedModelName, setSelectedModelName] = useState<string>();
 
   useEffect(() => {
-    const model = selectedInferenceProvider?.models.find(_model => _model.id === selectedModel?.model);
+    const model = selectedInferenceProvider?.models
+      .filter(_model => _model.type === type)
+      .find(_model => _model.id === selectedModel?.model);
+      
     if (model && selectedInferenceProvider) {
       setSelectedModelName(model.name.replace(selectedInferenceProvider.name, "").trim());
     }

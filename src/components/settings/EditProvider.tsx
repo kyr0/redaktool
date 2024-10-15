@@ -79,10 +79,13 @@ export const EditProviderSettings = ({ inferenceProvider, onDone }: EditProvider
     try {
       form.clearErrors();
       const valid = await form.trigger("name"/*["apiKey"]*/);
-      const newInferenceProvider = form.getValues()
+
+
+      const editedInferenceProvider = form.getValues()
+      console.log("saving edited provider settings", editedInferenceProvider.inferenceProviderName, inferenceProvider.inferenceProviderName, "valid" , valid, form.getValues());
 
       // TODO: check for IoC custom validation options
-      if (newInferenceProvider.inferenceProviderName !== "ollama" && (!newInferenceProvider.apiKey || newInferenceProvider.apiKey.trim() === "" || newInferenceProvider.apiKey === "no-key")) {
+      if (inferenceProvider.inferenceProviderName !== "ollama" && (!editedInferenceProvider.apiKey || editedInferenceProvider.apiKey.trim() === "" || editedInferenceProvider.apiKey === "no-key")) {
         form.setError("apiKey", {
           type: "required",
         })
@@ -90,6 +93,7 @@ export const EditProviderSettings = ({ inferenceProvider, onDone }: EditProvider
       }
 
       if (!valid) {
+        console.error("Form validation failed", form.getValues());
         return;
       }
 
@@ -115,10 +119,6 @@ export const EditProviderSettings = ({ inferenceProvider, onDone }: EditProvider
       }*/
 
       console.log("current inferenceProviders", inferenceProviders)
-
-      console.log(
-        "saving new provider settings",
-      );
 
       // update in place
       for (let i=0; i<inferenceProviders.length; i++) {

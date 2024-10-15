@@ -12,13 +12,17 @@ export let messageChannelApi: MessageChannelContextType;
 
 export const MessageChannelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [features, setFeatures] = useState<MessageChannelContextType>(messageChannelApi);
+  const { postMessage, addListener, removeListener } = useMessageChannel<MessageChannelMessage>();
 
   useEffect(() => {
     if (!messageChannelApi) {
-      (async () => {
-        const { postMessage, addListener, removeListener } = await useMessageChannel<MessageChannelMessage>();
+
+      console.log("Making new messagechannel (message-channel.tsx)");
+      ;(async () => {
 
         async function sendCommand<T>(action: SupportedActions, payload: MessageChannelPayload): Promise<T> {
+
+          console.log("sendCommand", action, payload);
           const taskId = getNextId(action);
           return new Promise((resolve, reject) => {
             const listener = addListener((message) => {
@@ -54,7 +58,7 @@ export const MessageChannelProvider: React.FC<{ children: React.ReactNode }> = (
         setFeatures(messageChannelApi);
       })();
     }
-  }, []);
+  }, [postMessage, addListener, removeListener]);
 
   return (
     <MessageChannelContext.Provider value={features}>

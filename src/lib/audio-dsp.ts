@@ -327,10 +327,18 @@ export function processAudioBufferWithBandpass(
     bandpassFilter.frequency.value = centerFrequency;
     bandpassFilter.Q.value = centerFrequency / bandwidth;
 
+    // Configure the peaking filter to boost vocal frequencies
+    const vocalBoostFilter = offlineContext.createBiquadFilter();
+    vocalBoostFilter.type = "peaking";
+    vocalBoostFilter.frequency.value = 1500; // Center frequency for vocal boost
+    vocalBoostFilter.gain.value = 5; // Gain in dB
+    vocalBoostFilter.Q.value = 1; // Quality factor
+
     const source = offlineContext.createBufferSource();
     source.buffer = originalBuffer;
     source.connect(bandpassFilter);
-    bandpassFilter.connect(offlineContext.destination);
+    bandpassFilter.connect(vocalBoostFilter);
+    vocalBoostFilter.connect(offlineContext.destination);
     source.start();
 
     offlineContext

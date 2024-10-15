@@ -39,13 +39,15 @@ import { filterForVisibleElements } from "../../lib/content-script/element";
 import { prefPerPage } from "../../lib/content-script/prefs";
 import { formatDuration } from "../../lib/content-script/format";
 import { Mic2Icon, PauseCircleIcon, PauseIcon, PlayIcon } from "lucide-react";
-import { messageChannelApi, useMessageChannelContext } from "../../message-channel";
 import type { InferenceProviderType, SlicedAudioWavs, TranscriptionTask } from "../../shared";
 import { transcribeInWorker } from "../../lib/content-script/transcribe";
 import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
 import type { InferenceProvider } from "../settings/types";
 import { inferenceProvidersDbState } from "../settings/db";
 import { db } from "../../lib/content-script/db";
+import { toast } from "sonner";
+import { getSupportedCodecs } from "../../lib/content-script/codec";
+import { useMessageChannelContext } from "../../message-channel";
 
 interface HTMLMediaElementWithCaptureStream extends HTMLMediaElement {
   captureStream(): MediaStream;
@@ -127,9 +129,16 @@ export const TranscriptionLayout = () => {
     useState<boolean>(false);
   const [inferenceProviders, setInferenceProviders] = useState<Array<InferenceProvider>>([]);
   const [modelPk, setModelPk] = useState<ModelPreference>();
+  const [supportedCodecs] = useState(
+    getSupportedCodecs()
+      .flatMap(codec => codec.fileExtensions)
+  );
+  const messageChannelApi = useMessageChannelContext();
 
   useEffect(() => {
-    (async() => {
+
+    console.log("supportedCodecs", supportedCodecs)
+    ;(async() => {
       console.log("loading inference providers")
       const inferenceProviders: Array<InferenceProvider> = (await inferenceProvidersDbState.get()).sort((a, b) => a.name.localeCompare(b.name))
       setInferenceProviders(inferenceProviders)
@@ -186,96 +195,43 @@ export const TranscriptionLayout = () => {
   }, []);
 
   useEffect(() => {
+
+    if (!audioFile) {
+      console.log("no audio file");
+      return;
+    }
+
     (async () => {
 
       console.log("audioFile", audioFile);
 
-      if (!audioFile) return;
+      try {
 
-      const metaData = await getAudioMetadata(audioFile);
+        const metaData = await getAudioMetadata(audioFile);
 
-      console.log("metaData", metaData);
+        console.log("metaData", metaData);
 
-      console.log("processing audio... (slicing)");
-      const wavBlobs: SlicedAudioWavs = await messageChannelApi.sendCommand("process-transcription-audio", {
-        audioFile,
-        metaData,
-      });
+        console.log("processing audio... (slicing)");
 
-      if (wavBlobs && Array.isArray(wavBlobs)) {
+        const wavBlobs: SlicedAudioWavs = await messageChannelApi.sendCommand("process-transcription-audio", {
+          audioFile,
+          metaData,
+        });
 
-        console.log("done (slicing)", wavBlobs);
-
-        setAudioBufferBlobs(wavBlobs);
-
-        console.log("wavBlobs", wavBlobs)
-
-        /*
-        if (audioFile && audioContext) {
-          if (audioPlayerStatusRef.current) {
-            audioPlayerStatusRef.current.innerHTML =
-              "Applying bandpass filter...";
-          }
-
-          setAudioBuffer(
-            await processAudioBufferWithBandpass(
-              await getAudioFileAsAudioBuffer(audioFile, audioContext),
-            ),
-          );
-
-          if (audioPlayerContainerRef.current) {
-            console.log("shoing audio player");
-            audioPlayerContainerRef.current.classList.remove("ab-hidden");
-          }
+        if (wavBlobs && Array.isArray(wavBlobs)) {
+          console.log("done (slicing)", wavBlobs);
+          setAudioBufferBlobs(wavBlobs);
+          console.log("wavBlobs", wavBlobs);
+        } else {
+          console.log("Failed to process audio file", wavBlobs);
+          throw new Error("Failed to process audio file");
         }
-        */
-      } else {
-        console.error("Failed to process audio file:", wavBlobs);
+      } catch (error) {
+        console.error("Error processing audio file:", error);
+        toast.error("Unable to transcribe audio data. Please check the file format and try again.");
       }
     })();
   }, [audioFile, messageChannelApi]);
-
-  /*
-  useEffect(() => {
-    if (audioBuffer && audioContext) {
-      (async () => {
-        console.log("Slicing into chunks...", audioBuffer);
-
-        if (audioPlayerStatusRef.current) {
-          audioPlayerStatusRef.current.innerHTML =
-            "Schneide Audio in Abschnitte...";
-        }
-        setAudioBufferSlices(await sliceAudioBufferAtPauses(audioBuffer, 60));
-      })();
-    }
-  }, [audioBuffer, audioContext]);
-  */
-
-  /*
-  useEffect(() => {
-    if (audioBufferSlices.length === 0) return;
-
-    if (audioPlayerStatusRef.current) {
-      audioPlayerStatusRef.current.innerHTML = "Transcoding slices into wav...";
-    }
-    console.log("Transcoding slices into wav...", audioBufferSlices);
-
-    const blobs = [];
-    for (let i = 0; i < audioBufferSlices.length; i++) {
-      blobs.push({
-        blob: audioBufferToWav(audioBufferSlices[i]),
-        duration: audioBufferSlices[i].duration,
-      });
-    }
-    console.log("Settings blobs", blobs);
-    setAudioBufferBlobs(blobs);
-
-    if (audioPlayerStatusRef.current) {
-      audioPlayerStatusRef.current.classList.add("ab-hidden");
-      audioPlayerStatusRef.current.innerHTML = "";
-    }
-  }, [audioBufferSlices]);
-  */
 
   useEffect(() => {
     if (!mediaElContainerRef.current) return;
@@ -295,16 +251,19 @@ export const TranscriptionLayout = () => {
 
   const onTranscribeSliceClick = useCallback(
     (blob: Blob, index: number, elapsedMins: number, elapsedSecs: number) => {
+
       let prevTranscription = "";
       return async () => {
 
         if (!modelPk) {
           console.error("No model selected");
+          toast.error("No model selected. Please select a model.");
           return;
         }
 
         if (!inferenceProviders) {
           console.error("No inference providers found");
+          toast.error("No inference providers found. Please check your settings.");
           return;
         }
 
@@ -312,6 +271,7 @@ export const TranscriptionLayout = () => {
 
         if (!activeInferenceProvider) {
           console.log("No active inference provider found", modelPk.providerName, "inferenceProviders", inferenceProviders);
+          toast.error("No active inference provider found. Please check your settings.");
           return;
         }
 
@@ -324,61 +284,51 @@ export const TranscriptionLayout = () => {
         console.log("transcribe with activeInferenceProvider", activeInferenceProvider);
         console.log("transcribe with modelPk", modelPk);
 
-        const transcription = await transcribeInWorker({
-          blob,
-          prompt: prevTranscription,
-          apiKey: activeInferenceProvider?.apiKey,
-          model: modelPk?.model,
-          codec: "wav", // TODO: might be opus?
-          providerType: activeInferenceProvider.inferenceProviderName as InferenceProviderType,
-        })
-        
-        console.log("done transcribe slice", transcription);
+        try {
+          const transcription = await transcribeInWorker({
+            blob,
+            prompt: prevTranscription,
+            apiKey: activeInferenceProvider?.apiKey,
+            model: modelPk?.model,
+            codec: "wav", // it's decoded by this time
+            providerType: activeInferenceProvider.inferenceProviderName as InferenceProviderType,
+          }, messageChannelApi)
+          
+          console.log("done transcribe slice", transcription);
 
-        // buffer
-        prevTranscription = transcription.text;
+          // buffer
+          prevTranscription = transcription.text;
 
-        const newElapsedTimes = [
-          ...elapsedTimes,
-          { index, mins: elapsedMins, secs: elapsedSecs },
-        ];
+          const newElapsedTimes = [
+            ...elapsedTimes,
+            { index, mins: elapsedMins, secs: elapsedSecs },
+          ];
 
-        setElapsedTimes(newElapsedTimes);
+          setElapsedTimes(newElapsedTimes);
 
-        /*
-        TODO: Fix this, should index time from the start of the audio
-        let prevAllInSecs = 0;
+          const prevElapedTime:
+            | { index: number; mins: number; secs: number }
+            | undefined = newElapsedTimes[index - 2];
 
-        if (elapsedTime[index - 1]) {
-          prevAllInSecs =
-            elapsedTime[index - 1].mins * 60 + elapsedTime[index - 1].secs;
+          setIndexesTranscribing((indexesTranscribing) =>
+            indexesTranscribing.filter((i) => i !== index - 1),
+          );
 
-          // replace for displaying the start time
-          elapsedMins = Math.floor(prevAllInSecs / 60);
-          elapsedSecs = prevAllInSecs % 60;
-        } else {
-          elapsedMins = 0;
-          elapsedSecs = 0;
+          setEditorValue(
+            (editorValue) =>
+              `${editorValue}\n\n${index}. ${prevElapedTime ? `${printDouble(prevElapedTime.mins.toFixed(0))}:${printDouble(prevElapedTime.secs.toFixed(0))} -` : "0:00 -"} ${printDouble(
+                elapsedMins.toFixed(0),
+              )}:${printDouble(elapsedSecs.toFixed(0))} - ${transcription.text}`,
+          );
+          setIsTranscriptionRunning(false);
+        } catch (error) {
+          console.error("Error transcribing slice:", error);
+          toast.error("Error transcribing slice. Please try again.");
+          setIsTranscriptionRunning(false);
         }
-          */
-        const prevElapedTime:
-          | { index: number; mins: number; secs: number }
-          | undefined = newElapsedTimes[index - 2];
-
-        setIndexesTranscribing((indexesTranscribing) =>
-          indexesTranscribing.filter((i) => i !== index - 1),
-        );
-
-        setEditorValue(
-          (editorValue) =>
-            `${editorValue}\n\n${index}. ${prevElapedTime ? `${printDouble(prevElapedTime.mins.toFixed(0))}:${printDouble(prevElapedTime.secs.toFixed(0))} -` : "0:00 -"} ${printDouble(
-              elapsedMins.toFixed(0),
-            )}:${printDouble(elapsedSecs.toFixed(0))} - ${transcription.text}`,
-        );
-        setIsTranscriptionRunning(false);
       };
     },
-    [elapsedTimes, modelPk, inferenceProviders],
+    [elapsedTimes, modelPk, inferenceProviders, messageChannelApi],
   );
 
   const onSelectMediaElement = useCallback(
@@ -492,40 +442,36 @@ export const TranscriptionLayout = () => {
                 const sizeInMb = audioBlob.size / 1024 / 1024;
 
                 if (sizeInMb > 0.1 || secondsPassed > 1) {
-                  const audioBuffer = await blobToAudioBuffer(audioBlob);
+                  try {
+                    const audioBuffer = await blobToAudioBuffer(audioBlob);
+                    console.log("Audio buffer set", audioBlob, audioBuffer);
+                    if (audioPlayerStatusRef.current) {
+                      audioPlayerStatusRef.current.innerHTML =
+                        "Applying band-pass filter...";
+                    }
+                    console.log("Applying band-pass filter...");
 
-                  console.log("Audio buffer set", audioBlob, audioBuffer);
-                  if (audioPlayerStatusRef.current) {
-                    audioPlayerStatusRef.current.innerHTML =
-                      "Applying band-pass filter...";
+                    const audioBufferFiltered =
+                      await processAudioBufferWithBandpass(audioBuffer);
+
+                    setAudioBuffer(audioBufferFiltered);
+
+                    console.log("Slicing into chunks...");
+                    if (audioPlayerStatusRef.current) {
+                      audioPlayerStatusRef.current.innerHTML =
+                        "Slicing into chunks...";
+                    }
+                    const slicedChunks = await sliceAudioBufferAtPauses(
+                      audioBufferFiltered,
+                      10,
+                    );
+                    setAudioBufferSlices(slicedChunks);
+                    console.log("Done slicing");
+                  } catch (error) {
+                    console.error("Error decoding audio data:", error);
+                    toast.error("Unable to decode audio data. Please check the file format and try again.");
                   }
-                  console.log("Applying band-pass filter...");
-
-                  const audioBufferFiltered =
-                    await processAudioBufferWithBandpass(audioBuffer);
-
-                  setAudioBuffer(audioBufferFiltered);
-
-                  console.log("Slicing into chunks...");
-                  if (audioPlayerStatusRef.current) {
-                    audioPlayerStatusRef.current.innerHTML =
-                      "Slicing into chunks...";
-                  }
-                  const slicedChunks = await sliceAudioBufferAtPauses(
-                    audioBufferFiltered,
-                    10,
-                  );
-                  setAudioBufferSlices(slicedChunks);
-                  console.log("Done slicing");
                 }
-                /*
-                const transcription = (await transcribeInWorker(
-                  audioBlob,
-                )) as {
-                  text: string;
-                };
-                console.log("done transcribe slice 1MiB", transcription);
-                */
               })();
 
               // @ts-ignore
@@ -560,7 +506,8 @@ export const TranscriptionLayout = () => {
                     <CardTitle>Video oder Audio vom Computer</CardTitle>
                     <CardDescription>
                       Wählen Sie eine Audio oder Video-Datei von Ihrem Computer
-                      aus.
+                      aus. Die folgenden Formate werden von diesem Browser unterstützt:{" "}
+                      <strong>{supportedCodecs.join(", ")}</strong>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -578,9 +525,10 @@ export const TranscriptionLayout = () => {
                     </form>
 
                     <CardDescription className="ab-mt-2">
-                      Es werden keine Daten vorab auf Server hochgeladen.
-                      Die Audio-Abschnitte werden noch im Browser geschnitten
-                      und anschließend mit dem gewählten KI-Modell transkribiert.
+                      Die Audio-Abschnitte werden noch <strong>im Browser</strong> geschnitten,
+                      DSP-verarbeitet (Bandpass-Filter) und anschließend mit dem gewählten KI-Modell transkribiert.
+                      Bitte beachten Sie, dass der Bandpass-Filter die Qualität der Aufnahme für das menschliche
+                      Ohr verschlechtert, für die KI jedoch verbessert.
                     </CardDescription>
                   </CardContent>
                 </div>
@@ -758,8 +706,8 @@ export const TranscriptionLayout = () => {
                     },
                     0,
                   );
-                  const elapsedMins = elapsedTime / 60;
-                  const elapsedSecs = elapsedTime % 60;
+                  const elapsedMins = Math.floor(elapsedTime / 60); // Fix: Correctly calculate minutes
+                  const elapsedSecs = Math.floor(elapsedTime % 60); // Fix: Correctly calculate seconds
                   const sizeInMiB = blob.blob.size / 1024 / 1024;
 
                   const isTranscribing = indexesTranscribing.includes(index);
@@ -781,7 +729,7 @@ export const TranscriptionLayout = () => {
                           {index + 1}
                         </Badge>
                         <span className="ab-font-mono ab-text-xs">
-                          {elapsedMins.toFixed(0)}:{elapsedSecs.toFixed(0)}:{" "}
+                          {elapsedMins}:{printDouble(elapsedSecs.toString())}:{" "}
                           {blob.duration.toFixed(2)} Sek.,{" "}
                           {sizeInMiB.toFixed(2)} MiB
                         </span>

@@ -150,16 +150,39 @@ async function decodeAudioUsingWebCodecs(file: File, codec: string, metaData: Au
   */
 
 let offscreenClient: Client | null = null;
-let messageChannel: MessageChannel | null = null;
 
 // Create the offscreen document if it doesn't already exist
 async function initializeOffscreenClient() {
+  console.log("initializeOffscreenClient");
   const url = chrome.runtime.getURL('audio-processor.html');
 
+  // Send a "ping" to the offscreenClient and check for "pong" response
+  if (offscreenClient) {
+
+    await new Promise<void>((resolve) => {
+
+      const messageChannel = new MessageChannel();
+      const pingTimeout = setTimeout(async () => {
+        console.log("Ping not answered, re-initializing offscreen client");
+        offscreenClient = null;
+        resolve();
+      }, 10);
+
+      messageChannel.port1.onmessage = (event) => {
+        if (event.data === "pong") {
+          clearTimeout(pingTimeout);
+          console.log("Received pong from offscreen client");
+          resolve();
+        }
+      };
+
+      if (offscreenClient) {
+        offscreenClient.postMessage("ping", [messageChannel.port2]);
+      }
+    })    
+  }
+
   if (!offscreenClient) {
-
-    // TODO: FIX: Only a single offscreen document may be created.
-
     console.log("create offscreen client as it doesn't exist", url);
     await chrome.offscreen.createDocument({
       url,
@@ -172,14 +195,9 @@ async function initializeOffscreenClient() {
 
     console.log("client", offscreenClient);
   }
-
-  if (offscreenClient && !messageChannel) {
-    messageChannel = new MessageChannel();
-  }
 }
 
 async function postMessageToOffscreen(file: File): Promise<any> {
-
   try {
     await initializeOffscreenClient();
   } catch(e) {
@@ -187,7 +205,11 @@ async function postMessageToOffscreen(file: File): Promise<any> {
   }
 
   return new Promise((resolve, reject) => {
-    if (offscreenClient && messageChannel) {
+    if (offscreenClient) {
+      // Create a new MessageChannel for each communication
+      const messageChannel = new MessageChannel();
+
+      // Listen for the response from the offscreen client
       messageChannel.port1.onmessage = (event) => {
         if (event.data) {
           resolve(event.data);
@@ -195,15 +217,23 @@ async function postMessageToOffscreen(file: File): Promise<any> {
           reject(new Error("No data received from offscreen client"));
         }
       };
-      offscreenClient.postMessage(file, [messageChannel.port2]);
+
+      // Send the message with the new MessagePort
+      try {
+        offscreenClient.postMessage(file, [messageChannel.port2]);
+      } catch (error) {
+        reject(new Error(`Failed to post message to offscreen client: ${error}`));
+      }
     } else {
-      reject(new Error("Offscreen client or message channel not initialized"));
+      reject(new Error("Offscreen client not initialized"));
     }
   });
 }
 
+
 async function decodeSliceOffscreen(file: File) {
   try {
+    console.log("decodeSliceOffscreen", file);
     const res = await postMessageToOffscreen(file);
     console.log("res data", res);
     return res;
@@ -276,6 +306,7 @@ addListener(async(e) => {
 
         const wavBlobs = await decodeSliceOffscreen(audio.audioFile);
 
+        // TODO: sometimes hangs forever
         console.log("wavBlobs", wavBlobs);
 
         postMessage({
@@ -285,7 +316,7 @@ addListener(async(e) => {
           payload: wavBlobs 
         })
       } catch (error) {
-        console.log("compile prompt error", e.data.payload, error);
+        console.log("process transcription audio error", e.data.payload, error);
         postMessage({
           id: e.data.id,
           success: false,

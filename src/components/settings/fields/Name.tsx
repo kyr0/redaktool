@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   FormControl,
   FormDescription,
@@ -9,8 +8,6 @@ import {
 } from "../../../ui/form";
 import { Input } from "../../../ui/input";
 import type { SettingsFieldProps } from "../types";
-import type { InferenceProviderType } from "../../../lib/worker/llm/interfaces";
-import { aiInferenceProviderIdents, aiInferenceProviders } from "../../../lib/content-script/ai-models";
 
 export const NameField = ({ form, mode }: SettingsFieldProps) => {
 

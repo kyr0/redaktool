@@ -56,7 +56,7 @@ export interface TranscriptionTask {
   prompt?: string; // optional, previous transcription
 }
 
-export type SlicedAudioWavs = Array<{ blob: Blob; duration: number }>
+export type SlicedAudioWavs = Array<{ blob: Blob; duration: number, fileType: string }>
 
 export interface DbKeyValue {
   key: string;

@@ -127,6 +127,7 @@ export default {
         card: {
           DEFAULT: "hsl(var(--ab-card))",
           foreground: "hsl(var(--ab-card-foreground))",
+          border: "hsl(var(--ab-card-border))",
         },
       },
       borderRadius: {
