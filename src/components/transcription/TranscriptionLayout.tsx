@@ -46,7 +46,7 @@ import type { InferenceProvider } from "../settings/types";
 import { inferenceProvidersDbState } from "../settings/db";
 import { db } from "../../lib/content-script/db";
 import { toast } from "sonner";
-import { getSupportedCodecs } from "../../lib/content-script/codec";
+import { encodeToOgg, getSupportedCodecs, isAudioEncoderAvailableAndSupportsOgg } from "../../lib/content-script/codec";
 import { useMessageChannelContext } from "../../message-channel";
 
 interface HTMLMediaElementWithCaptureStream extends HTMLMediaElement {
@@ -103,7 +103,6 @@ export const TranscriptionLayout = () => {
   const mediaElContainerRef = useRef<any>();
   const audioPlayerStatusRef = useRef<any>();
   const videoEl$ = getElementSelectionStore();
-  //const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioBufferSlices, setAudioBufferSlices] = useState<
@@ -153,16 +152,16 @@ export const TranscriptionLayout = () => {
       console.log("loading inference providers storedModelPk", storedModelPk)
       setModelPk(storedModelPk);
     })();
-  }, [name]);
+  }, []);
 
   const setInternalModelPk = useCallback(
     (value: ModelPreference) => {
       (async () => {
         setModelPk((prev) => (prev !== value ? value : prev));
-        modelPkStateDb.set(await modelPkStateDb.get());
+        await modelPkStateDb.set(value);
       })();
     },
-    [modelPkStateDb],
+    [],
   );
 
   const onFindVisibleMediaElements = useCallback(() => {
@@ -213,12 +212,38 @@ export const TranscriptionLayout = () => {
 
         console.log("processing audio... (slicing)");
 
+        // load test audio blob
+        const waitingSpeechAudioBlobUrl = chrome.runtime.getURL("data/audio_file_processing_de.mp3")
+        const waitingSpeechAudioBlob = await (await fetch(waitingSpeechAudioBlobUrl)).blob()
+
         const wavBlobs: SlicedAudioWavs = await messageChannelApi.sendCommand("process-transcription-audio", {
           audioFile,
           metaData,
+          waitingSpeechAudioBlob,
         });
 
         if (wavBlobs && Array.isArray(wavBlobs)) {
+          if (await isAudioEncoderAvailableAndSupportsOgg()) {
+            console.log("encoding to ogg");
+
+            console.time("encodeToOgg");
+            // Run encoding in parallel
+            const oggBlobs = await Promise.all(wavBlobs.map(async (wavBlob) => {
+              const oggBlob = await encodeToOgg({
+                blob: wavBlob.blob,
+                duration: wavBlob.duration,
+                numberOfChannels: metaData.numberOfChannels,
+                sampleRate: metaData.sampleRate,
+              });
+              console.log("oggBlob", oggBlob);
+              return oggBlob;
+            }));
+
+            console.timeEnd("encodeToOgg");
+            
+            console.log("oggBlobs", oggBlobs);
+          }
+
           console.log("done (slicing)", wavBlobs);
           setAudioBufferBlobs(wavBlobs);
           console.log("wavBlobs", wavBlobs);

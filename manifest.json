@@ -48,7 +48,7 @@
   "incognito": "split",
   "web_accessible_resources": [
     {
-      "resources": ["message-channel.html", "message-channel.js", "audio-processor.html", "audio-processor.js", "data/OK.mp3"],
+      "resources": ["message-channel.html", "message-channel.js", "audio-processor.html", "audio-processor.js", "data/OK.mp3", "data/audio_file_processing_de.mp3", "data/audio_file_processing_en.mp3"],
       "matches": ["<all_urls>"],
       "use_dynamic_url": true
     },

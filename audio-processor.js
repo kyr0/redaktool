@@ -43,9 +43,23 @@ navigator.serviceWorker.onmessage = e => {
     return;
   }
 
-  if (e.data instanceof File) {
-    decodeFilterSlice(e.data).then(file => {
+  if (typeof e.data !== "undefined") {
+    console.log("RECV in audio processor", e.data);
+
+    const playWaitingSpeechBlob = (blob) => {
+      const audioElement = new Audio(URL.createObjectURL(blob));
+      audioElement.volume = 0.1; // Set volume to 10%
+      //audioElement.loop = true;
+      audioElement.play().catch(error => console.error("Error playing audio:", error));
+    };
+
+    const speechPlaybackInterval = setInterval(() => {
+      playWaitingSpeechBlob(e.data.waitingSpeechBlob);
+    }, 10000); // 10 seconds interval
+
+    decodeFilterSlice(e.data.audioFile).then(file => {
       console.log("file res", file);
+      clearInterval(speechPlaybackInterval);
       e.ports[0].postMessage(file);
       timeout = setTimeout(close, 60e3);
     });
@@ -56,15 +70,36 @@ async function decodeFilterSlice(file) {
   console.log("decode filter slice", file);
 
   const audioContext = new AudioContext();
+
+
+  // Create an oscillator to play a 24kHz sound at a low volume
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  oscillator.type = 'sine'; // Use a sine wave
+  oscillator.frequency.setValueAtTime(24000, audioContext.currentTime); // Set frequency to 24kHz
+  gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set the volume to very low
+
+  // Connect oscillator to the gain node and then to the audio output
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  // Start the oscillator to keep AudioContext alive
+  oscillator.start();
+
   const buffer = await file.arrayBuffer();
   console.log("buffer", buffer);
 
   const wavBlobs = [];
   
   try {
+
+    // this must succeed in 30secs
+    const audioBuffer = await getAudioFileAsAudioBuffer(file, audioContext)
+    
     // AudioBuffer
     const filteredAudioBuffer = await processAudioBufferWithBandpass(
-      await getAudioFileAsAudioBuffer(file, audioContext)
+      audioBuffer
     );
     console.log("filteredAudioBuffer", filteredAudioBuffer);
 
@@ -86,6 +121,8 @@ async function decodeFilterSlice(file) {
     wavBlobs.push({
       error,
     });
+  } finally {
+    oscillator.stop();
   }
   return wavBlobs;
 }

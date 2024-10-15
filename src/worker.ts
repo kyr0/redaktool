@@ -9,8 +9,9 @@ import {
   type MessageChannelPackage,
   type MessageChannelMessage,
   type DbKeyValue,
-  type AudioFile,
+  type AudioTranscriptionData,
   type TranscriptionTask,
+  type SlicedAudioWavs,
 } from "./shared";
 import {
   promptStreaming,
@@ -197,7 +198,7 @@ async function initializeOffscreenClient() {
   }
 }
 
-async function postMessageToOffscreen(file: File): Promise<any> {
+async function postMessageToOffscreen(data: any): Promise<any> {
   try {
     await initializeOffscreenClient();
   } catch(e) {
@@ -220,7 +221,7 @@ async function postMessageToOffscreen(file: File): Promise<any> {
 
       // Send the message with the new MessagePort
       try {
-        offscreenClient.postMessage(file, [messageChannel.port2]);
+        offscreenClient.postMessage(data, [messageChannel.port2]);
       } catch (error) {
         reject(new Error(`Failed to post message to offscreen client: ${error}`));
       }
@@ -231,10 +232,10 @@ async function postMessageToOffscreen(file: File): Promise<any> {
 }
 
 
-async function decodeSliceOffscreen(file: File) {
+async function decodeSliceOffscreen(audioFile: File, waitingSpeechBlob: Blob) {
   try {
-    console.log("decodeSliceOffscreen", file);
-    const res = await postMessageToOffscreen(file);
+    console.log("decodeSliceOffscreen", audioFile);
+    const res = await postMessageToOffscreen({ audioFile, waitingSpeechBlob });
     console.log("res data", res);
     return res;
   } catch (error) {
@@ -295,18 +296,18 @@ addListener(async(e) => {
 
       try {
         // audio.audioFile is of type File
-        const audio = e.data.payload as AudioFile;
+        const audioTranscriptionData = e.data.payload as AudioTranscriptionData;
 
-        console.log("audio recv", audio);
+        console.log("audio recv", audioTranscriptionData);
         //const codec = getCodecFromMimeType(audio.audioFile.type);
         //const metaData = audio.metaData;
         //const fileBlob = new Blob([audio.audioFile], { type: audio.audioFile.type });
         //const arrayBuffer = await audio.audioFile.arrayBuffer();
         //console.log("arrayBuffer", arrayBuffer);
 
-        const wavBlobs = await decodeSliceOffscreen(audio.audioFile);
+        const wavBlobs: SlicedAudioWavs = await decodeSliceOffscreen(audioTranscriptionData.audioFile, audioTranscriptionData.waitingSpeechAudioBlob);
 
-        // TODO: sometimes hangs forever
+        // trancode to ogg theora
         console.log("wavBlobs", wavBlobs);
 
         postMessage({

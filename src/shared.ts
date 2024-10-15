@@ -37,9 +37,10 @@ export interface MLModel {
   config: any;
 }
 
-export interface AudioFile {
+export interface AudioTranscriptionData {
   audioFile: File;
   metaData: AudioMetaData;
+  waitingSpeechAudioBlob: Blob;
 }
 
 export type InferenceProviderType = "openai" | "deepgram";
@@ -87,8 +88,8 @@ export interface ErrorMessage extends MessageChannelPackage<null> {
   payload: null;
 }
 
-export interface ProcessTranscriptionAudioMessage extends MessageChannelPackage<AudioFile> {
-  payload: AudioFile;
+export interface ProcessTranscriptionAudioMessage extends MessageChannelPackage<AudioTranscriptionData> {
+  payload: AudioTranscriptionData;
 }
 
 export interface ProcessTranscriptionAudioResultMessage extends MessageChannelPackage<SlicedAudioWavs> {
@@ -104,7 +105,7 @@ export interface TranscriptionResultMessage extends MessageChannelPackage<Transc
 }
 
 export type MessageChannelMessage = EmbeddingModelMessage | PromptMessage | CompilePromptMessage | CompilePromptResultMessage | DbMessage | ProcessTranscriptionAudioMessage | ErrorMessage | ProcessTranscriptionAudioResultMessage | TranscriptionMessage | TranscriptionResultMessage;
-export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue | AudioFile | SlicedAudioWavs | TranscriptionTask | TranscriptionResponse | null;
+export type MessageChannelPayload = MLModel | Prompt | CompilePrompt | ParseSmartPromptResult | DbKeyValue | AudioTranscriptionData | SlicedAudioWavs | TranscriptionTask | TranscriptionResponse | null;
 
 export interface HyperParameters {
   autoTuneCreativity: number;
