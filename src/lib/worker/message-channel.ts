@@ -15,6 +15,8 @@ export const useMessageChannel = <T>(
         // the callback assignment will last as long as the MessagePort
         // so we can use it to communicate with the content script
         self.tunnelPort.onmessage = (messageEvent) => {
+
+          console.log("onMessage (message-channel)", messageEvent, 'listeners', tunnelListeners);
           const listenerCallbacks = Object.values(tunnelListeners);
           if (listenerCallbacks.length) {
             listenerCallbacks

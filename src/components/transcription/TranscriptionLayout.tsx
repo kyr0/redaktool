@@ -21,15 +21,11 @@ import {
   useEffect,
   useRef,
   useState,
-  type SyntheticEvent,
 } from "react";
 import { MarkdownEditor } from "../MarkdownEditor";
 import AudioPlayer from "../../ui/audio-player";
 import {
-  audioBufferToWav,
   blobToAudioBuffer,
-  blobToDataUrl,
-  getAudioFileAsAudioBuffer,
   getAudioMetadata,
   processAudioBufferWithBandpass,
   sliceAudioBufferAtPauses,
@@ -38,15 +34,15 @@ import { Badge } from "../../ui/badge";
 import { filterForVisibleElements } from "../../lib/content-script/element";
 import { prefPerPage } from "../../lib/content-script/prefs";
 import { formatDuration } from "../../lib/content-script/format";
-import { Mic2Icon, PauseCircleIcon, PauseIcon, PlayIcon } from "lucide-react";
-import type { InferenceProviderType, SlicedAudioWavs, TranscriptionTask } from "../../shared";
+import { Mic2Icon, PauseCircleIcon } from "lucide-react";
+import type { InferenceProviderType, SlicedAudioWavs } from "../../shared";
 import { transcribeInWorker } from "../../lib/content-script/transcribe";
 import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
 import type { InferenceProvider } from "../settings/types";
 import { inferenceProvidersDbState } from "../settings/db";
 import { db } from "../../lib/content-script/db";
 import { toast } from "sonner";
-import { encodeToOgg, getSupportedCodecs, isAudioEncoderAvailableAndSupportsOgg } from "../../lib/content-script/codec";
+import { getSupportedCodecs } from "../../lib/content-script/codec";
 import { useMessageChannelContext } from "../../message-channel";
 
 interface HTMLMediaElementWithCaptureStream extends HTMLMediaElement {
@@ -133,6 +129,8 @@ export const TranscriptionLayout = () => {
       .flatMap(codec => codec.fileExtensions)
   );
   const messageChannelApi = useMessageChannelContext();
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isEncoding, setIsEncoding] = useState<boolean>(false);
 
   useEffect(() => {
 
@@ -205,7 +203,7 @@ export const TranscriptionLayout = () => {
       console.log("audioFile", audioFile);
 
       try {
-
+        setIsProcessing(true);
         const metaData = await getAudioMetadata(audioFile);
 
         console.log("metaData", metaData);
@@ -223,29 +221,38 @@ export const TranscriptionLayout = () => {
         });
 
         if (wavBlobs && Array.isArray(wavBlobs)) {
-          if (await isAudioEncoderAvailableAndSupportsOgg()) {
-            console.log("encoding to ogg");
+          setIsProcessing(false);
+          console.log("encoding to ogg");
+            //setIsEncoding(true);
 
+            /*
             console.time("encodeToOgg");
             // Run encoding in parallel
             const oggBlobs = await Promise.all(wavBlobs.map(async (wavBlob) => {
               const oggBlob = await encodeToOgg({
                 blob: wavBlob.blob,
                 duration: wavBlob.duration,
-                numberOfChannels: metaData.numberOfChannels,
-                sampleRate: metaData.sampleRate,
+                bitrate: 48000, 
               });
               console.log("oggBlob", oggBlob);
               return oggBlob;
             }));
 
             console.timeEnd("encodeToOgg");
+            */
+            //setIsEncoding(false);
             
-            console.log("oggBlobs", oggBlobs);
-          }
+            //console.log("oggBlobs", oggBlobs);
+            /*
+            setAudioBufferBlobs(wavBlobs.map(wavBlob => ({
+              ...wavBlob,
+              blob: oggBlobs[wavBlobs.indexOf(wavBlob)],
+              fileType: "audio/ogg",
+            }))); // Replace wavs with oggs
+            */
+          setAudioBufferBlobs(wavBlobs);
 
           console.log("done (slicing)", wavBlobs);
-          setAudioBufferBlobs(wavBlobs);
           console.log("wavBlobs", wavBlobs);
         } else {
           console.log("Failed to process audio file", wavBlobs);
@@ -254,6 +261,9 @@ export const TranscriptionLayout = () => {
       } catch (error) {
         console.error("Error processing audio file:", error);
         toast.error("Unable to transcribe audio data. Please check the file format and try again.");
+      } finally {
+        setIsProcessing(false);
+        setIsEncoding(false);
       }
     })();
   }, [audioFile, messageChannelApi]);
@@ -519,6 +529,13 @@ export const TranscriptionLayout = () => {
     }
   }, [selectedMediaElement]);
 
+  const onClearBlobs = useCallback(() => {
+    setAudioBufferBlobs([]);
+    setElapsedTimes([]);
+    setIndexesTranscribing([]);
+    setEditorValue("");
+  }, []);
+
   return (
     <ResizablePanelGroup direction="vertical">
       <ResizablePanel defaultSize={50} minSize={20}>
@@ -559,7 +576,9 @@ export const TranscriptionLayout = () => {
                 </div>
                 <div>
                   <CardFooter className="ab-flex ab-justify-between">
-                    {/*<Button variant="outline">Cancel</Button>*/}
+                    <Button onClick={onClearBlobs} variant="outline">
+                      Leeren
+                    </Button>
                     {/*
                     <Button>
                       Audio-Verarbeitung starten
@@ -782,12 +801,7 @@ export const TranscriptionLayout = () => {
                 })}
                 {audioBufferBlobs.length === 0 && (
                   <p className="ab-p-2">
-                    Dieser Bereich wird mit vorverarbeiteten Audio-Abschnitten
-                    befüllt. Dies ist technisch notwendig und findet statt,
-                    sobald die Verarbeitung der Transkription abgeschlossen
-                    wurde wurde. (Klicken Sie auf "Verarbeiten" oder
-                    Pausieren/Stoppen Sie einen Stream, der zuvor aktiviert
-                    wurde.)
+                    {isProcessing ? "🔄 Slicing/Processing..." : isEncoding ? "🔄 Encoding to OGG..." : "Dieser Bereich wird mit vorverarbeiteten Audio-Abschnitten befüllt. Dies ist technisch notwendig und findet statt, sobald die Verarbeitung der Transkription abgeschlossen wurde wurde. (Klicken Sie auf 'Verarbeiten' oder Pausieren/Stoppen Sie einen Stream, der zuvor aktiviert wurde.)"}
                   </p>
                 )}
               </div>

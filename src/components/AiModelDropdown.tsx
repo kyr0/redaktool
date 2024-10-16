@@ -14,8 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, Mail, MessageSquare, PlusCircle, UserPlus } from "lucide-react";
-import { useEditor } from "@milkdown/react";
+import { ArrowDown } from "lucide-react";
 import type { InferenceProviderType } from "../lib/worker/llm/interfaces";
 import type { InferenceProvider } from "./settings/types";
 import type { AIModelType } from "../lib/content-script/ai-models";
@@ -45,30 +44,32 @@ export function AiModelDropdown({
   onChange,
 }: AiModelDropdownProps) {
   const { t, i18n } = useTranslation();
-  const [selectedInferenceProvider, setSelectedInferenceProvider] = useState<InferenceProvider|null>();
-  const [selectedModel, setSelectedModel] = useState<ModelPreference|null>();
+  const [selectedInferenceProvider, setSelectedInferenceProvider] = useState<InferenceProvider | null>(null);
+  const [selectedModel, setSelectedModel] = useState<ModelPreference | null>(null);
   const [selectedModelName, setSelectedModelName] = useState<string>();
 
   useEffect(() => {
     const model = selectedInferenceProvider?.models
       .filter(_model => _model.type === type)
       .find(_model => _model.id === selectedModel?.model);
-      
+
     if (model && selectedInferenceProvider) {
       setSelectedModelName(model.name.replace(selectedInferenceProvider.name, "").trim());
     }
-  }, [selectedModel, selectedInferenceProvider]);
+  }, [selectedModel, selectedInferenceProvider, type]);
 
   useEffect(() => {
-
     let foundModel = false;
     if (value) {
-
       console.log("DEFAULT value", value);
-      const selectedInferenceProvider = options.find((option) => option.inferenceProviderName === value.inferenceProvider);
+      const selectedInferenceProvider = options.find(
+        (option) => option.inferenceProviderName === value.inferenceProvider
+      );
 
       if (selectedInferenceProvider) {
-        const hasModel = options.find((option) => option.models.find((_model) => value.model));
+        const hasModel = selectedInferenceProvider.models.find(
+          (_model) => _model.id === value.model
+        );
 
         if (hasModel) {
           setSelectedInferenceProvider(selectedInferenceProvider);
@@ -77,18 +78,32 @@ export function AiModelDropdown({
         }
       }
     }
-     
+
     if (!foundModel) {
       setSelectedInferenceProvider(null);
       setSelectedModel(null);
     }
   }, [value, options]);
 
+  // Validate model belongs to the selected provider, reset if not
+  useEffect(() => {
+    if (selectedInferenceProvider && selectedModel) {
+      const validModel = selectedInferenceProvider.models.some(
+        (model) => model.id === selectedModel.model && model.type === type
+      );
+
+      if (!validModel) {
+        setSelectedModel(null);
+      }
+    }
+  }, [selectedInferenceProvider, selectedModel, type]);
+
+  // Trigger onChange only when selectedModel is valid
   useEffect(() => {
     if (selectedModel) {
       onChange(selectedModel);
     }
-  }, [selectedModel]);
+  }, [selectedModel, onChange]);
 
   return (
     <span className="ab-flex ab-row">
@@ -98,7 +113,11 @@ export function AiModelDropdown({
             size={"sm"}
             className="!ab-text-xs !ab-h-5 !ab-px-1 hover:!ab-bg-primary-foreground"
           >
-            {options.length === 0 ? "KI-Anbieter konfigurieren" : selectedInferenceProvider ? `${selectedInferenceProvider.name}` : "KI-Anbieter wählen..."}
+            {options.length === 0
+              ? "KI-Anbieter konfigurieren"
+              : selectedInferenceProvider
+              ? `${selectedInferenceProvider.name}`
+              : "KI-Anbieter wählen..."}
             <ArrowDown className="ab-w-3 ab-h-3 ab-ml-1" />
           </Button>
         </DropdownMenuTrigger>
@@ -106,21 +125,30 @@ export function AiModelDropdown({
           <DropdownMenuLabel>KI-Anbieter wählen:</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {options.filter(option => !!option.models
-            .find(option => option.type === type))
+          {options
+            .filter((option) =>
+              option.models.find((model) => model.type === type)
+            )
             .map((option) => (
-            <DropdownMenuItem key={`${option.name}-item}`} onSelect={() => {
-              setSelectedInferenceProvider(option);
+              <DropdownMenuItem
+                key={`${option.name}-item}`}
+                onSelect={() => {
+                  setSelectedInferenceProvider(option);
 
-              if (option.models?.[0]) {
-                setSelectedModel({ inferenceProvider: option.inferenceProviderName, model: option.models?.[0].id, providerName: option.name });
-              } else {
-                setSelectedModel(null);
-              }
-            }}>
-              {option.name}
-            </DropdownMenuItem>
-          ))}
+                  if (option.models?.[0]) {
+                    setSelectedModel({
+                      inferenceProvider: option.inferenceProviderName,
+                      model: option.models[0].id,
+                      providerName: option.name,
+                    });
+                  } else {
+                    setSelectedModel(null);
+                  }
+                }}
+              >
+                {option.name}
+              </DropdownMenuItem>
+            ))}
 
           {options.length === 0 && (
             <DropdownMenuItem>
@@ -131,39 +159,6 @@ export function AiModelDropdown({
               </span>
             </DropdownMenuItem>
           )}
-
-          {/*
-          <DropdownMenuGroup>
-            {options.map((option) => (
-              <DropdownMenuSub key={`${option.name}-submenu`}>
-                <DropdownMenuSubTrigger key={`${option.name}-submenu`}>
-                  {option.name}
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="ab-z-[2147483646]">
-                  {option.models.map((model) => {
-                    console.log("id", `${option.name}-${model.id}-item}`)
-                    return (
-                      <>
-                        <DropdownMenuGroup key={`${option.name}-${model.id}-item}`}>
-                          <DropdownMenuItem onSelect={() => {
-                            const nextSelection: ModelPreference = {
-                              inferenceProvider: option.inferenceProviderName,
-                              model: model.id,
-                            };
-                            setSelectedValue(nextSelection);
-                            onChange(nextSelection);
-                          }}>
-                            {model.name.replace(option.name, "").trim()}
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      </>
-                    )
-                  })}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            ))}
-          </DropdownMenuGroup>
-          */}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -174,7 +169,9 @@ export function AiModelDropdown({
               size={"sm"}
               className="!ab-text-xs !ab-h-5 !ab-px-1 hover:!ab-bg-primary-foreground !ab-ml-1"
             >
-              {(selectedModel && selectedModelName) ? selectedModelName : "KI-Modell wählen..."}
+              {selectedModel && selectedModelName
+                ? selectedModelName
+                : "KI-Modell wählen..."}
               <ArrowDown className="ab-w-3 ab-h-3 ab-ml-1" />
             </Button>
           </DropdownMenuTrigger>
@@ -183,32 +180,38 @@ export function AiModelDropdown({
             <DropdownMenuSeparator />
 
             {selectedInferenceProvider.models
-              .filter(model => model.type === type)
+              .filter((model) => model.type === type)
               .map((option) => (
-              <DropdownMenuItem key={`${option.name}-item}`} onSelect={() => {
-                setSelectedModel({
-                  inferenceProvider: selectedInferenceProvider.inferenceProviderName,
-                  model: option.id,
-                  providerName: selectedInferenceProvider.name,
-                });
-              }}>
-                {option.name.replace(selectedInferenceProvider.name, "").trim()}
-              </DropdownMenuItem>
-            ))}
+                <DropdownMenuItem
+                  key={`${option.name}-item}`}
+                  onSelect={() => {
+                    setSelectedModel({
+                      inferenceProvider:
+                        selectedInferenceProvider.inferenceProviderName,
+                      model: option.id,
+                      providerName: selectedInferenceProvider.name,
+                    });
+                  }}
+                >
+                  {option.name
+                    .replace(selectedInferenceProvider.name, "")
+                    .trim()}
+                </DropdownMenuItem>
+              ))}
 
-            {!selectedModel && selectedInferenceProvider?.models.length === 0 && (
+            {!selectedModel && selectedInferenceProvider.models.length === 0 && (
               <DropdownMenuItem>
                 <span>
                   Klicken Sie im Menü links auf Einstellungen <br />
                   und konfigurieren Sie für den KI-Anbieter: <br />
-                  - {selectedInferenceProvider.name}<br />
+                  - {selectedInferenceProvider.name}
+                  <br />
                   mit "+ Neu" mindestens ein KI-Modell.
                 </span>
               </DropdownMenuItem>
             )}
-
           </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
       )}
     </span>
   );

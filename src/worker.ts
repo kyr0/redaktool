@@ -307,8 +307,21 @@ addListener(async(e) => {
 
         const wavBlobs: SlicedAudioWavs = await decodeSliceOffscreen(audioTranscriptionData.audioFile, audioTranscriptionData.waitingSpeechAudioBlob);
 
-        // trancode to ogg theora
         console.log("wavBlobs", wavBlobs);
+        /*
+        const mp3encoder = new lamejs.Mp3Encoder(1, 44100, 48); //mono 44.1khz encode to 128kbps
+
+        for (let i = 0; i < wavBlobs.length; i++) {
+          const mp3Data = mp3encoder.encodeBuffer(wavBlobs[i]);
+          console.log("mp3Data", mp3Data);
+
+          wavBlobs[i].blob = new Blob([mp3Data], { type: "audio/mp3" });
+          wavBlobs[i].fileType = "audio/mp3";
+        }
+
+        // trancode to ogg theora
+        console.log("wavBlobs", wavBlobs, lamejs.Mp3Encoder        );
+        */
 
         postMessage({
           id: e.data.id,
