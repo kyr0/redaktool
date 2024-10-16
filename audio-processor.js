@@ -107,7 +107,6 @@ async function decodeFilterSlice(file) {
 
     console.log("filteredAudioBufferSlices", filteredAudioBufferSlices);
 
-
     for (let i = 0; i < filteredAudioBufferSlices.length; i++) {
       console.log("Blobbing to wav", i);
       wavBlobs.push({

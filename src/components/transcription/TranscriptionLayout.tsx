@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
+  CardFooter
 } from "../../ui/card";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
@@ -25,6 +25,7 @@ import {
 import { MarkdownEditor } from "../MarkdownEditor";
 import AudioPlayer from "../../ui/audio-player";
 import {
+  audioBufferToWav,
   blobToAudioBuffer,
   getAudioMetadata,
   processAudioBufferWithBandpass,
@@ -132,22 +133,23 @@ export const TranscriptionLayout = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isEncoding, setIsEncoding] = useState<boolean>(false);
 
-  useEffect(() => {
+  // New state to track the status of each wavBlob
+  const [transcriptionStatuses, setTranscriptionStatuses] = useState<Array<'not_started' | 'transcribing' | 'done' | 'error'>>([]);
 
-    console.log("supportedCodecs", supportedCodecs)
-    ;(async() => {
-      console.log("loading inference providers")
-      const inferenceProviders: Array<InferenceProvider> = (await inferenceProvidersDbState.get()).sort((a, b) => a.name.localeCompare(b.name))
-      setInferenceProviders(inferenceProviders)
-      console.log("DONE loading inference providers", inferenceProviders)
-    })()
+  useEffect(() => {
+    console.log("supportedCodecs", supportedCodecs);
+    (async () => {
+      console.log("loading inference providers");
+      const inferenceProviders: Array<InferenceProvider> = (await inferenceProvidersDbState.get()).sort((a, b) => a.name.localeCompare(b.name));
+      setInferenceProviders(inferenceProviders);
+      console.log("DONE loading inference providers", inferenceProviders);
+    })();
   }, []);
 
   useEffect(() => {
     (async () => {
       const storedModelPk = await modelPkStateDb.get();
-      
-      console.log("loading inference providers storedModelPk", storedModelPk)
+      console.log("loading inference providers storedModelPk", storedModelPk);
       setModelPk(storedModelPk);
     })();
   }, []);
@@ -155,7 +157,13 @@ export const TranscriptionLayout = () => {
   const setInternalModelPk = useCallback(
     (value: ModelPreference) => {
       (async () => {
-        setModelPk((prev) => (prev !== value ? value : prev));
+        setModelPk((prev) => {
+          if (prev !== value) {
+            setTranscriptionStatuses([]); // Reset transcription statuses when model changes
+            return value;
+          }
+          return prev;
+        });
         await modelPkStateDb.set(value);
       })();
     },
@@ -186,20 +194,19 @@ export const TranscriptionLayout = () => {
       setAudioBufferBlobs([]);
       setElapsedTimes([]);
       setIndexesTranscribing([]);
+      setTranscriptionStatuses([]); // Reset transcription statuses
 
       setAudioFile(file);
     }
   }, []);
 
   useEffect(() => {
-
     if (!audioFile) {
       console.log("no audio file");
       return;
     }
 
     (async () => {
-
       console.log("audioFile", audioFile);
 
       try {
@@ -211,8 +218,8 @@ export const TranscriptionLayout = () => {
         console.log("processing audio... (slicing)");
 
         // load test audio blob
-        const waitingSpeechAudioBlobUrl = chrome.runtime.getURL("data/audio_file_processing_de.mp3")
-        const waitingSpeechAudioBlob = await (await fetch(waitingSpeechAudioBlobUrl)).blob()
+        const waitingSpeechAudioBlobUrl = chrome.runtime.getURL("data/audio_file_processing_de.mp3");
+        const waitingSpeechAudioBlob = await (await fetch(waitingSpeechAudioBlobUrl)).blob();
 
         const wavBlobs: SlicedAudioWavs = await messageChannelApi.sendCommand("process-transcription-audio", {
           audioFile,
@@ -220,10 +227,7 @@ export const TranscriptionLayout = () => {
           waitingSpeechAudioBlob,
         });
 
-        if (wavBlobs && Array.isArray(wavBlobs)) {
-          setIsProcessing(false);
-          console.log("encoding to ogg");
-            //setIsEncoding(true);
+          //setIsEncoding(true);
 
             /*
             console.time("encodeToOgg");
@@ -250,8 +254,12 @@ export const TranscriptionLayout = () => {
               fileType: "audio/ogg",
             }))); // Replace wavs with oggs
             */
-          setAudioBufferBlobs(wavBlobs);
 
+        if (wavBlobs && Array.isArray(wavBlobs)) {
+          setIsProcessing(false);
+          console.log("encoding to ogg");
+          setAudioBufferBlobs(wavBlobs);
+          setTranscriptionStatuses(new Array(wavBlobs.length).fill('not_started')); // Initialize statuses
           console.log("done (slicing)", wavBlobs);
           console.log("wavBlobs", wavBlobs);
         } else {
@@ -286,10 +294,8 @@ export const TranscriptionLayout = () => {
 
   const onTranscribeSliceClick = useCallback(
     (blob: Blob, index: number, elapsedMins: number, elapsedSecs: number) => {
-
       let prevTranscription = "";
       return async () => {
-
         if (!modelPk) {
           console.error("No model selected");
           toast.error("No model selected. Please select a model.");
@@ -302,7 +308,7 @@ export const TranscriptionLayout = () => {
           return;
         }
 
-        const activeInferenceProvider = inferenceProviders.find((ip) => ip.name === modelPk.providerName)
+        const activeInferenceProvider = inferenceProviders.find((ip) => ip.name === modelPk.providerName);
 
         if (!activeInferenceProvider) {
           console.log("No active inference provider found", modelPk.providerName, "inferenceProviders", inferenceProviders);
@@ -313,6 +319,13 @@ export const TranscriptionLayout = () => {
         setIsTranscriptionRunning(true);
         setIndexesTranscribing((indexesTranscribing) => {
           return [...indexesTranscribing, index - 1];
+        });
+
+        // Update status to transcribing
+        setTranscriptionStatuses((statuses) => {
+          const newStatuses = [...statuses];
+          newStatuses[index - 1] = 'transcribing';
+          return newStatuses;
         });
 
         console.log("transcribe slice", blob);
@@ -327,8 +340,8 @@ export const TranscriptionLayout = () => {
             model: modelPk?.model,
             codec: "wav", // it's decoded by this time
             providerType: activeInferenceProvider.inferenceProviderName as InferenceProviderType,
-          }, messageChannelApi)
-          
+          }, messageChannelApi);
+
           console.log("done transcribe slice", transcription);
 
           // buffer
@@ -355,16 +368,51 @@ export const TranscriptionLayout = () => {
                 elapsedMins.toFixed(0),
               )}:${printDouble(elapsedSecs.toFixed(0))} - ${transcription.text}`,
           );
+
+          // Update status to done
+          setTranscriptionStatuses((statuses) => {
+            const newStatuses = [...statuses];
+            newStatuses[index - 1] = 'done';
+            return newStatuses;
+          });
+
           setIsTranscriptionRunning(false);
         } catch (error) {
           console.error("Error transcribing slice:", error);
           toast.error("Error transcribing slice. Please try again.");
+
+          // Update status to error
+          setTranscriptionStatuses((statuses) => {
+            const newStatuses = [...statuses];
+            newStatuses[index - 1] = 'error';
+            return newStatuses;
+          });
+
           setIsTranscriptionRunning(false);
         }
       };
     },
     [elapsedTimes, modelPk, inferenceProviders, messageChannelApi],
   );
+
+  const onTranscribeAll = useCallback(async () => {
+    for (let i = 0; i < audioBufferBlobs.length; i++) {
+      const blob = audioBufferBlobs[i];
+      const elapsedTime = audioBufferBlobs.reduce(
+        (acc, blob, index) => {
+          if (index <= i) {
+            return acc + blob.duration;
+          }
+          return acc;
+        },
+        0,
+      );
+      const elapsedMins = Math.floor(elapsedTime / 60);
+      const elapsedSecs = Math.floor(elapsedTime % 60);
+
+      await onTranscribeSliceClick(blob.blob, i + 1, elapsedMins, elapsedSecs)();
+    }
+  }, [audioBufferBlobs, onTranscribeSliceClick]);
 
   const onSelectMediaElement = useCallback(
     (e: any) => {
@@ -501,7 +549,20 @@ export const TranscriptionLayout = () => {
                       10,
                     );
                     setAudioBufferSlices(slicedChunks);
-                    console.log("Done slicing");
+                    console.log("Done slicing", slicedChunks);
+
+                    // Convert sliced audio buffers to blobs and update state
+                    const slicedBlobs = await Promise.all(slicedChunks.map(async (buffer) => {
+                      return {
+                        blob: audioBufferToWav(buffer),
+                        duration: buffer.duration,
+                        fileType: "audio/wav",
+                      };
+                    }));
+                    setAudioBufferBlobs(slicedBlobs);
+
+                    // Set transcription statuses for each sliced blob
+                    setTranscriptionStatuses(slicedBlobs.map(() => 'not_started'));
                   } catch (error) {
                     console.error("Error decoding audio data:", error);
                     toast.error("Unable to decode audio data. Please check the file format and try again.");
@@ -534,6 +595,7 @@ export const TranscriptionLayout = () => {
     setElapsedTimes([]);
     setIndexesTranscribing([]);
     setEditorValue("");
+    setTranscriptionStatuses([]); // Reset transcription statuses
   }, []);
 
   return (
@@ -733,12 +795,23 @@ export const TranscriptionLayout = () => {
                 <AudioPlayer className="w-[100%]" audioBlob={audioBlob!} />
               </div>
               */}
-              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1">
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-justify-between ab-items-center">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
                   Audio-Abschnitte
                 </h5>
+                {transcriptionStatuses.some(status => status !== 'done') && (
+                  <Button
+                    size={"sm"}
+                    onClick={onTranscribeAll}
+                    disabled={isTranscriptionRunning || audioBufferBlobs.length === 0}
+                    className=""
+                  >
+                    Alle Transkribieren
+                  </Button>
+                )}
               </div>
               <div className="ab-flex ab-flex-col ab-w-full ab-mt-2">
+               
                 {audioBufferBlobs.map((blob, index) => {
                   // Calculate the total duration of all audio clips
                   const elapsedTime = audioBufferBlobs.reduce(
@@ -755,9 +828,7 @@ export const TranscriptionLayout = () => {
                   const sizeInMiB = blob.blob.size / 1024 / 1024;
 
                   const isTranscribing = indexesTranscribing.includes(index);
-                  const isAlreadyTranscribed =
-                    elapsedTimes.find((t) => t.index === index + 1) !==
-                    undefined;
+                  const isAlreadyTranscribed = transcriptionStatuses[index] === 'done';
                   const isDisabled =
                     isTranscribing ||
                     isAlreadyTranscribed ||
