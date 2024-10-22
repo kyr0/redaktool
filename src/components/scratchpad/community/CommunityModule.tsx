@@ -42,13 +42,13 @@ export const CommunityModule: FC<GenericPersistentModuleWrapperProps> = memo(({ 
       <div className="ab-grid ab-grid-cols-2 ab-items-center ab-justify-between ab-mx-auto ab-m-2 ab-ml-3">
         <div className="ab-flex ab-items-center ab-justify-start ab-space-x-2">
           <PlusIcon className="ab-flex ab-shrink-0 ab-w-8 ab-h-8"/>
-          <h2 className="ab-text-sm ab-font-bold">Built-in tools</h2>
+          <h2 className="ab-text-sm ab-font-bold">{t("header_builtin_tools")}</h2>
         </div>
         <div className="ab-mb-2 ab-flex ab-justify-center ab-items-center ab-gap-2">
           <MagnifyingGlassIcon className="ab-flex ab-shrink-0 ab-opacity-50 ab-w-6 ab-h-6" />
           <Input 
             type="text" 
-            placeholder="Type to filter tools..."
+            placeholder={t("type_to_fitler_tools")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="ab-w-full"
@@ -91,7 +91,7 @@ export const CommunityModule: FC<GenericPersistentModuleWrapperProps> = memo(({ 
       <div className="ab-grid ab-grid-cols-2 ab-items-center ab-justify-between ab-mx-auto ab-m-2 ab-mt-4 ab-ml-3">
         <div className="ab-flex ab-items-center ab-justify-start ab-space-x-2">
           <BlocksIcon className="ab-flex ab-shrink-0 ab-w-8 ab-h-8"/>
-          <h2 className="ab-text-sm ab-font-bold">Community tools</h2>
+          <h2 className="ab-text-sm ab-font-bold">{t("header_community_tools")}</h2>
         </div>
         <div className="ab-mb-2 ab-flex ab-justify-center ab-items-center ab-gap-2">
           <MagnifyingGlassIcon className="ab-flex ab-shrink-0 ab-opacity-50 ab-w-6 ab-h-6" />
@@ -131,7 +131,7 @@ export const CommunityModule: FC<GenericPersistentModuleWrapperProps> = memo(({ 
             </Card>
           ))
         ) : (
-          <p className="ab-text-center ab-text-gray-500 ab-mt-10">No community tools found.</p>
+          <p className="ab-text-center ab-text-gray-500 ab-mt-10">{t("no_community_tools_found")}</p>
         )}
       </div>
     </>

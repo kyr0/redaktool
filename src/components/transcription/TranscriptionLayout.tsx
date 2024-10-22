@@ -35,7 +35,7 @@ import { Badge } from "../../ui/badge";
 import { filterForVisibleElements } from "../../lib/content-script/element";
 import { prefPerPage } from "../../lib/content-script/prefs";
 import { formatDuration } from "../../lib/content-script/format";
-import { Mic2Icon, PauseCircleIcon } from "lucide-react";
+import { Mic2Icon, PauseCircleIcon, PlayIcon } from "lucide-react";
 import type { InferenceProviderType, SlicedAudioWavs } from "../../shared";
 import { transcribeInWorker } from "../../lib/content-script/transcribe";
 import { AiModelDropdown, type ModelPreference } from "../AiModelDropdown";
@@ -135,6 +135,17 @@ export const TranscriptionLayout = () => {
 
   // New state to track the status of each wavBlob
   const [transcriptionStatuses, setTranscriptionStatuses] = useState<Array<'not_started' | 'transcribing' | 'done' | 'error'>>([]);
+
+  // New state to track the start time for recording
+  const [startTime, setStartTime] = useState<number>(0);
+  const [muted, setMuted] = useState<boolean>(false);
+
+  const onToggleMute = useCallback((isMuted: boolean) => {
+    setMuted(isMuted);
+    if (selectedMediaElement) {
+      selectedMediaElement.muted = isMuted
+    }
+  }, [selectedMediaElement]);
 
   useEffect(() => {
     console.log("supportedCodecs", supportedCodecs);
@@ -472,7 +483,8 @@ export const TranscriptionLayout = () => {
       }
 
       if (!isPlaying) {
-        selectedMediaElement.currentTime = 0;
+        selectedMediaElement.muted = muted;
+        selectedMediaElement.currentTime = startTime * 60; // Use the selected start time
         selectedMediaElement.play();
       }
 
@@ -588,7 +600,7 @@ export const TranscriptionLayout = () => {
         }
       })();
     }
-  }, [selectedMediaElement]);
+  }, [selectedMediaElement, startTime, muted]);
 
   const onClearBlobs = useCallback(() => {
     setAudioBufferBlobs([]);
@@ -695,6 +707,32 @@ export const TranscriptionLayout = () => {
                       </div>
                     </div>
 
+                    <div className="ab-flex ab-items-center ab-space-x-2 ab-mt-2">
+                      <input
+                        type="checkbox"
+                        id="muteCheckbox"
+                        className="ab-form-checkbox ab-h-4 ab-w-4"
+                        onChange={(evt) => onToggleMute(evt.target.checked)}
+                      />
+                      <label htmlFor="muteCheckbox" className="ab-text-sm">
+                        {t("mute_audio")}
+                      </label>
+                    </div>
+
+                    <div className="ab-flex ab-items-center ab-space-x-2 ab-mt-2">
+                      <label htmlFor="startTimeInput" className="ab-text-sm">
+                        Startzeit (Minute):
+                      </label>
+                      <input
+                        type="number"
+                        id="startTimeInput"
+                        className="ab-form-input ab-h-8 ab-w-16"
+                        value={startTime}
+                        onChange={(e) => setStartTime(Number(e.target.value))}
+                        min="0"
+                      />
+                    </div>
+
                     <CardDescription className="ab-mt-2">
                       Am Ende der Aufnahme oder wenn Sie die Aufnahme stoppen,
                       wird die Aufnahme Analysiert und geschnitten.
@@ -795,7 +833,8 @@ export const TranscriptionLayout = () => {
                 <AudioPlayer className="w-[100%]" audioBlob={audioBlob!} />
               </div>
               */}
-              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-justify-between ab-items-center">
+              
+              <div className="ab-ftr-bg ab-flex ab-flex-row ab-ml-1 ab-justify-between ab-items-center ab-pr-1">
                 <h5 className="ab-font-bold ab-p-1 ab-px-2 !ab-text-[12px]">
                   Audio-Abschnitte
                 </h5>
@@ -804,8 +843,9 @@ export const TranscriptionLayout = () => {
                     size={"sm"}
                     onClick={onTranscribeAll}
                     disabled={isTranscriptionRunning || audioBufferBlobs.length === 0}
-                    className=""
+                    className="!ab-h-6 ab-m-1 ab-mr-2"
                   >
+                    <PlayIcon className="ab-mr-2 ab-h-4 ab-w-4" />
                     Alle Transkribieren
                   </Button>
                 )}
