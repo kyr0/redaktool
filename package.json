@@ -26,7 +26,7 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.28.4",
-    "@crxjs/vite-plugin": "^2.0.0-beta.25",
+    "@crxjs/vite-plugin": "^2.0.0-beta.26",
     "@google-cloud/vertexai": "^1.1.0",
     "@hookform/resolvers": "^3.3.4",
     "@huggingface/transformers": "^3.0.0-alpha.15",

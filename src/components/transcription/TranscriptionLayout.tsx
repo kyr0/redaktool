@@ -715,7 +715,7 @@ export const TranscriptionLayout = () => {
                         onChange={(evt) => onToggleMute(evt.target.checked)}
                       />
                       <label htmlFor="muteCheckbox" className="ab-text-sm">
-                        {t("mute_audio")}
+                        Still
                       </label>
                     </div>
 
