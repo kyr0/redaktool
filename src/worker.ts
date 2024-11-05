@@ -47,6 +47,16 @@ import { transcribeDeepgram } from "./lib/worker/transcription/deepgram";
 // establish fast, MessageChannel-based communication between content script and worker
 const { postMessage, addListener } = useMessageChannel<MessageChannelMessage>();
 
+// Set up a periodic alarm to keep the service worker alive
+chrome.alarms.create("keepAlive", { periodInMinutes: 1 }); //every minutes is a safe interval
+
+// Listen for the alarm event to prevent the service worker from going inactive
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "keepAlive") {
+    console.log("keep-alive; don't remove; otherwise the service worker will be terminated and MessageChannels will be closed");
+  }
+});
+
 /*
 
 
@@ -149,68 +159,78 @@ async function decodeAudioUsingWebCodecs(file: File, codec: string, metaData: Au
 }
 
   */
-
 let offscreenClient: Client | null = null;
+let messageChannel: MessageChannel | null = null; // Persistent MessageChannel
+
+
 
 // Create the offscreen document if it doesn't already exist
 async function initializeOffscreenClient() {
   console.log("initializeOffscreenClient");
   const url = chrome.runtime.getURL('audio-processor.html');
 
-  // Send a "ping" to the offscreenClient and check for "pong" response
+  // Check for an existing offscreen client and a "pong" response
   if (offscreenClient) {
-
-    await new Promise<void>((resolve) => {
-
-      const messageChannel = new MessageChannel();
-      const pingTimeout = setTimeout(async () => {
+    const pingTimeout = new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
         console.log("Ping not answered, re-initializing offscreen client");
-        offscreenClient = null;
+        offscreenClient = null; // Reset the client if ping fails
         resolve();
-      }, 10);
+      }, 100); // Timeout duration; adjust as needed
 
-      messageChannel.port1.onmessage = (event) => {
-        if (event.data === "pong") {
-          clearTimeout(pingTimeout);
-          console.log("Received pong from offscreen client");
-          resolve();
-        }
-      };
+      if (messageChannel) {
+        messageChannel.port1.onmessage = (event) => {
+          if (event.data === "pong") {
+            clearTimeout(timeoutId);
+            console.log("Received pong from offscreen client");
+            resolve();
+          }
+        };
+      } else {
+        reject(new Error("MessageChannel not initialized"));
+      }
 
       if (offscreenClient) {
-        offscreenClient.postMessage("ping", [messageChannel.port2]);
+        offscreenClient.postMessage("ping", [messageChannel!.port2]);
+      } else {
+        reject(new Error("Offscreen client not initialized"));
       }
-    })    
+    });
+
+    await pingTimeout;
   }
 
   if (!offscreenClient) {
-    console.log("create offscreen client as it doesn't exist", url);
+    console.log("Creating new offscreen client", url);
     await chrome.offscreen.createDocument({
       url,
       reasons: ["AUDIO_PLAYBACK"] as Array<chrome.offscreen.Reason>,
-      justification: 'Transcoding and slicing transcription audio.' // details for using the API
+      justification: "Transcoding and slicing transcription audio.",
     });
 
     offscreenClient = (await self.clients.matchAll({ includeUncontrolled: true }))
       .find(c => c.url === url) || null;
 
-    console.log("client", offscreenClient);
+    if (!messageChannel) {
+      // Initialize MessageChannel only once
+      messageChannel = new MessageChannel();
+    }
+
+    console.log("client initialized:", offscreenClient);
   }
 }
 
+// Function to send a message to the offscreen client
 async function postMessageToOffscreen(data: any): Promise<any> {
   try {
     await initializeOffscreenClient();
-  } catch(e) {
+  } catch (e) {
     console.warn("Warning: Initializing offscreen client failed", e);
   }
 
   return new Promise((resolve, reject) => {
-    if (offscreenClient) {
-      // Create a new MessageChannel for each communication
-      const messageChannel = new MessageChannel();
-
-      // Listen for the response from the offscreen client
+    if (offscreenClient && messageChannel) {
+      // Reuse the same port to send and receive data
       messageChannel.port1.onmessage = (event) => {
         if (event.data) {
           resolve(event.data);
@@ -219,7 +239,6 @@ async function postMessageToOffscreen(data: any): Promise<any> {
         }
       };
 
-      // Send the message with the new MessagePort
       try {
         offscreenClient.postMessage(data, [messageChannel.port2]);
       } catch (error) {
@@ -231,7 +250,7 @@ async function postMessageToOffscreen(data: any): Promise<any> {
   });
 }
 
-
+// Usage example for sending data to the offscreen client
 async function decodeSliceOffscreen(audioFile: File, waitingSpeechBlob: Blob) {
   try {
     console.log("decodeSliceOffscreen", audioFile);

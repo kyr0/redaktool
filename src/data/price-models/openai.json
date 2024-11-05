@@ -1,4 +1,22 @@
 {
+  "openai-o1-mini": {
+    "provider": "openai",
+    "input": 0.000005,
+    "output": 0.000015,
+    "maxContextTokens": 128000,
+    "maxInputTokens": 123904,
+    "maxOutputTokens": 4096,
+    "tikTokenModelName": "o1-mini"
+  },
+  "openai-o1-preview": {
+    "provider": "openai",
+    "input": 0.000005,
+    "output": 0.000015,
+    "maxContextTokens": 128000,
+    "maxInputTokens": 123904,
+    "maxOutputTokens": 4096,
+    "tikTokenModelName": "o1-preview"
+  },
   "openai-gpt-4o": {
     "provider": "openai",
     "input": 0.000005,

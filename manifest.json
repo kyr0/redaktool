@@ -37,7 +37,7 @@
     }
   ],
   "host_permissions": ["*://*/*", "http://127.0.0.1/*", "http://localhost/*"],
-  "permissions": ["webRequest", "scripting", "activeTab", "storage", "unlimitedStorage", "offscreen"],
+  "permissions": ["webRequest", "scripting", "activeTab", "storage", "unlimitedStorage", "offscreen", "alarms"],
   "background": {
     "service_worker": "src/worker.ts",
     "type": "module"
@@ -50,7 +50,7 @@
     {
       "resources": ["message-channel.html", "message-channel.js", "audio-processor.html", "audio-processor.js", "data/OK.mp3", "data/audio_file_processing_de.mp3", "data/audio_file_processing_en.mp3"],
       "matches": ["<all_urls>"],
-      "use_dynamic_url": true
+      "use_dynamic_url": false
     },
     {
       "resources": ["dist/*"],

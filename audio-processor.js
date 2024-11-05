@@ -77,7 +77,7 @@ async function decodeFilterSlice(file) {
   const gainNode = audioContext.createGain();
 
   oscillator.type = 'sine'; // Use a sine wave
-  oscillator.frequency.setValueAtTime(24000, audioContext.currentTime); // Set frequency to 24kHz
+  oscillator.frequency.setValueAtTime(22050, audioContext.currentTime); // Set frequency to 24kHz
   gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set the volume to very low
 
   // Connect oscillator to the gain node and then to the audio output
