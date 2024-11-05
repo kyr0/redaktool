@@ -238,6 +238,8 @@ export const TranscriptionLayout = () => {
           waitingSpeechAudioBlob,
         });
 
+        console.log("wavBlobs", wavBlobs);
+
           //setIsEncoding(true);
 
             /*
